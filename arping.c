@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 529 2002-01-20 19:19:45Z marvin $
+ * $Id: arping.c 530 2002-01-20 19:22:33Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -31,6 +31,7 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  */
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -138,11 +139,12 @@ static void sigint(int i)
 
 static void usage(int ret)
 {
-	printf("arping %1.2f [ -qvrRd0bp ] [ -S <host/ip> ] [ -T <host/ip ]"
-	       " [ -s <MAC> ]\n"
-	       "            [ -t <MAC> ] [ -c <count> ] [ -i <interface> ] "
-	       "<host/ip/MAC | -B>\n",
+	printf("ARPing %1.2f, by Thomas Habets <thomas@habets.pp.se>\n",
 	       version);
+	printf("usage: arping [ -qvrRd0bp ] [ -S <host/ip> ] [ -T <host/ip ]"
+	       " [ -s <MAC> ]\n"
+	       "              [ -t <MAC> ] [ -c <count> ] [ -i <interface> ] "
+	       "<host/ip/MAC | -B>\n");
 	exit(ret);
 }
 

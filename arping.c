@@ -1,7 +1,7 @@
 /*
  * arping
  *
- * By marvin@rootbusters.net
+ * By Thomas Habets <thomas@habets.pp.se>
  *
  * ARP 'ping' utility
  *
@@ -12,10 +12,10 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 488 2001-12-23 13:02:41Z marvin $
+ * $Id: arping.c 529 2002-01-20 19:19:45Z marvin $
  */
 /*
- *  Copyright (C) 2000 Marvin (marvin@rootbusters.net)
+ *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public
@@ -33,6 +33,8 @@
  */
 #include <stdlib.h>
 #include <unistd.h>
+
+#include <sys/time.h>
 
 #ifndef ETH_ALEN
 #define ETH_ALEN 6
@@ -83,6 +85,7 @@ static u_char eth_null[ETH_ALEN] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 static u_char eth_target[ETH_ALEN];
 static u_char eth_source[ETH_ALEN];  // only used in main() but it belongs here
 
+static struct timeval lastpacketsent;
 static const u_int ip_xmas = 0xffffffff;
 
 static pcap_t *pcap;
@@ -186,10 +189,35 @@ static void alasend(int i)
 		fprintf(stderr, "libnet_write_link_layer(): error\n");
 		exit(1);
 	}
+	if (gettimeofday(&lastpacketsent, NULL)) {
+		fprintf(stderr, "arping: %s\n", strerror(errno));
+		exit(1);
+	}
 	alarm(1);
 #if SOLARIS
 	signal(SIGALRM, alasend);
 #endif
+}
+
+/*
+ * NOTE: not re-entrant
+ */
+static char* tvtoda(const struct timeval *tv, const struct timeval *tv2)
+{
+	static char buf[128];
+	double f,f2;
+
+	f = tv->tv_sec + (double)tv->tv_usec / 1000000;
+	f2 = tv2->tv_sec + (double)tv2->tv_usec / 1000000;
+	f = (f2 - f) * 1000000;
+	if (f < 1000) {
+		sprintf(buf, "%.3f usec", f);
+	} else if (f < 1000000) {
+		sprintf(buf, "%.3f msec", f / 1000);
+	} else {
+		sprintf(buf, "%.3f sec", f / 1000000);
+	}
+	return buf;
 }
 
 static void handlepacket(const char *unused, struct pcap_pkthdr *h,
@@ -201,8 +229,14 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 	struct icmphdr *hicmp;
 	unsigned int c;
 	unsigned char *cp;
+	struct timeval recvtime;
 
 	DEBUG(printf("handlepacket()\n"));
+
+	if (gettimeofday(&recvtime, NULL)) {
+		fprintf(stderr, "arping: %s\n", strerror(errno));
+		exit(1);
+	}
 
 	eth = (struct ethhdr*)packet;
 
@@ -238,8 +272,9 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 					for (c = 0; c < ETH_ALEN-1; c++) {
 						printf("%.2x:", *cp++);
 					}
-					printf("%.2x): icmp_seq=%d", *cp,
-					       hicmp->un.echo.sequence);
+					printf("%.2x): icmp_seq=%d time=%s", *cp,
+					       hicmp->un.echo.sequence,
+					       tvtoda(&lastpacketsent, &recvtime));
 				}
 				printf("\n");
 			}
@@ -280,9 +315,9 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 					}
 				}
 				if (!rawoutput) {
-					printf(" (%s): index=%d",
+					printf(" (%s): index=%d time=%s",
 					       libnet_host_lookup(ip, 0),
-					       numrecvd);
+					       numrecvd, tvtoda(&lastpacketsent, &recvtime));
 				}
 				numrecvd++;
 				if (!quiet) {

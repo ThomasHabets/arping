@@ -1,8 +1,8 @@
-$Id: README 425 2001-09-09 14:43:02Z marvin $
+$Id: README 529 2002-01-20 19:19:45Z marvin $
 
  ARP Ping
 
-    By Marvin (marvin@rootbusters.net)
+    By Thomas Habets <thomas@habets.pp.se>
 
 
 Introduction
@@ -118,6 +118,20 @@ Q: 1.01 is out, didn't you just say 1.0 was supposed to be the last one?
 
 A: Shut up.
 ---
+Q: The roundtrip times are off, sometimes by milliseconds!
+
+A: I know.
+   Short answer:
+     'ping' does the same thing. (ping from iputils-ss010824 anyway)
+
+   Long answer:
+     I can't (portably anyway) do anything other than queue a packet
+     to the network. That means I don't know exactly when it arrived. Also,
+     I can't tell when a packet arrives on the wire, only when arping gets
+     it from the kernel. Just make sure neither the network (whole segment
+     if you are hubbed, just your NIC if you are switched) nor your box is
+     loaded when you care about timing.
+---
 Q: Is it OK to make arping suid root?
 
 A: Be my guest, but if care about security *at all* you will have to restrict
@@ -125,6 +139,9 @@ A: Be my guest, but if care about security *at all* you will have to restrict
    from the code when it's running suid, but I honestly don't want to. This is
    a network debugging tool, which generates low-level network packets that
    ordinary users have absolutely no business generating.
+
+   For example, I don't protect against an ALRM signal flood, which will result
+   in a packet flood.
 
    If you are honestly debugging the network then I don't see why you aren't
    root already.
@@ -142,14 +159,24 @@ A: Ah, I see. A broadcast was changed to unicast, I don't know why I set it to
    ... Or you can run arping -s ff:ff:ff:ff:ff:ff <host>.
    If this fixes it please LET ME KNOW.
 ---
+Q: Hey! Wasn't this Marvins program? (marvin@rootbusters.net, that is)
+   You thief!
+
+A: We are the same person.
+---
 Q: Say hi to Psychad for me.
 
 A: Will do.
 ---
 
+Misc
+----
+There, I added the stupid roundtrip time feature. Now I dare you to think of
+any other applicable features. (IPv4 only, for now)
+
 License
 -------
 It's GPL, see the LICENSE file.
 
--------------------------------------------------------------------------------
-Send questions/suggestions/patches/rants/money/sparcs to marvin@rootbusters.net
+----------------------------------------------------------------------------
+Send questions/suggestions/patches/rants/money/sparcs to thomas@habets.pp.se

@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 1124 2004-08-29 18:44:15Z marvin $
+ * $Id: arping.c 1210 2005-01-28 13:22:59Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -89,7 +89,7 @@
 #define IP_ALEN 4
 #endif
 
-const float version = 2.04f;
+const float version = 2.05f;
 
 static libnet_t *libnet = 0;
 
@@ -579,7 +579,9 @@ static void pingip_recv(const char *unused, struct pcap_pkthdr *h,
 			default:
 				fprintf(stderr, "arping: can't happen!\n");
 			}
-			printf(beep?"\a\n":"\n");
+			if (display != QUIET) {
+				printf(beep?"\a\n":"\n");
+			}
 			numrecvd++;
 		}
 	}
@@ -660,7 +662,9 @@ static void pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 			fprintf(stderr, "arping: can't-happen-bug\n");
 			sigint(0);
 		}
-		printf(beep?"\a\n":"\n");
+		if (display != QUIET) {
+			printf(beep?"\a\n":"\n");
+		}
 		numrecvd++;
 	}
 }

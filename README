@@ -1,4 +1,4 @@
-$Id: README 546 2002-02-12 18:17:47Z marvin $
+$Id: README 616 2002-05-05 19:47:27Z marvin $
 
  ARP Ping
 
@@ -10,7 +10,7 @@ Introduction
 Arping is a util to find out it a specific IP address on the LAN is 'taken'
 and what MAC address owns it. Sure, you *could* just use 'ping' to find out if
 it's taken and even if the computer blocks ping (and everything else) you still
-get an entry in your arp cache. But what if you aren't on a routable net? Or
+get an entry in your ARP cache. But what if you aren't on a routable net? Or
 the host blocks ping (all ICMP even)? Then you're screwed. Or you use arping.
 
 Why it's not stupid
@@ -19,7 +19,7 @@ Say you have a block of N real ARIN-assigned IP-addresses. You want to debug
 the net and you don't know which IP addresses are taken. You can't ping anyone
 before you take the IP, and you can't pick an IP before you know which are
 already taken. Catch 22. But with arping you can 'ping' the IP and if you get
-no responce, the IP is availible.
+no response, the IP is available.
 
 Example uses
 ------------
@@ -27,14 +27,15 @@ If some box is dumping non-IP (like IPX) garbage and you don't know which box
 it is, you can ping by MAC to get the IP and fix the problem.
 
 If you are on someone else's net and want to 'borrow' a real IP address instead
-of using one of those 10.x.x.x-addresses the dhcp hands out you probably want
+of using one of those 10.x.x.x-addresses the DHCP hands out you probably want
 to know which ones are taken, or people will get mad (a friend of mine got a
-call on his cellphone about 15 secs after he accidentally 'stole' an IP, oops).
+call on his cellphone about 15 seconds after he accidentally 'stole' an IP,
+oops).
 
 Compiling
 ---------
-Type 'make linux' to compile under linux and 'make openbsd' to compile under
-openbsd. Follow this pattern for compilation under solaris and freebsd.
+Type 'make linux' to compile under Linux and 'make openbsd' to compile under
+openbsd. Follow this pattern for compilation under Solaris and FreeBSD.
 If you have some other OS, try all before mailing me.
 
 'make install' will copy arping to /usr/local/bin, and put the manpage where
@@ -55,14 +56,14 @@ A: Not really, as you can see by typing 'ifconfig' the lo (local) interface
    and since packets to localhost does not go over any wire there is no need
    to identify which box is talking to which. There is only one.
 ---
-Q: Arping finds some hosts, but not others. why?   btw, I have several NICs.
+Q: Arping finds some hosts, but not others. why?   BTW, I have several NICs.
 
 A: You have to choose interface with the -i switch if the default is wrong for
    you.
 ---
-Q: I tried to ping my own MAC addr, but it doesn't work.
+Q: I tried to ping my own MAC address, but it doesn't work.
 
-A: A sane OS will think it's suspicios if you send packets to yourself over
+A: A sane OS will think it's suspicious if you send packets to yourself over
    the wire and will ignore them.
 
    And why would you want to lookup the IP or MAC of yourself? ifconfig
@@ -75,7 +76,7 @@ A: Arping when pinging a MAC relies on the host to answer a broadcast ping
    host to pop up on MAC ping, you have to config it to respond to broadcast
    pings.
    (for linux, make sure /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts is 0)
-A: -T <ip/host> allows you to restrict the arping to a limited subnet, which
+A: -T <IP/host> allows you to restrict the arping to a limited subnet, which
    may or may not work for you. For example if the box 00:01:02:03:04:05 is on
    192.168.0.0/24 then the broadcast probably is 192.168.0.255, so try:
    # arping -T 192.168.0.255 00:01:02:03:04:05
@@ -84,7 +85,7 @@ Q: It doesn't compile, I get some error message about libnet and/or libpcap
 
 A: Arping depends on libnet and libpcap, get libnet at:
    http://www.packetfactory.net/libnet and libpcap from your distribution.
-   (alt. you can search for libpcap on freshmeat.net)
+   (alt. you can search for libpcap on http://freshmeat.net)
 ---
 Q: I get this when I compile: "/bin/sh: libnet-config: command not found"
 
@@ -95,10 +96,10 @@ Q: I get bus error on my bigendian box
 A: Damn, I thought I fixed those. Tell me how you got it and I'll try to fix
    it.
 ---
-Q: I get "libnet_get_ipaddr(): no error" when I run arping with ip (src or dst)
+Q: I get "libnet_get_ipaddr(): no error" when I run arping with IP (src or dst)
    255.255.255.255.
 
-A: Use the -b/-B switches. Libnet sucks (haha only serious) and returns -1 for
+A: Use the -b/-B switches. Libnet sucks (ha ha only serious) and returns -1 for
    error == int32 encoded 255.255.255.255.
 ---
 Q: I used to be able to use -S 255.255.255.255, now it fails. What's going on?
@@ -194,14 +195,14 @@ The source box is 192.168.0.2/0:10:5a:3e:c5:b4 and the target box is
 
 For pinging IP addresses:
  When a host wants to send an IP packet to another host, it sends out an ARP
- packet asking what MAC the destination IP addr has, a so-called 'who-has'
+ packet asking what MAC the destination IP address has, a so-called 'who-has'
  packet. This is then answered by another ARP packet, the 'is-at' packet.
  
  18:16:07.179699 0:10:5a:3e:c5:b4 ff:ff:ff:ff:ff:ff 0806 42:
                  arp who-has 192.168.0.1 tell 192.168.0.2
  
  This is the packet generated by arping.
- An ethernet frame from my 3com card to the broadcast address carrying an arp
+ An Ethernet frame from my 3com card to the broadcast address carrying an arp
  packet asking what MAC 192.168.0.1 has (who-has).
  
  18:16:07.180221 0:60:93:34:91:99 0:10:5a:3e:c5:b4 0806 60:
@@ -211,7 +212,7 @@ For pinging IP addresses:
  
 For pinging MAC addresses:
  A broadcast ping (255.255.255.255, or any address supplied with -T, see below)
- is sent out on the ethernet, but in an ethernet frame addressed to the target
+ is sent out on the Ethernet, but in an Ethernet frame addressed to the target
  MAC only.
  
  18:20:09.627321 0:10:5a:3e:c5:b4 0:60:93:34:91:99 0800 42:
@@ -219,7 +220,7 @@ For pinging MAC addresses:
                  (ttl 48, id 17767, len 28)
  
  This is the packet generated by arping.
- Ethernet frame from my 3com nic to the destination MAC, carrying a broadcast
+ Ethernet frame from my 3com NIC to the destination MAC, carrying a broadcast
  ping.
  
  18:20:09.628432 0:60:93:34:91:99 0:10:5a:3e:c5:b4 0800 60:
@@ -228,7 +229,7 @@ For pinging MAC addresses:
  
  The answer, including the source address of the target host. Note that this
  is not how every OS responds to a broadcast ping (if at all). Some answer with
- a source address equal to the broadcast address, and others dont' answer at
+ a source address equal to the broadcast address, and others don't' answer at
  all.
  This is why pinging a raw MAC doesn't always work, and you may need to play
  with -T to get it to answer correctly (or at all). You can always brute-force

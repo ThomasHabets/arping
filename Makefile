@@ -1,5 +1,7 @@
-# $Id: Makefile 59 2000-05-23 15:30:21Z marvin $
+# $Id: Makefile 90 2000-07-31 02:42:02Z marvin $
 TARGETS=arping
+
+CCFLAGS=-g
 
 all: $(TARGETS)
 

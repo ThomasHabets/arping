@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 74 2000-07-05 23:19:38Z marvin $
+ * $Id: arping.c 90 2000-07-31 02:42:02Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -45,7 +45,6 @@ u_char eth_null[ETH_ALEN] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 u_char eth_target[ETH_ALEN];
 
 u_int ip_xmas = 0xffffffff;
-
 
 pcap_t *pcap;
 struct bpf_program bpf_prog;
@@ -83,7 +82,7 @@ void alasend(int i)
 	if (searchmac) {
 		libnet_build_icmp_echo(ICMP_ECHO,      /* type */ 
 				       0,              /* code */ 
-				       4321,           /* id */ 
+				       (short)random(),           /* id */ 
 				       htons(numsent-1), /* seq */ 
 				       NULL,           /* pointer to payload */
 				       0,              /* payload length */ 
@@ -157,9 +156,12 @@ void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
 		hicmp = (struct icmphdr*)((char*)hip + sizeof(struct iphdr));
 		
 		if ((htons(hicmp->type) == ICMP_ECHOREPLY)
-			&& !memcmp(eth->h_source, eth_target, ETH_ALEN)
-			&& !memcmp(eth->h_dest, mymac->ether_addr_octet,
-				   ETH_ALEN)) {
+		    && (
+			    (!memcmp(eth->h_source, eth_target, ETH_ALEN)
+			     || !memcmp(eth_target, eth_xmas, ETH_ALEN))
+				    )
+			    && !memcmp(eth->h_dest, mymac->ether_addr_octet,
+				       ETH_ALEN)) {
 			u_char *cp = eth->h_source;
 			if (!rawoutput) {
 				printf("%d bytes from ", h->len);

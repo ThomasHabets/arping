@@ -1,4 +1,4 @@
-$Id: README 72 2000-07-02 11:20:08Z marvin $
+$Id: README 97 2000-08-13 16:06:31Z marvin $
 
  ARP Ping
 
@@ -33,8 +33,9 @@ call about 15 secs after he accidentally 'stole' an IP, oops).
 
 Compiling
 ---------
-Improvise.
-
+Type make linux to compile under linux and make openbsd to compile under openbsd.
+If you have some other OS, try both before mailing me.
+ 
 How it does it
 --------------
 Bah, just read the source. Or the help text.
@@ -49,6 +50,12 @@ A: Not really, as you can see by typing 'ifconfig' the lo (local) interface
    there to differentiate computers on a shared medium (the aether, or ether)
    and since packets to localhost does not go over any wire there is no need
    to identify which box is talking to which. There is only one.
+---
+Q: I run the program and it segfaults no matter which address I try to ping.
+
+A: Libnet segfaults when given a non-existing interface, I'm looking for how
+   to check the validity of an interface before sending it to libnet but for
+   now just give it an existing interface or change the default in the source.
 ---
 Q: Arping find some hosts, but not others. why?   btw, I have several NICs.
 
@@ -65,26 +72,22 @@ A: A sane OS will think it's suspicios if you send packets to yourself over
 ---
 Q: I can't ping any MAC address on my LAN.
 
-A: Are they windows boxen?
-   <technical>
-   Arping sends arp-directed broadcast (so it does NOT go to anyone but the
-   target) pings to the MAC and checks the IP address of the responding
-   packet. I seem to recall windows boxen answer oddly or not at all to
-   broadcast pings, but since I don't have a windows box, I haven't tested.
-   I will test it, but I don't know if there is any good way around it. Sure,
-   if I get a broadcast address back at least I can tell the machine is on the
-   LAN but then again, the OS will probably cache the MAC so you can just run
-   'arp' and see if the MAC is in there after the packet should have come back.
-   </technical>
-   <non-technical>
-   Windows sucks
-   </non-technical>
+A: Arping when pinging a MAC relies on the host to answer a broadcast ping
+   (icmp echo request) properly (IIRC: not the windows way). If you want a
+   host to pop up on MAC ping, you have to config it to respond to broadcast
+   pings.
+   (for linux, make sure /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts is 0)
 ---
 Q: It doesn't compile, I get some error message about libnet and/or libpcap
 
 A: Arping depends on libnet and libpcap, get libnet at:
    http://www.packetfactory.net/libnet and libpcap from your distribution.
    (alt. you can search for libpcap on freshmeat.net)
+---
+Q: I get bus error on my bigendian box
+
+A: Damn, I thought I fixed those. Tell me how you got it and I'll try to fix it.
+
 
 License
 -------

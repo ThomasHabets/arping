@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 93 2000-07-31 02:53:49Z marvin $
+ * $Id: arping.c 97 2000-08-13 16:06:31Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -31,11 +31,34 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  */
-#include <getopt.h>
-#include <libnet.h>
-#include <pcap.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#if USE_NETIF
 #include <net/if.h>
 #include <net/if_arp.h>
+#endif
+
+#include <libnet.h>
+#include <pcap.h>
+
+#ifndef ETH_ALEN
+#define ETH_ALEN 6
+#endif
+
+#ifndef ETH_P_IP
+#define ETH_P_IP 0x0800
+#endif
+
+#if OPENBSD
+#include "openbsd.h"
+#endif
+
+#if 0
+#define DEBUG(a) a
+#else
+#define DEBUG(a)
+#endif
 
 const float version = 0.8;
 
@@ -49,7 +72,11 @@ u_int ip_xmas = 0xffffffff;
 pcap_t *pcap;
 struct bpf_program bpf_prog;
 struct in_addr net,mask;
+#if OPENBSD
+char *ifname = "le0";
+#else
 char *ifname = "eth0";
+#endif
 u_long dip = 0;
 u_char *packet;
 struct libnet_link_int *linkint;
@@ -75,6 +102,7 @@ void usage(int ret)
 
 void alasend(int i)
 {
+  DEBUG(printf("alasend()\n"));
 	if (numsent >= maxcount) {
 		sigint(numrecvd ? 0 : 1);
 	}
@@ -88,6 +116,7 @@ void alasend(int i)
 				       0,              /* payload length */ 
 				       /* header memory */ 
 				       packet + LIBNET_ETH_H + LIBNET_IP_H);
+
 		if (libnet_do_checksum(packet + LIBNET_ETH_H, IPPROTO_ICMP,
 				       LIBNET_ICMP_ECHO_H) == -1) { 
 			libnet_error(LIBNET_ERR_FATAL,
@@ -119,6 +148,7 @@ void alasend(int i)
 
 void sigint(int i)
 {
+  DEBUG(printf("sigint()\n"));
 	if (!rawoutput) {
 		if (searchmac) {
 			u_char *cp=eth_target;
@@ -148,20 +178,18 @@ void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
 	unsigned int c;
 	unsigned char *cp;
 
+	DEBUG(printf("handlepacket()\n"));
 
 	eth = (struct ethhdr*)packet;
 
 	if (searchmac) {
 		hip = (struct iphdr*)((char*)eth + sizeof(struct ethhdr));
 		hicmp = (struct icmphdr*)((char*)hip + sizeof(struct iphdr));
-		
 		if ((htons(hicmp->type) == ICMP_ECHOREPLY)
-		    && (
-			    (!memcmp(eth->h_source, eth_target, ETH_ALEN)
-			     || !memcmp(eth_target, eth_xmas, ETH_ALEN))
-				    )
-			    && !memcmp(eth->h_dest, mymac->ether_addr_octet,
-				       ETH_ALEN)) {
+		    && ((!memcmp(eth->h_source, eth_target, ETH_ALEN)
+			 || !memcmp(eth_target, eth_xmas, ETH_ALEN)))
+		    && !memcmp(eth->h_dest, mymac->ether_addr_octet,
+			       ETH_ALEN)) {
 			u_char *cp = eth->h_source;
 			if (!rawoutput) {
 				printf("%d bytes from ", h->len);
@@ -182,10 +210,10 @@ void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
 		if ((htons(harp->ar_op) == ARPOP_REPLY)
 		    && (htons(harp->ar_pro) == ETH_P_IP)
 		    && (htons(harp->ar_hrd) == ARPHRD_ETHER)) {
-			int ip = (int)*(int*)((char*)harp
-					      + sizeof(struct arphdr)
-					      + harp->ar_hln);
+		  int ip;
+			memcpy(&ip, (char*)harp + harp->ar_hln + sizeof(struct arphdr), 4);
 			if (dip == ip) {
+
 				cp = (u_char*)harp + sizeof(struct arphdr);
 				if (!rawoutput && !finddup) {
 					printf("%d bytes from ", h->len);
@@ -208,6 +236,7 @@ void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
 
 void recvpackets(void)
 {
+  DEBUG(printf("recvpackets()\n"));
 	if (-1 == pcap_loop(pcap, -1, (pcap_handler)handlepacket, NULL)) {
 		fprintf(stderr, "pcap_loop(): error\n");
 		exit(1);
@@ -221,6 +250,8 @@ int main(int argc, char **argv)
 	int c;
 	struct bpf_program bp;
 	
+	DEBUG(printf("main()\n"));
+
 	while ((c = getopt(argc, argv, "0dvhi:rc:")) != EOF) {
 		switch (c) {
 		case 'v':
@@ -264,21 +295,22 @@ int main(int argc, char **argv)
 	}
 
 	if (strchr(argv[optind], ':')) {
-		char n[6];
+		unsigned int n[6];
 		dip = ip_xmas;
+
 		if (sscanf(argv[optind], "%x:%x:%x:%x:%x:%x", 
-			   (int*)&n[0],
-			   (int*)&n[1],
-			   (int*)&n[2],
-			   (int*)&n[3],
-			   (int*)&n[4],
-			   (int*)&n[5]
+			   &n[0],
+			   &n[1],
+			   &n[2],
+			   &n[3],
+			   &n[4],
+			   &n[5]
 			   ) != 6) {
 			fprintf(stderr, "Illegal mac addr %s\n", argv[optind]);
 			return 1;
 		}
 		for (c = 0; c < 6; c++) {
-			eth_target[c] = n[c];
+			eth_target[c] = n[c] & 0xff;
 		}
 		searchmac = 1;
 	} else {
@@ -326,7 +358,7 @@ int main(int argc, char **argv)
 	}
 
 	if (searchmac) {
-		if (-1 == libnet_build_ethernet(eth_target,
+		if (-1 == libnet_build_ethernet(eth_xmas,
 						mymac->ether_addr_octet,
 						ETHERTYPE_IP,
 						NULL,

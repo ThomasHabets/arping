@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 412 2001-09-03 14:01:49Z marvin $
+ * $Id: arping.c 417 2001-09-05 21:55:32Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@rootbusters.net)
@@ -89,7 +89,7 @@ static char *ifname = "eth0";
 #else
 static char *ifname = NULL;
 #endif
-static u_long dip = 0;
+static u_int32_t dip = 0;
 static u_char *packet;
 struct libnet_link_int *linkint;
 
@@ -245,7 +245,7 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 		if ((htons(harp->ar_op) == ARPOP_REPLY)
 		    && (htons(harp->ar_pro) == ETH_P_IP)
 		    && (htons(harp->ar_hrd) == ARPHRD_ETHER)) {
-			int ip;
+			u_int32_t ip;
 			memcpy(&ip, (char*)harp + harp->ar_hln
 			       + sizeof(struct arphdr), 4);
 			if (dip == ip) {

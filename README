@@ -1,4 +1,4 @@
-$Id: README 97 2000-08-13 16:06:31Z marvin $
+$Id: README 120 2000-09-09 22:20:30Z marvin $
 
  ARP Ping
 
@@ -86,8 +86,12 @@ A: Arping depends on libnet and libpcap, get libnet at:
 ---
 Q: I get bus error on my bigendian box
 
-A: Damn, I thought I fixed those. Tell me how you got it and I'll try to fix it.
+A: Damn, I thought I fixed those. Tell me how you got it and I'll try to fix
+   it.
+---
+Q: I get "libnet_get_ipaddr(): no error" when I run arping with ip 0.0.0.0.
 
+A: Use the -0 switch.
 
 License
 -------

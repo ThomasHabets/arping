@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 97 2000-08-13 16:06:31Z marvin $
+ * $Id: arping.c 120 2000-09-09 22:20:30Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -72,10 +72,11 @@ u_int ip_xmas = 0xffffffff;
 pcap_t *pcap;
 struct bpf_program bpf_prog;
 struct in_addr net,mask;
-#if OPENBSD
-char *ifname = "le0";
-#else
+#if 0
+// Use this if you want to hard-code a default interface
 char *ifname = "eth0";
+#else
+char *ifname = NULL;
 #endif
 u_long dip = 0;
 u_char *packet;
@@ -324,6 +325,13 @@ int main(int argc, char **argv)
 	/*
 	 * libnet init
 	 */
+	if (!ifname) {
+		if (!(ifname = pcap_lookupdev(ebuf))) {
+			fprintf(stderr, "pcap_lookupdev(): %s\n", ebuf);
+			exit(1);
+		}
+	}
+
 	if (!(linkint = libnet_open_link_interface(ifname, ebuf))) {
 		fprintf(stderr, "libnet_get_hwaddr(): %s\n", ebuf);
 		exit(1);

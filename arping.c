@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 427 2001-09-09 22:47:42Z marvin $
+ * $Id: arping.c 467 2001-11-18 18:25:43Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@rootbusters.net)
@@ -47,6 +47,11 @@
 #include "freebsd.h" 
 #endif
 
+#if MACOSX
+#include <sys/socket.h>
+#include "freebsd.h" 
+#endif
+
 #if USE_NETIF
 #include <net/if.h>
 #include <net/if_arp.h>
@@ -70,7 +75,7 @@
 #define DEBUG(a)
 #endif
 
-const float version = 1.02;
+const float version = 1.03;
 
 struct ether_addr *mymac;
 static u_char eth_xmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};

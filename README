@@ -1,8 +1,8 @@
-$Id: README 143 2000-09-28 20:45:19Z marvin $
+$Id: README 276 2001-03-15 16:34:57Z marvin $
 
  ARP Ping
 
-    By Marvin (marvin@nss.nu)
+    By Marvin (marvin@rootbusters.net)
 
 
 Introduction
@@ -10,16 +10,16 @@ Introduction
 Arping is a util to find out it a specific IP address on the LAN is 'taken'
 and what MAC address owns it. Sure, you *could* just use 'ping' to find out if
 it's taken and even if the computer blocks ping (and everything else) you still
-get an entry in your arp cache. But what if you aren't on a routable net? Then
-you're screwed. Or you use arping.
+get an entry in your arp cache. But what if you aren't on a routable net? Or
+the host blocks ping (all ICMP even)? Then you're screwed. Or you use arping.
 
 Why it's not stupid
 -------------------
 Say you have a block of N real ARIN-assigned IP-addresses. You want to debug
 the net and you don't know which IP addresses are taken. You can't ping anyone
 before you take the IP, and you can't pick an IP before you know which are
-already taken. But with arping you can 'ping' the IP and if you get no
-responce, the IP is availible.
+already taken. Catch 22. But with arping you can 'ping' the IP and if you get
+no responce, the IP is availible.
 
 Example uses
 ------------
@@ -104,4 +104,4 @@ License
 It's GPL, see the LICENSE file.
 
 -------------------------------------------------------------------------------
-Send questions/suggestions/patches/rants/money/sparcs/whatever to marvin@nss.nu
+Send questions/suggestions/patches/rants/money/sparcs to marvin@rootbusters.net

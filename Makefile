@@ -1,4 +1,4 @@
-# $Id: Makefile 148 2000-10-05 22:12:32Z marvin $
+# $Id: Makefile 276 2001-03-15 16:34:57Z marvin $
 TARGETS=arping
 
 USE_NETIF=0
@@ -36,6 +36,7 @@ solaris:
 
 install:
 	install -c arping /usr/local/bin/arping
+	install arping.8 /usr/local/man/man8/arping.8
 
 all: $(TARGETS)
 

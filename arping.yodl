@@ -1,13 +1,15 @@
-manpage(arping)(8)(06th october, 2000)(arping)()
+manpage(arping)(8)(15th mars, 2001)(arping)()
 
 manpagename(arping)(sends arp and/or echo requests to a given host)
 
 manpagesynopsis()
-    bf(arping) [-h] [-q] [-v] [-r] [-d] [-0] [-c em(count)] [-i em(interface)]
+    bf(arping) [-h] [-q] [-v] [-r] [-d] [-0] [-s em(MAC)] [-t em(MAC)]   \
+[-c em(count)]
+	[-i em(interface)]
     em(host)
 
 manpagedescription()
-    The em(arping) utility sends bf(ARP) and/or bf(ICMP) requests to the specified em(host) and displays the replies. The em(host) may be specified by its bf(DNS), its bf(IP) address, or its bf(MAC) address.
+    The em(arping) utility sends bf(ARP) and/or bf(ICMP) requests to the specified em(host) and displays the replies. The em(host) may be specified by its bf(hostname), its bf(IP) address, or its bf(MAC) address.
 
     One request is sent each second.
 
@@ -21,14 +23,17 @@ startdit()
 
     dit(-v) Verbose output.
 
-    dit(-q) Quiet output.
-
-    dit(-r) Raw output : only the MAC address is displayed for each reply.
+    dit(-r) Raw output: only the MAC/IP address is displayed for each reply.
 
     dit(-d) Find duplicate replies.
 
-    dit(-0) Use this option to ping with source address 0.0.0.0 IP, or you
-    may get some error messages, depending on your system.
+    dit(-0) Use this option to ping with source IP address 0.0.0.0. Use this
+	when you haven't configured your interface yet (so it has the IP
+	0.0.0.0, but libnet returns 0 for error so blah blah blah...)
+
+    dit(-s em(MAC)) Set source MAC address.
+
+    dit(-t em(MAC)) Set target MAC address to use when pinging IP address.
 
     dit(-c em(count)) Only send em(count) requests.
 
@@ -42,6 +47,7 @@ manpageseealso()
 
 manpageauthor()
 
-    Pingarp has been written by Marvin <marvin@nss.nu>.
-    The manual page was written by Brieuc "BBP" Jeunhomme <bbp@via.ecp.fr>
-    with very minor adjustments from Marvin.
+    Arping was written by Marvin <marvin@rootbusters.net>.
+    
+    The manual page was originally written by Brieuc "BBP" Jeunhomme
+    <bbp@via.ecp.fr>.

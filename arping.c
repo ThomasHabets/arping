@@ -1,7 +1,7 @@
 /*
  * arping
  *
- * By marvin@nss.nu
+ * By marvin@rootbusters.net
  *
  * ARP 'ping' utility
  *
@@ -12,10 +12,10 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 253 2001-02-10 15:18:51Z marvin $
+ * $Id: arping.c 276 2001-03-15 16:34:57Z marvin $
  */
 /*
- *  Copyright (C) 2000 Marvin (marvin@nss.nu)
+ *  Copyright (C) 2000 Marvin (marvin@rootbusters.net)
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public
@@ -70,49 +70,72 @@
 #define DEBUG(a)
 #endif
 
-const float version = 0.95;
+const float version = 0.96;
 
 struct ether_addr *mymac;
-u_char eth_xmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-u_char eth_null[ETH_ALEN] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-u_char eth_target[ETH_ALEN];
+static u_char eth_xmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+static u_char eth_null[ETH_ALEN] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+static u_char eth_target[ETH_ALEN];
+static u_char eth_source[ETH_ALEN];  // only used in main() but it belongs here
 
-u_int ip_xmas = 0xffffffff;
+static const u_int ip_xmas = 0xffffffff;
 
-pcap_t *pcap;
+static pcap_t *pcap;
 struct bpf_program bpf_prog;
 struct in_addr net,mask;
 #if 0
 // Use this if you want to hard-code a default interface
-char *ifname = "eth0";
+static char *ifname = "eth0";
 #else
-char *ifname = NULL;
+static char *ifname = NULL;
 #endif
-u_long dip = 0;
-u_char *packet;
+static u_long dip = 0;
+static u_char *packet;
 struct libnet_link_int *linkint;
 
-unsigned int verbose = 0;
-unsigned int numsent = 0;
-unsigned int numrecvd = 0;
-unsigned int searchmac = 0;
-unsigned int finddup = 0;
-unsigned int maxcount = -1;
-unsigned int rawoutput = 0;
-unsigned int quiet = 0;
-unsigned int nullip = 0;
+static unsigned int verbose = 0;
+static unsigned int numsent = 0;
+static unsigned int numrecvd = 0;
+static unsigned int searchmac = 0;
+static unsigned int finddup = 0;
+static unsigned int maxcount = -1;
+static unsigned int rawoutput = 0;
+static unsigned int quiet = 0;
+static unsigned int nullip = 0;
 
-void sigint(int i);
-
-
-void usage(int ret)
+static void sigint(int i)
 {
-	printf("arping %1.2f [ -q ] [ -v ] [ -r ] [ -d ] [ -0 ] [ -c count ]\n"
+	DEBUG(printf("sigint()\n"));
+	if (!rawoutput) {
+		if (searchmac) {
+			u_char *cp=eth_target;
+			int c;
+			printf("\n--- ");
+			for (c = 0; c < ETH_ALEN-1; c++) {
+				printf("%.2x:", (u_char)*cp++);
+			}
+			printf("%.2x statistics ---\n", *cp);
+		} else {
+			printf("\n--- %s statistics ---\n",
+			       libnet_host_lookup(dip,0));
+		}
+		printf("%d packets transmitted, %d packets received, %3.0f%% "
+		       "unanswered\n", numsent, numrecvd,
+		       100.0 - 100.0 * (float)(numrecvd)/(float)numsent);
+	}
+	exit(i);
+}
+
+
+static void usage(int ret)
+{
+	printf("arping %1.2f [ -q ] [ -v ] [ -r ] [ -d ] [ -0 ] [ -s <MAC> ] "
+	       "[ -c count ]\n"
 	       "            [ -i <interface> ] <host/ip/MAC>\n", version);
 	exit(ret);
 }
 
-void alasend(int i)
+static void alasend(int i)
 {
   DEBUG(printf("alasend()\n"));
 	if (numsent >= maxcount) {
@@ -161,30 +184,8 @@ void alasend(int i)
 #endif
 }
 
-void sigint(int i)
-{
-	DEBUG(printf("sigint()\n"));
-	if (!rawoutput) {
-		if (searchmac) {
-			u_char *cp=eth_target;
-			int c;
-			printf("\n--- ");
-			for (c = 0; c < ETH_ALEN-1; c++) {
-				printf("%.2x:", (u_char)*cp++);
-			}
-			printf("%.2x statistics ---\n", *cp);
-		} else {
-			printf("\n--- %s statistics ---\n",
-			       libnet_host_lookup(dip,0));
-		}
-		printf("%d packets transmitted, %d packets received, %3.0f%% "
-		       "unanswered\n", numsent, numrecvd,
-		       100.0 - 100.0 * (float)(numrecvd)/(float)numsent);
-	}
-	exit(i);
-}
-
-void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
+static void handlepacket(const char *unused, struct pcap_pkthdr *h,
+			 u_char *packet)
 {
 	struct ethhdr *eth;
 	struct arphdr *harp;
@@ -203,7 +204,7 @@ void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
 		if ((htons(hicmp->type) == ICMP_ECHOREPLY)
 		    && ((!memcmp(eth->h_source, eth_target, ETH_ALEN)
 			 || !memcmp(eth_target, eth_xmas, ETH_ALEN)))
-		    && !memcmp(eth->h_dest, mymac->ether_addr_octet,
+		    && !memcmp(eth->h_dest, eth_source,
 			       ETH_ALEN)) {
 			u_char *cp = eth->h_source;
 			numrecvd++;
@@ -256,7 +257,7 @@ void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
 	}
 }
 
-void recvpackets(void)
+static void recvpackets(void)
 {
 	DEBUG(printf("recvpackets()\n"));
 	if (-1 == pcap_loop(pcap, -1, (pcap_handler)handlepacket, NULL)) {
@@ -271,10 +272,14 @@ int main(int argc, char **argv)
 	char *ebuf = "no error";
 	int c;
 	struct bpf_program bp;
+	char must_be_pingip = 0;
+	char have_eth_source = 0;
 	
 	DEBUG(printf("main()\n"));
 
-	while ((c = getopt(argc, argv, "0dvhi:rc:q")) != EOF) {
+	memcpy(eth_target, eth_xmas, ETH_ALEN);
+
+	while ((c = getopt(argc, argv, "0dvhi:rc:qs:t:")) != EOF) {
 		switch (c) {
 		case 'v':
 			verbose++;
@@ -306,11 +311,55 @@ int main(int argc, char **argv)
 		case '0':
 			nullip = 1;
 			break;
+		case 's':
+			{
+                           unsigned int n[6];
+			   
+			   if (sscanf(optarg, "%x:%x:%x:%x:%x:%x",
+				      &n[0],
+				      &n[1],
+				      &n[2],
+				      &n[3],
+				      &n[4],
+				      &n[5]
+				   ) != 6) {
+				   fprintf(stderr, "Illegal MAC addr %s\n",
+					   optarg);
+				   exit(1);
+			   }
+			   for (c = 0; c < 6; c++) {
+				   eth_source[c] = n[c] & 0xff;
+			   }
+			   have_eth_source = 1;
+			}
+			break;
+		case 't':
+			must_be_pingip = 1;
+			{
+                           unsigned int n[6];
+			   
+			   if (sscanf(optarg, "%x:%x:%x:%x:%x:%x",
+				      &n[0],
+				      &n[1],
+				      &n[2],
+				      &n[3],
+				      &n[4],
+				      &n[5]
+				   ) != 6) {
+				   fprintf(stderr, "Illegal MAC addr %s\n",
+					   optarg);
+				   exit(1);
+			   }
+			   for (c = 0; c < 6; c++) {
+				   eth_target[c] = n[c] & 0xff;
+			   }
+			}
+			break;
 		default:
 			usage(1);
 		}
 	}
-	if (optind >= argc) {
+	if (optind + 1 != argc) {
 		usage(1);
 		exit(1);
 	}
@@ -322,6 +371,12 @@ int main(int argc, char **argv)
 	if (strchr(argv[optind], ':')) {
 		unsigned int n[6];
 		dip = ip_xmas;
+
+		if (must_be_pingip) {
+			fprintf(stderr, "Specified switch can't be used in "
+				"MAC-ping mode");
+			exit(1);
+		}
 
 		if (sscanf(argv[optind], "%x:%x:%x:%x:%x:%x", 
 			   &n[0],
@@ -341,7 +396,6 @@ int main(int argc, char **argv)
 	} else {
 		dip = libnet_name_resolve((u_char*)argv[optind],
 					  LIBNET_RESOLVE);
-		memcpy(eth_target, eth_xmas, ETH_ALEN);
 	}
 	if (finddup && maxcount == -1) {
 		maxcount = 3;
@@ -361,11 +415,16 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	
-	if (!(mymac = libnet_get_hwaddr(linkint, (u_char*)ifname,  ebuf))) {
-		fprintf(stderr, "libnet_get_hwaddr(): %s\n", ebuf);
-		exit(1);
+	if (!have_eth_source) {
+		if (!(mymac = libnet_get_hwaddr(linkint, (u_char*)ifname,
+						ebuf))) {
+			fprintf(stderr, "libnet_get_hwaddr(): %s\n", ebuf);
+			exit(1);
+		}
+		memcpy(eth_source, mymac->ether_addr_octet, ETH_ALEN);
+		have_eth_source = 1;
 	}
-	
+
 	if (nullip) {
 		myip = 0;
 	} else if  (!(myip = htonl(libnet_get_ipaddr(linkint,(u_char*)ifname,
@@ -396,14 +455,20 @@ int main(int argc, char **argv)
 		printf("This box:   Interface: %s  IP: %s   MAC address: ",
 		       ifname, libnet_host_lookup(myip,0));
 		for (c = 0; c < ETH_ALEN - 1; c++) {
-			printf("%.2x:", (unsigned )mymac->ether_addr_octet[c]);
+			printf("%.2x:", (unsigned )eth_source[c]);
 		}
-		printf("%.2x\n", mymac->ether_addr_octet[ETH_ALEN - 1]);
+		printf("%.2x\n", eth_source[ETH_ALEN - 1]);
 	}
 
 	if (searchmac) {
+		// ping MAC
+		/*
+		 * note: it's eth_xmas below, that's a feature. I don't want
+		 *       a -t line to affect a MAC ping (even though it can't
+		 *       since the lone arg is written last).
+		 */
 		if (-1 == libnet_build_ethernet(eth_xmas,
-						mymac->ether_addr_octet,
+						eth_source,
 						ETHERTYPE_IP,
 						NULL,
 						0,
@@ -433,8 +498,9 @@ int main(int argc, char **argv)
 				       /* header memory */ 
 				       packet + LIBNET_ETH_H + LIBNET_IP_H);
 	} else {
-		if (-1 == libnet_build_ethernet(eth_xmas,
-						mymac->ether_addr_octet,
+		// ping ip
+		if (-1 == libnet_build_ethernet(eth_target, // usually xmas
+						eth_source, // this box
 						ETHERTYPE_ARP,
 						NULL,
 						0,
@@ -448,7 +514,7 @@ int main(int argc, char **argv)
 					   6,
 					   4,
 					   ARPOP_REQUEST,
-					   mymac->ether_addr_octet,
+					   eth_source,
 					   (u_char*)&myip,
 					   eth_null,
 					   (u_char*)&dip,

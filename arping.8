@@ -1,14 +1,15 @@
-.TH "arping" "8" "06th october, 2000" "arping" "" 
+.TH "arping" "8" "15th mars, 2001" "arping" "" 
 .PP 
 .SH "NAME" 
 arping \- sends arp and/or echo requests to a given host
 .PP 
 .SH "SYNOPSIS" 
-\fBarping\fP [-q] [-h] [-v] [-r] [-d] [-0] [-c \fIcount\fP] [-i \fIinterface\fP]
+\fBarping\fP [-h] [-q] [-v] [-r] [-d] [-0] [-s \fIMAC\fP] [-t \fIMAC\fP]   [-c \fIcount\fP]
+[-i \fIinterface\fP]
 \fIhost\fP
 .PP 
 .SH "DESCRIPTION" 
-The \fIarping\fP utility sends \fBARP\fP and/or \fBICMP\fP requests to the specified \fIhost\fP and displays the replies\&. The \fIhost\fP may be specified by its \fBDNS\fP, its \fBIP\fP address, or its \fBMAC\fP address\&.
+The \fIarping\fP utility sends \fBARP\fP and/or \fBICMP\fP requests to the specified \fIhost\fP and displays the replies\&. The \fIhost\fP may be specified by its \fBhostname\fP, its \fBIP\fP address, or its \fBMAC\fP address\&.
 .PP 
 One request is sent each second\&.
 .PP 
@@ -24,18 +25,22 @@ Does not display messages, except error messages\&.
 .IP "-v" 
 Verbose output\&.
 .IP 
-.IP "-q" 
-Quiet output\&.
-.IP 
 .IP "-r" 
-Raw output : only the MAC address is displayed for each reply\&.
+Raw output: only the MAC/IP address is displayed for each reply\&.
 .IP 
 .IP "-d" 
 Find duplicate replies\&.
 .IP 
 .IP "-0" 
-Use this option to ping with source address 0\&.0\&.0\&.0 IP, or you
-may get some error messages, depending on your system\&.
+Use this option to ping with source IP address 0\&.0\&.0\&.0\&. Use this
+when you haven\'t configured your interface yet (so it has the IP
+0\&.0\&.0\&.0, but libnet returns 0 for error so blah blah blah\&.\&.\&.)
+.IP 
+.IP "-s \fIMAC\fP" 
+Set source MAC address\&.
+.IP 
+.IP "-t \fIMAC\fP" 
+Set target MAC address to use when pinging IP address\&.
 .IP 
 .IP "-c \fIcount\fP" 
 Only send \fIcount\fP requests\&.
@@ -50,6 +55,7 @@ Use the specified interface\&.
 .PP 
 .SH "AUTHOR" 
 .PP 
-Pingarp has been written by Marvin <marvin@nss\&.nu>\&.
-The manual page was written by Brieuc "BBP" Jeunhomme <bbp@via\&.ecp\&.fr>
-with very minor adjustments from Marvin\&.
+Arping was written by Marvin <marvin@rootbusters\&.net>\&.
+.PP 
+The manual page was originally written by Brieuc "BBP" Jeunhomme
+<bbp@via\&.ecp\&.fr>\&.

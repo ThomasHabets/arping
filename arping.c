@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 467 2001-11-18 18:25:43Z marvin $
+ * $Id: arping.c 488 2001-12-23 13:02:41Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@rootbusters.net)
@@ -313,7 +313,8 @@ int main(int argc, char **argv)
 	
 	DEBUG(printf("main()\n"));
 
-	strcpy(ebuf, "no error");
+	strncpy(ebuf, "no error", LIBNET_ERRBUF_SIZE);
+	ebuf[LIBNET_ERRBUF_SIZE -1 ] = 0;
 
 	memcpy(eth_target, eth_xmas, ETH_ALEN);
 

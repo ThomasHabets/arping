@@ -1,4 +1,4 @@
-dnl $Id: configure.in 708 2002-08-30 22:21:10Z marvin $
+dnl $Id: configure.in 709 2002-08-30 22:40:41Z marvin $
 
 AC_INIT(arping2.c)
 AC_CONFIG_HEADER(config.h)
@@ -23,6 +23,14 @@ case `uname -s` in
         AC_MSG_RESULT(no)
 	;;
 esac
+
+AC_MSG_CHECKING(for explicit size type support)
+AC_TRY_COMPILE(
+	[#include <sys/types.h>
+	u_int32_t foo;],
+	AC_DEFINE(HAVE_ESIZE_TYPES, 1, [Define this if your system has u_int32_t and such])
+	AC_MSG_RESULT(yes),
+	AC_MSG_RESULT(no))
 
 AC_PREFIX_DEFAULT(/usr/local)
 

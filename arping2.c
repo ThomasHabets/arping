@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping2.c 708 2002-08-30 22:21:10Z marvin $
+ * $Id: arping2.c 709 2002-08-30 22:40:41Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -47,6 +47,15 @@
 
 #ifdef HAVE_NET_BPF_H
 #include <net/bpf.h>
+#endif
+
+#ifndef HAVE_ESIZE_TYPES
+/*
+ * let's hope we at least have these
+ */
+#define u_int8_t uint8_t
+#define u_int16_t uint16_t
+#define u_int32_t uint32_t
 #endif
 
 #ifndef ETH_ALEN
@@ -773,9 +782,9 @@ int main(int argc, char **argv)
 		fprintf(stderr, "arping: pcap_open_live(): %s\n",ebuf);
 		exit(1);
 	}
-#ifdef HAVE_NET_BPF_H
+#ifndef HAVE_NET_BPF_H
 	{
-		u_int on = 1;
+		u_int32_t on = 1;
 		if (0 < (ioctl(pcap_fileno(pcap), BIOCIMMEDIATE,
 			       &on))) {
 			fprintf(stderr, "arping: ioctl(fd,BIOCIMMEDIATE, 1) "
@@ -784,7 +793,6 @@ int main(int argc, char **argv)
 		}
 	}
 #endif
-
 
 	if (mode == PINGIP) {
 		// FIXME: better filter with addresses?

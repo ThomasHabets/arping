@@ -1,4 +1,4 @@
-# $Id: Makefile 708 2002-08-30 22:21:10Z marvin $
+# $Id: Makefile 709 2002-08-30 22:40:41Z marvin $
 TARGETS=arping
 
 USE_NETIF=0
@@ -60,5 +60,8 @@ arping2: $(O_arping2)
 clean:
 	rm -f *.o $(TARGETS)
 
-maintainerclean: clean
-	rm -f config{.cache,.h,.h.in,.log,.status,ure}
+distclean: clean
+	rm -f config{.cache,.h,.log,.status}
+
+maintainerclean: distclean
+	rm -f config{.h.in,ure}

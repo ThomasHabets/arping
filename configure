@@ -1017,6 +1017,30 @@ EOF
 	;;
 esac
 
+echo $ac_n "checking for explicit size type support""... $ac_c" 1>&6
+echo "configure:1022: checking for explicit size type support" >&5
+cat > conftest.$ac_ext <<EOF
+#line 1024 "configure"
+#include "confdefs.h"
+#include <sys/types.h>
+	u_int32_t foo;
+int main() {
+cat >> confdefs.h <<\EOF
+#define HAVE_ESIZE_TYPES 1
+EOF
+
+	echo "$ac_t""yes" 1>&6
+; return 0; }
+EOF
+if { (eval echo configure:1036: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+  rm -rf conftest*
+  echo "$ac_t""no" 1>&6
+else
+  echo "configure: failed program was:" >&5
+  cat conftest.$ac_ext >&5
+fi
+rm -f conftest*
+
 
 
 trap '' 1 2 15

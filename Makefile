@@ -1,4 +1,4 @@
-# $Id: Makefile 704 2002-08-27 00:57:19Z marvin $
+# $Id: Makefile 708 2002-08-30 22:21:10Z marvin $
 TARGETS=arping
 
 USE_NETIF=0
@@ -59,3 +59,6 @@ arping2: $(O_arping2)
 	gcc -I/home/thompa/src/Libnet-1.1.0/include -L/home/thompa/src/Libnet-1.1.0/src -o arping2 arping2.c -lnet -lpcap
 clean:
 	rm -f *.o $(TARGETS)
+
+maintainerclean: clean
+	rm -f config{.cache,.h,.h.in,.log,.status,ure}

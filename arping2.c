@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping2.c 705 2002-08-27 22:35:25Z marvin $
+ * $Id: arping2.c 708 2002-08-30 22:21:10Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -31,6 +31,7 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  */
+#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -44,6 +45,9 @@
 #include <libnet.h>
 #include <pcap.h>
 
+#ifdef HAVE_NET_BPF_H
+#include <net/bpf.h>
+#endif
 
 #ifndef ETH_ALEN
 #define ETH_ALEN 6
@@ -127,18 +131,18 @@ static char *tv2str(const struct timeval *tv, const struct timeval *tv2,
 	case 0:
 		sprintf(buf, "%.3f usec", f);
 		break;
-	case 1:
+	case 3:
 		sprintf(buf, "%.3f msec", f);
 		break;
-	case 2:
+	case 6:
 		sprintf(buf, "%.3f sec", f);
 		break;
-	case 3:
+	case 9:
 		sprintf(buf, "%.3f sec", f*1000);
 		break;
         default:
 		// huh, uh, huhuh
-		sprintf(buf, "%.3fe%d sec", f,exp);
+		sprintf(buf, "%.3fe%d sec", f, exp-6);
 	}
 	return buf;
 }
@@ -198,6 +202,9 @@ static void pingmac_send(u_int8_t *srcmac, u_int8_t *dstmac,
 			libnet_geterror(libnet));
 		sigint(0);
 	}
+	if(verbose>1) {
+		printf("arping: sending packet\n");
+	}
 	if (-1 == (c = libnet_write(libnet))) {
 		fprintf(stderr, "libnet_write(): %s\n",
 			libnet_geterror(libnet));
@@ -246,7 +253,9 @@ static void pingip_send(u_int8_t *srcmac, u_int8_t *dstmac,
 			libnet_geterror(libnet));
 		sigint(0);
 	}
-
+	if(verbose>1) {
+		printf("arping: sending packet\n");
+	}
 	if (-1 == libnet_write(libnet)) {
 		fprintf(stderr, "arping: libnet_write(): %s\n", 
 			libnet_geterror(libnet));
@@ -270,6 +279,10 @@ static void pingip_recv(const char *unused, struct pcap_pkthdr *h,
 	struct libnet_arp_hdr *harp;
 	struct timeval arrival;
 	int c;
+
+	if(verbose>2) {
+		printf("arping: received response for ip ping\n");
+	}
 
 	if (-1 == gettimeofday(&arrival, NULL)) {
 		fprintf(stderr, "arping: gettimeofday(): %s\n",
@@ -340,6 +353,10 @@ static void pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 	struct timeval arrival;
 	int c;
 
+	if(verbose>2) {
+		printf("arping: received response for mac ping\n");
+	}
+
 	if (-1 == gettimeofday(&arrival, NULL)) {
 		fprintf(stderr, "arping: gettimeofday(): %s\n",
 			strerror(errno));
@@ -407,18 +424,27 @@ static void ping_recv(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
 
 	tv.tv_sec = packetwait / 1000000;
 	tv.tv_usec = packetwait % 1000000;
+
+	if(verbose>3) {
+		printf("arping: receiving packets...\n");
+	}
+
 	for (;!done;) {
+		int sr;
 		FD_ZERO(&fds);
 		FD_SET(pcap_fileno(pcap), &fds);
+		
 		if (-1 == gettimeofday(&tv2,NULL)) {
 			fprintf(stderr, "arping: "
 				"gettimeofday(): %s\n",
 				strerror(errno));
 			sigint(0);
 		}
-		switch(select(pcap_fileno(pcap)+1,
-			      &fds,
-			      NULL,NULL,&tv)) {
+//		printf("running select()\n");
+
+		switch(sr = select(pcap_fileno(pcap)+1,
+				   &fds,
+				   NULL,NULL,&tv)) {
 		case -1:
 			if (errno == EINTR) {
 				return;
@@ -429,13 +455,21 @@ static void ping_recv(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
 		case 0:
 			done = 1;
 			break;
-		default:
-			if (1 != pcap_dispatch(pcap, 1,
-					       func,
-					       NULL)) {
-				fprintf(stderr, "Fuck!\n");
+		default: {
+			int ret;
+			if (1 != (ret = pcap_dispatch(pcap, 1,
+						      func,
+						      NULL))) {
+#ifndef HAVE_WEIRD_BSD
+				// weird is normal on bsd :)
+				if (verbose) {
+					fprintf(stderr, "arping: select=%d "
+						"pcap_dispatch=%d!\n",
+						sr, ret);
+				}
+#endif
 			}
-			break;
+			break; }
 		}
 		
 		if (-1 == gettimeofday(&tv,NULL)) {
@@ -631,6 +665,11 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if (getuid() && geteuid()) {
+		fprintf(stderr, "arping: must run as root\n");
+		exit(1);
+	}
+
 	/*
 	 * libnet init
 	 */
@@ -734,6 +773,19 @@ int main(int argc, char **argv)
 		fprintf(stderr, "arping: pcap_open_live(): %s\n",ebuf);
 		exit(1);
 	}
+#ifdef HAVE_NET_BPF_H
+	{
+		u_int on = 1;
+		if (0 < (ioctl(pcap_fileno(pcap), BIOCIMMEDIATE,
+			       &on))) {
+			fprintf(stderr, "arping: ioctl(fd,BIOCIMMEDIATE, 1) "
+				"failed, continuing anyway, YMMV: %s\n",
+				strerror(errno));
+		}
+	}
+#endif
+
+
 	if (mode == PINGIP) {
 		// FIXME: better filter with addresses?
 		if (-1 == pcap_compile(pcap, &bp, "arp", 0,-1)) {
@@ -771,6 +823,17 @@ int main(int argc, char **argv)
 		}
 	}
 	signal(SIGINT, sigint);
+
+	if (verbose) {
+		printf("This box:   Interface: %s  IP: %s   MAC address: ",
+		       ifname, libnet_addr2name4(libnet_get_ipaddr4(libnet),
+						 0));
+		for (c = 0; c < ETH_ALEN - 1; c++) {
+			printf("%.2x:", (u_int8_t)srcmac[c]);
+		}
+		printf("%.2x\n", (u_int8_t)srcmac[ETH_ALEN - 1]);
+	}
+
 
 	if (display == NORMAL) {
 		printf("ARPING %s\n", parm);

@@ -1,0 +1,29 @@
+dnl $Id: configure.in 708 2002-08-30 22:21:10Z marvin $
+
+AC_INIT(arping2.c)
+AC_CONFIG_HEADER(config.h)
+
+AC_PROG_CC
+AC_PROG_INSTALL
+
+AC_PROG_GCC_TRADITIONAL
+if test "$GCC" = yes ; then
+    CFLAGS="$CFLAGS -Wall"
+fi
+
+AC_CHECK_HEADERS(net/bpf.h)
+
+AC_MSG_CHECKING(If this is WeirdBSD)
+case `uname -s` in
+     *BSD)
+	AC_DEFINE(HAVE_WEIRD_BSD, 1, [define if you have WeirdBSD])
+	AC_MSG_RESULT(yes)
+	;;
+     *)
+        AC_MSG_RESULT(no)
+	;;
+esac
+
+AC_PREFIX_DEFAULT(/usr/local)
+
+AC_OUTPUT(config.h)

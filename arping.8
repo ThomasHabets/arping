@@ -1,4 +1,4 @@
-.TH "arping" "8" "21th June, 2001" "arping" "" 
+.TH "arping" "8" "8th July, 2001" "arping" "" 
 .PP 
 .SH "NAME" 
 arping \- sends arp and/or ip pings to a given host
@@ -21,7 +21,7 @@ Displays a help message and exits\&.
 Does not display messages, except error messages\&.
 .IP 
 .IP "-v" 
-Verbose output\&.
+Verbose output\&. Use twice for more messages\&.
 .IP 
 .IP "-r" 
 Raw output: only the MAC/IP address is displayed for each reply\&.
@@ -63,7 +63,7 @@ Turn on promiscious mode on interface, use this if you don\'t
 "own" the MAC address you are using\&.
 .IP 
 .IP "-s \fIMAC\fP" 
-Set source MAC address\&.
+Set source MAC address\&. You may need to use -p with this\&.
 .IP 
 .IP "-t \fIMAC\fP" 
 Set target MAC address to use when pinging IP address\&.
@@ -87,6 +87,3 @@ instead of -S 255\&.255\&.255\&.255\&. This is libnets fault\&.
 .SH "AUTHOR" 
 .PP 
 Arping was written by Marvin <marvin@rootbusters\&.net>\&.
-.PP 
-The manual page was originally written by Brieuc "BBP" Jeunhomme
-<bbp@via\&.ecp\&.fr>\&.

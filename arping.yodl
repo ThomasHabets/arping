@@ -1,4 +1,4 @@
-manpage(arping)(8)(21th June, 2001)(arping)()
+manpage(arping)(8)(8th July, 2001)(arping)()
 
 manpagename(arping)(sends arp and/or ip pings to a given host)
 
@@ -75,6 +75,3 @@ manpageseealso()
 manpageauthor()
 
     Arping was written by Marvin <marvin@rootbusters.net>.
-    
-    The manual page was originally written by Brieuc "BBP" Jeunhomme
-    <bbp@via.ecp.fr>.

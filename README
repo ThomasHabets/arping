@@ -1,4 +1,4 @@
-$Id: README 276 2001-03-15 16:34:57Z marvin $
+$Id: README 351 2001-06-21 17:06:38Z marvin $
 
  ARP Ping
 
@@ -63,7 +63,7 @@ A: Libnet segfaults when given a non-existing interface, I'm looking for how
    Update (version 0.9): arping should now pick an interface that exists, so
    there should be no more segfaults unless you override it with the -i switch.
 ---
-Q: Arping find some hosts, but not others. why?   btw, I have several NICs.
+Q: Arping finds some hosts, but not others. why?   btw, I have several NICs.
 
 A: You have to choose interface with the -i switch if the default is wrong for
    you.
@@ -98,6 +98,18 @@ A: Damn, I thought I fixed those. Tell me how you got it and I'll try to fix
 Q: I get "libnet_get_ipaddr(): no error" when I run arping with ip 0.0.0.0.
 
 A: Use the -0 switch.
+---
+Q: Arping used to work (0.97 and down) for pinging MACs, but not with 0.98 and
+   up. What did you screw up?
+
+A: Ah, I see. A broadcast was changed to unicast, I don't know why I set it to
+   be broadcast in the first place, and even wrote a comment justifying it.
+   It still worked for me when I tested it now (with unicast) but if it
+   doens't for you, search the source for KEYWORD and you'll find
+   instructions on how to change it back.
+   ... Or you can run arping -s ff:ff:ff:ff:ff:ff <host>.
+   If this fixes it please LET ME KNOW.
+---
 
 License
 -------

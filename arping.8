@@ -1,11 +1,10 @@
-.TH "arping" "8" "2nd June, 2001" "arping" "" 
+.TH "arping" "8" "21th June, 2001" "arping" "" 
 .PP 
 .SH "NAME" 
 arping \- sends arp and/or ip pings to a given host
 .PP 
 .SH "SYNOPSIS" 
-\fBarping\fP [-h] [-q] [-v] [-r] [-R] [-d] [-0] [-s \fIMAC\fP]      [-t \fIMAC\fP] [-c \fIcount\fP] [-i \fIinterface\fP]
-\fIhost\fP
+\fBarping\fP [-hqvrRd0bp] [-S \fIhost/ip\fP] [-s \fIMAC\fP] [-t \fIMAC\fP]       [-c \fIcount\fP] [-i \fIinterface\fP] \fIhost\fP
 .PP 
 .SH "DESCRIPTION" 
 The \fIarping\fP utility sends \fBARP\fP and/or \fBICMP\fP requests to the specified \fIhost\fP and displays the replies\&. The \fIhost\fP may be specified by its \fBhostname\fP, its \fBIP\fP address, or its \fBMAC\fP address\&.
@@ -37,7 +36,28 @@ Find duplicate replies\&.
 .IP "-0" 
 Use this option to ping with source IP address 0\&.0\&.0\&.0\&. Use this
 when you haven\'t configured your interface yet (so it has the IP
-0\&.0\&.0\&.0, but libnet returns 0 for error so blah blah blah\&.\&.\&.)
+0\&.0\&.0\&.0, but libnet returns 0 for error so blah blah blah\&.\&.\&.)\&.
+Note that this may get the MAC-ping unanswered\&.
+.IP 
+.IP "-b" 
+Like -0 but source broadcast source address (255\&.255\&.255\&.255)\&.
+Note that this may get the arping unanswered since it\'s not normal behavior
+for a host\&.
+.IP 
+.IP "-S \fIIP\fP" 
+Like -b and -0 but with set source address\&.
+Note that this may get the arping unanswered if the target does not have
+routing to the IP\&. If you don\'t own the IP you are using, you may need to turn
+on promiscious mode on the interface (with -p)\&. With this switch you can find
+out what IP-address a host has without taking an IP-address yourself\&.
+.IP 
+\fIExample\fP:                                                                To check the address of MAC-A, use knowledge of MAC-B and IP-B\&.
+.IP 
+$ arping -S <IP-B> -s <MAC-B> -p <MAC-A>
+.IP 
+.IP "-p" 
+Turn on promiscious mode on interface, use this if you don\'t
+"own" the MAC address you are using\&.
 .IP 
 .IP "-s \fIMAC\fP" 
 Set source MAC address\&.

@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 348 2001-06-02 15:09:25Z marvin $
+ * $Id: arping.c 351 2001-06-21 17:06:38Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@rootbusters.net)
@@ -102,6 +102,9 @@ static unsigned int maxcount = -1;
 static unsigned int rawoutput = 0;
 static unsigned int quiet = 0;
 static unsigned int nullip = 0;
+static unsigned int bcaip = 0;
+static unsigned int sourceip = 0;
+static unsigned int is_promisc = 0;
 
 static void sigint(int i)
 {
@@ -129,16 +132,17 @@ static void sigint(int i)
 
 static void usage(int ret)
 {
-	printf("arping %1.2f [ -q ] [ -v ] [ -r ] [ -R ] [ -d ] [ -0 ] "
+	printf("arping %1.2f [ -qvrRd0bp ] [ -S <host/ip> ]"
 	       "[ -s <MAC> ] [ -t <MAC> ]\n"
-	       "            [ -c <count> ] [ -i <interface> ] <host/ip/MAC>\n",
+	       "            [ -c <count> ] [ -i <interface> ] "
+	       "<host/ip/MAC>\n",
 	       version);
 	exit(ret);
 }
 
 static void alasend(int i)
 {
-  DEBUG(printf("alasend()\n"));
+	DEBUG(printf("alasend()\n"));
 	if (numsent >= maxcount) {
 		sigint(numrecvd ? 0 : 1);
 	}
@@ -306,7 +310,7 @@ int main(int argc, char **argv)
 
 	memcpy(eth_target, eth_xmas, ETH_ALEN);
 
-	while ((c = getopt(argc, argv, "0dvhi:rRc:qs:t:")) != EOF) {
+	while ((c = getopt(argc, argv, "0bdS:vhi:rRc:qs:t:p")) != EOF) {
 		switch (c) {
 		case 'v':
 			verbose++;
@@ -337,6 +341,16 @@ int main(int argc, char **argv)
 			break;
 		case 'd':
 			finddup = 1;
+			break;
+		case 'S':
+			sourceip = libnet_name_resolve(optarg,
+						       LIBNET_RESOLVE);
+			if (!sourceip) {
+				nullip = 1;
+			}
+			break;
+		case 'b':
+			bcaip = 1;
 			break;
 		case '0':
 			nullip = 1;
@@ -385,6 +399,9 @@ int main(int argc, char **argv)
 			   }
 			}
 			break;
+		case 'p':
+			is_promisc = 1;
+			break;
 		default:
 			usage(1);
 		}
@@ -398,13 +415,18 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+	if (nullip + bcaip > 1 || (sourceip && (nullip || bcaip))) {
+		fprintf(stderr, "-S, -b and -0 are mutually exclusive\n");
+		exit(1);
+	}
+
 	if (strchr(argv[optind], ':')) {
 		unsigned int n[6];
 		dip = ip_xmas;
 
 		if (must_be_pingip) {
 			fprintf(stderr, "Specified switch can't be used in "
-				"MAC-ping mode");
+				"MAC-ping mode\n");
 			exit(1);
 		}
 
@@ -457,6 +479,10 @@ int main(int argc, char **argv)
 
 	if (nullip) {
 		myip = 0;
+	} else if (bcaip) {
+		myip = 0xffffffff;
+	} else if (sourceip) {
+		myip = sourceip;
 	} else if  (!(myip = htonl(libnet_get_ipaddr(linkint,(u_char*)ifname,
 						     ebuf)))) {
 		fprintf(stderr, "libnet_get_ipaddr(): %s\n", ebuf);
@@ -493,11 +519,17 @@ int main(int argc, char **argv)
 	if (searchmac) {
 		// ping MAC
 		/*
+		 * KEYWORD
+		 * What the hell was I thinking when I wrote the comment below?
+		 * -------
 		 * note: it's eth_xmas below, that's a feature. I don't want
 		 *       a -t line to affect a MAC ping (even though it can't
 		 *       since the lone arg is written last).
+		 * -------
+		 * Phew! Anyway, change eth_target to eth_xmas three lines
+		 *       below to change it back.
 		 */
-		if (-1 == libnet_build_ethernet(eth_xmas,
+		if (-1 == libnet_build_ethernet(eth_target, /* <---- here  */
 						eth_source,
 						ETHERTYPE_IP,
 						NULL,
@@ -559,7 +591,7 @@ int main(int argc, char **argv)
 	/*
 	 * pcap init
 	 */
-	if (!(pcap = pcap_open_live(ifname, 100, 0, 10, ebuf))) {
+	if (!(pcap = pcap_open_live(ifname, 100, is_promisc, 10, ebuf))) {
 		fprintf(stderr, "pcap_open_live(): %s\n", ebuf);
 		exit(1);
 	}

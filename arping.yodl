@@ -1,11 +1,10 @@
-manpage(arping)(8)(2nd June, 2001)(arping)()
+manpage(arping)(8)(21th June, 2001)(arping)()
 
 manpagename(arping)(sends arp and/or ip pings to a given host)
 
 manpagesynopsis()
-    bf(arping) [-h] [-q] [-v] [-r] [-R] [-d] [-0] [-s em(MAC)]      \
-[-t em(MAC)] [-c em(count)] [-i em(interface)]
-    em(host)
+    bf(arping) [-hqvrRd0bp] [-S em(host/ip)] [-s em(MAC)] [-t em(MAC)]       \
+[-c em(count)] [-i em(interface)] em(host)
 
 manpagedescription()
     The em(arping) utility sends bf(ARP) and/or bf(ICMP) requests to the specified em(host) and displays the replies. The em(host) may be specified by its bf(hostname), its bf(IP) address, or its bf(MAC) address.
@@ -31,7 +30,26 @@ startdit()
 
     dit(-0) Use this option to ping with source IP address 0.0.0.0. Use this
 	when you haven't configured your interface yet (so it has the IP
-	0.0.0.0, but libnet returns 0 for error so blah blah blah...)
+	0.0.0.0, but libnet returns 0 for error so blah blah blah...).
+	Note that this may get the MAC-ping unanswered.
+
+    dit(-b) Like -0 but source broadcast source address (255.255.255.255).
+Note that this may get the arping unanswered since it's not normal behavior
+for a host.
+
+    dit(-S em(IP)) Like -b and -0 but with set source address.
+Note that this may get the arping unanswered if the target does not have
+routing to the IP. If you don't own the IP you are using, you may need to turn
+on promiscious mode on the interface (with -p). With this switch you can find
+out what IP-address a host has without taking an IP-address yourself.
+
+em(Example):                                                                \
+	To check the address of MAC-A, use knowledge of MAC-B and IP-B.
+
+	$ arping -S <IP-B> -s <MAC-B> -p <MAC-A>
+
+    dit(-p) Turn on promiscious mode on interface, use this if you don't
+            "own" the MAC address you are using.
 
     dit(-s em(MAC)) Set source MAC address.
 

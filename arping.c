@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 560 2002-03-05 18:41:08Z marvin $
+ * $Id: arping.c 697 2002-08-19 13:26:52Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -78,7 +78,7 @@
 #define DEBUG(a)
 #endif
 
-const float version = 1.04;
+const float version = 1.05;
 
 struct ether_addr *mymac;
 static u_char eth_xmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -245,7 +245,8 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 
 	if (searchmac) {
 		// ping mac
-		hip = (struct iphdr*)((char*)eth + sizeof(struct libnet_ethernet_hdr));
+		hip = (struct iphdr*)((char*)eth
+				      + sizeof(struct libnet_ethernet_hdr));
 		hicmp = (struct icmphdr*)((char*)hip + sizeof(struct iphdr));
 		if ((htons(hicmp->type) == ICMP_ECHOREPLY)
 		    && ((!memcmp(eth->h_source, eth_target, ETH_ALEN)
@@ -271,18 +272,22 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 				}
 				if (!rawoutput) {
 					/*
-					 * ugly code due to non-aligned saddr (bus error on sparc)
+					 * ugly code due to non-aligned saddr
+					 * (bus error on sparc)
 					 */
 					u_int32_t tmp;
-					memcpy(&tmp, &hip->saddr, sizeof(u_int32_t));
+					memcpy(&tmp, &hip->saddr,
+					       sizeof(u_int32_t));
 					printf("%s",libnet_host_lookup(tmp,0));
 					printf(" (");
 					for (c = 0; c < ETH_ALEN-1; c++) {
 						printf("%.2x:", *cp++);
 					}
-					printf("%.2x): icmp_seq=%d time=%s", *cp,
+					printf("%.2x): icmp_seq=%d time=%s",
+					       *cp,
 					       hicmp->un.echo.sequence,
-					       tvtoda(&lastpacketsent, &recvtime));
+					       tvtoda(&lastpacketsent,
+						      &recvtime));
 				}
 				if (beep) {
 					printf("\a");
@@ -304,6 +309,7 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 				if (!rawoutput && !finddup) {
 					printf("%d bytes from ", h->len);
 				}
+
 				if (!quiet) {
 					if (rawoutput & 1) {
 						for (c = 0; c < harp->ar_hln-1;
@@ -347,6 +353,7 @@ static void recvpackets(void)
 		fprintf(stderr, "pcap_loop(): error\n");
 		exit(1);
 	}
+	DEBUG(printf("}recvpackets()\n"));
 }
 
 int main(int argc, char **argv)

@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 546 2002-02-12 18:17:47Z marvin $
+ * $Id: arping.c 560 2002-03-05 18:41:08Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -482,7 +482,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	if (getuid() && geteuid()) {
-		fprintf(stderr, "Must be r00t\n");
+		fprintf(stderr, "arping: must run as root\n");
 		return 1;
 	}
 

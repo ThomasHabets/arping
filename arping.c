@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 58 2000-05-23 13:29:11Z marvin $
+ * $Id: arping.c 59 2000-05-23 15:30:21Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -84,7 +84,7 @@ void alasend(int i)
 		libnet_build_icmp_echo(ICMP_ECHO,      /* type */ 
 				       0,              /* code */ 
 				       4321,           /* id */ 
-				       htons(numsent), /* seq */ 
+				       htons(numsent-1), /* seq */ 
 				       NULL,           /* pointer to payload */
 				       0,              /* payload length */ 
 				       /* header memory */ 
@@ -184,7 +184,6 @@ void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
 					      + sizeof(struct arphdr)
 					      + harp->ar_hln);
 			if (dip == ip) {
-				numrecvd;
 				cp = (u_char*)harp + sizeof(struct arphdr);
 				if (!rawoutput && !finddup) {
 					printf("%d bytes from ", h->len);
@@ -199,7 +198,7 @@ void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
 					       numrecvd++);
 				}
 				printf("\n");
-				}
+			}
 		}
 	}
 

@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 121 2000-09-09 22:28:23Z marvin $
+ * $Id: arping.c 128 2000-09-11 21:37:59Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -60,7 +60,7 @@
 #define DEBUG(a)
 #endif
 
-const float version = 0.9;
+const float version = 0.10;
 
 struct ether_addr *mymac;
 u_char eth_xmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -226,8 +226,9 @@ void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
 				if (!rawoutput) {
 					printf(" (%s): index=%d",
 					       libnet_host_lookup(ip, 0),
-					       numrecvd++);
+					       numrecvd);
 				}
+				numrecvd++;
 				printf("\n");
 			}
 		}

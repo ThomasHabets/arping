@@ -1,4 +1,4 @@
-$Id: README 360 2001-07-08 01:49:03Z marvin $
+$Id: README 363 2001-07-08 02:31:20Z marvin $
 
  ARP Ping
 
@@ -133,10 +133,6 @@ A: Ah, I see. A broadcast was changed to unicast, I don't know why I set it to
    instructions on how to change it back.
    ... Or you can run arping -s ff:ff:ff:ff:ff:ff <host>.
    If this fixes it please LET ME KNOW.
----
-Q: What exactly does -d do?
-
-A: I forget...
 ---
 
 License

@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 353 2001-06-21 17:24:27Z marvin $
+ * $Id: arping.c 359 2001-07-08 00:34:18Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@rootbusters.net)
@@ -300,13 +300,15 @@ static void recvpackets(void)
 int main(int argc, char **argv)
 {
 	u_long myip;
-	char *ebuf = "no error";
+	char ebuf[LIBNET_ERRBUF_SIZE];
 	int c;
 	struct bpf_program bp;
 	char must_be_pingip = 0;
 	char have_eth_source = 0;
 	
 	DEBUG(printf("main()\n"));
+
+	strcpy(ebuf, "no error");
 
 	memcpy(eth_target, eth_xmas, ETH_ALEN);
 

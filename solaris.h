@@ -1,8 +1,12 @@
-/* $Id: solaris.h 138 2000-09-15 17:22:30Z marvin $ */
+/* $Id: solaris.h 465 2001-11-18 14:43:45Z marvin $ */
 
 #define __u8 uint8_t
 #define __u16 uint16_t
 #define __u32 uint32_t
+
+#define u_int8_t uint8_t
+#define u_int16_t uint16_t
+#define u_int32_t uint32_t
 
 struct ethhdr 
 {

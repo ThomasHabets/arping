@@ -1,4 +1,4 @@
-$Id: README 529 2002-01-20 19:19:45Z marvin $
+$Id: README 532 2002-01-20 19:44:00Z marvin $
 
  ARP Ping
 
@@ -131,6 +131,8 @@ A: I know.
      it from the kernel. Just make sure neither the network (whole segment
      if you are hubbed, just your NIC if you are switched) nor your box is
      loaded when you care about timing.
+     But if you find way to get more exact timing portably (or just for one
+     OS really), let me know.
 ---
 Q: Is it OK to make arping suid root?
 

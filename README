@@ -1,4 +1,4 @@
-$Id: README 1063 2004-02-02 00:37:34Z marvin $
+$Id: README 1211 2005-01-28 13:28:16Z marvin $
 
  ARP Ping
 
@@ -72,6 +72,14 @@ A: Arping 2.x will not work with Libnet 1.0.x. This is This is due to
 
 A: On BSD, you'll prolly need to type something like:
    gmake MAKE=gmake openbsd
+---
+Q: Where's the Windows version? A compiled .exe would be nice.
+
+A: I don't have a windows box, so the .exe I'm providing was NOT compiled
+   by me. If something is strange about it tell me, but there won't be much
+   I can do about it.
+   That being said:
+   ftp://ftp.habets.pp.se/pub/synscan/arping-for-windows-not-compiled-by-me.exe
 ---
 Q: On sparc64, the IP shown in the output is 0.0.0.0.
 

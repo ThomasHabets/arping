@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 859 2003-04-07 17:38:44Z marvin $
+ * $Id: arping.c 860 2003-04-07 18:02:51Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -291,8 +291,10 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 					printf("%.2x ", *cp++);
 				}
 				if (rawoutput & 1) {
+					u_int32_t tmp;
+					memcpy(&tmp, &hip->saddr, 4);
 					printf("%s",
-					       libnet_host_lookup(hip->saddr,
+					       libnet_host_lookup(tmp,
 								  0));
 				}
 				if (!rawoutput) {

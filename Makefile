@@ -1,4 +1,4 @@
-# $Id: Makefile 467 2001-11-18 18:25:43Z marvin $
+# $Id: Makefile 604 2002-04-22 12:32:37Z marvin $
 TARGETS=arping
 
 USE_NETIF=0
@@ -14,7 +14,8 @@ CFLAGS=-g -I/usr/local/include -L/usr/local/lib -DUSE_NETIF=$(USE_NETIF) -DOPENB
 usage:
 	@echo
 	@echo "usage: make [ target ]"
-	@echo "Target can be freebsd, openbsd, linux, solaris or macosx"
+	@echo "Target can be one of: "
+	@echo "freebsd, openbsd, netbsd, linux, solaris or macosx"
 	@echo
 	@echo "Make doc will re-create the manpage"
 	@echo "You may use make install after"
@@ -34,6 +35,8 @@ macosx:
 
 openbsd:
 	make OPENBSD=1 all
+netbsd:
+	make openbsd
 
 solaris:
 	make USE_NETIF=0 SOLARIS=1 all

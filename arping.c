@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 530 2002-01-20 19:22:33Z marvin $
+ * $Id: arping.c 531 2002-01-20 19:35:32Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -269,7 +269,13 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 								  0));
 				}
 				if (!rawoutput) {
-					printf("%s",libnet_host_lookup(hip->saddr,0));
+					/*
+					 * ugly code due to non-aligned saddr (bus error on sparc)
+					 */
+					u_int32_t tmp;
+					memcpy(&tmp, &hip->saddr, sizeof(u_int32_t));
+					printf("%s",libnet_host_lookup(tmp,0));
+//					printf("%p\n", &hip->saddr);
 					printf(" (");
 					for (c = 0; c < ETH_ALEN-1; c++) {
 						printf("%.2x:", *cp++);

@@ -1,5 +1,5 @@
 /*
- * arping 0.4
+ * arping
  *
  * By marvin@nss.nu
  *
@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 47 2000-05-18 08:16:03Z marvin $
+ * $Id: arping.c 54 2000-05-19 16:38:26Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -37,7 +37,7 @@
 #include <net/if.h>
 #include <net/if_arp.h>
 
-const float version = 0.4;
+const float version = 0.5;
 
 struct ether_addr *mymac;
 u_char eth_xmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};

@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 697 2002-08-19 13:26:52Z marvin $
+ * $Id: arping.c 699 2002-08-19 23:28:46Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -197,6 +197,7 @@ static void alasend(int i)
 		exit(1);
 	}
 	alarm(1);
+	DEBUG(fprintf(stderr, "Resetting timer\n"));
 #if SOLARIS
 	signal(SIGALRM, alasend);
 #endif
@@ -353,7 +354,7 @@ static void recvpackets(void)
 		fprintf(stderr, "pcap_loop(): error\n");
 		exit(1);
 	}
-	DEBUG(printf("}recvpackets()\n"));
+	// does not return
 }
 
 int main(int argc, char **argv)

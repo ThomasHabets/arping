@@ -1,4 +1,4 @@
-$Id: README 616 2002-05-05 19:47:27Z marvin $
+$Id: README 699 2002-08-19 23:28:46Z marvin $
 
  ARP Ping
 
@@ -180,6 +180,11 @@ Misc
 ----
 There, I added the stupid roundtrip time feature. Now I dare you to think of
 any other applicable features. (IPv4 only, for now)
+
+Ok, two more were thought of. Both of which are non-trivially-portable.
+1) Automatically select interface depending on IP address pinged.
+2) Don't use SIGARLM. Non-trivial because you can't (AFAIK) select() on a pcap-
+   opened device.
 
 License
 -------

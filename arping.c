@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 70 2000-07-02 11:05:56Z marvin $
+ * $Id: arping.c 74 2000-07-05 23:19:38Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -37,7 +37,7 @@
 #include <net/if.h>
 #include <net/if_arp.h>
 
-const float version = 0.6;
+const float version = 0.7;
 
 struct ether_addr *mymac;
 u_char eth_xmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -76,10 +76,10 @@ void usage(int ret)
 
 void alasend(int i)
 {
-	numsent++;
-	if (numsent > maxcount) {
+	if (numsent >= maxcount) {
 		sigint(numrecvd ? 0 : 1);
 	}
+	numsent++;
 	if (searchmac) {
 		libnet_build_icmp_echo(ICMP_ECHO,      /* type */ 
 				       0,              /* code */ 

@@ -1,4 +1,4 @@
-# $Id: Makefile 143 2000-09-28 20:45:19Z marvin $
+# $Id: Makefile 148 2000-10-05 22:12:32Z marvin $
 TARGETS=arping
 
 USE_NETIF=0
@@ -15,8 +15,12 @@ usage:
 	@echo "usage: make [ target ]"
 	@echo "Target can be freebsd, openbsd, linux or solaris"
 	@echo
+	@echo "Make doc will re-create the manpage"
 	@echo "You may use make install after"
 	@echo
+
+doc: arping.yodl
+	yodl2man -o arping.8 arping.yodl
 
 linux:
 	make USE_NETIF=1 LINUX=1 all

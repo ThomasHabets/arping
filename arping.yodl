@@ -1,0 +1,47 @@
+manpage(arping)(8)(06th october, 2000)(arping)()
+
+manpagename(arping)(sends arp and/or echo requests to a given host)
+
+manpagesynopsis()
+    bf(arping) [-h] [-q] [-v] [-r] [-d] [-0] [-c em(count)] [-i em(interface)]
+    em(host)
+
+manpagedescription()
+    The em(arping) utility sends bf(ARP) and/or bf(ICMP) requests to the specified em(host) and displays the replies. The em(host) may be specified by its bf(DNS), its bf(IP) address, or its bf(MAC) address.
+
+    One request is sent each second.
+
+manpageoptions()
+
+startdit()
+
+    dit(-h) Displays a help message and exits.
+
+    dit(-q) Does not display messages, except error messages.
+
+    dit(-v) Verbose output.
+
+    dit(-q) Quiet output.
+
+    dit(-r) Raw output : only the MAC address is displayed for each reply.
+
+    dit(-d) Find duplicate replies.
+
+    dit(-0) Use this option to ping with source address 0.0.0.0 IP, or you
+    may get some error messages, depending on your system.
+
+    dit(-c em(count)) Only send em(count) requests.
+
+    dit(-i em(interface)) Use the specified interface.
+
+enddit()
+
+manpageseealso()
+
+    bf(ping(8)), bf(arp(8)), bf(rarp(8))
+
+manpageauthor()
+
+    Pingarp has been written by Marvin <marvin@nss.nu>.
+    The manual page was written by Brieuc "BBP" Jeunhomme <bbp@via.ecp.fr>
+    with very minor adjustments from Marvin.

@@ -1,0 +1,55 @@
+.TH "arping" "8" "06th october, 2000" "arping" "" 
+.PP 
+.SH "NAME" 
+arping \- sends arp and/or echo requests to a given host
+.PP 
+.SH "SYNOPSIS" 
+\fBarping\fP [-q] [-h] [-v] [-r] [-d] [-0] [-c \fIcount\fP] [-i \fIinterface\fP]
+\fIhost\fP
+.PP 
+.SH "DESCRIPTION" 
+The \fIarping\fP utility sends \fBARP\fP and/or \fBICMP\fP requests to the specified \fIhost\fP and displays the replies\&. The \fIhost\fP may be specified by its \fBDNS\fP, its \fBIP\fP address, or its \fBMAC\fP address\&.
+.PP 
+One request is sent each second\&.
+.PP 
+.SH "OPTIONS" 
+.PP 
+.IP 
+.IP "-h" 
+Displays a help message and exits\&.
+.IP 
+.IP "-q" 
+Does not display messages, except error messages\&.
+.IP 
+.IP "-v" 
+Verbose output\&.
+.IP 
+.IP "-q" 
+Quiet output\&.
+.IP 
+.IP "-r" 
+Raw output : only the MAC address is displayed for each reply\&.
+.IP 
+.IP "-d" 
+Find duplicate replies\&.
+.IP 
+.IP "-0" 
+Use this option to ping with source address 0\&.0\&.0\&.0 IP, or you
+may get some error messages, depending on your system\&.
+.IP 
+.IP "-c \fIcount\fP" 
+Only send \fIcount\fP requests\&.
+.IP 
+.IP "-i \fIinterface\fP" 
+Use the specified interface\&.
+.IP 
+.PP 
+.SH "SEE ALSO" 
+.PP 
+\fBping(8)\fP, \fBarp(8)\fP, \fBrarp(8)\fP
+.PP 
+.SH "AUTHOR" 
+.PP 
+Pingarp has been written by Marvin <marvin@nss\&.nu>\&.
+The manual page was written by Brieuc "BBP" Jeunhomme <bbp@via\&.ecp\&.fr>
+with very minor adjustments from Marvin\&.

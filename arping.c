@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 43 2000-05-17 23:40:03Z marvin $
+ * $Id: arping.c 45 2000-05-18 00:19:24Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -37,7 +37,7 @@
 #include <net/if.h>
 #include <net/if_arp.h>
 
-const float version = 0.3;
+const float version = 0.4;
 
 struct ether_addr *mymac;
 u_char eth_xmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -59,10 +59,16 @@ int verbose = 0;
 int numsent = 0;
 int numrecvd = 0;
 int searchmac = 0;
+int maxcount = 0x7fffffff;
+int rawoutput = 0;
+
+void sigint(int i);
+
 
 void usage(int ret)
 {
-	printf("arping %1.1f [ -v ] [ -i <interface> ] <host/ip/MAC>\n",
+	printf("arping %1.1f [ -v ] [ -r ] [ -c count ] [ -i <interface> ] "
+	       " <host/ip/MAC>\n",
 	       version);
 	exit(ret);
 }
@@ -82,7 +88,7 @@ void alasend(int i)
 				       LIBNET_ICMP_ECHO_H) == -1) { 
 			libnet_error(LIBNET_ERR_FATAL,
 				     "libnet_do_checksum failed\n"); 
-		} 
+		}
 		
 		if (libnet_do_checksum(packet + LIBNET_ETH_H,
 				       IPPROTO_IP, LIBNET_IP_H) == -1) { 
@@ -99,6 +105,9 @@ void alasend(int i)
 		exit(1);
 	}
 	numsent++;
+	if (numsent > maxcount) {
+		sigint(0);
+	}
 	alarm(1);
 }
 
@@ -163,13 +172,20 @@ void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
 					      + harp->ar_hln);
 			if (dip == ip) {
 				cp = (u_char*)harp + sizeof(struct arphdr);
-				printf("%d bytes from ", h->len);
+				if (!rawoutput) {
+					printf("%d bytes from ", h->len);
+				}
 				for (c = 0; c < harp->ar_hln -1; c++) {
 					printf("%.2x:", *cp++);
 				}
-				printf("%.2x (%s): index=%d\n", *cp,
-				       libnet_host_lookup(ip, 0), numrecvd++);
-			}
+				printf("%.2x", *cp);
+				if (!rawoutput) {
+					printf(" (%s): index=%d",
+					       libnet_host_lookup(ip, 0),
+					       numrecvd++);
+				}
+				printf("\n");
+				}
 		}
 	}
 
@@ -190,7 +206,7 @@ int main(int argc, char **argv)
 	int c;
 	struct bpf_program bp;
 	
-	while ((c = getopt(argc, argv, "vhi:")) != EOF) {
+	while ((c = getopt(argc, argv, "vhi:rc:")) != EOF) {
 		switch (c) {
 		case 'v':
 			verbose++;
@@ -199,6 +215,12 @@ int main(int argc, char **argv)
 			usage(0);
 		case 'i':
 			ifname = optarg;
+			break;
+		case 'r':
+			rawoutput = 1;
+			break;
+		case 'c':
+			maxcount = atoi(optarg);
 			break;
 		default:
 			usage(1);

@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping2.c 713 2002-08-31 12:31:43Z marvin $
+ * $Id: arping.c 737 2002-11-03 19:47:58Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -103,7 +103,7 @@ static void sigint(int i)
  */
 static void usage(int ret)
 {
-	printf("ARPing %1.2f, by Thomas Habets <thomas@habets.pp.se>\n",
+	printf("ARPing %1.2f BETA, by Thomas Habets <thomas@habets.pp.se>\n",
 	       version);
 	printf("usage: arping [ -qvrRd0bp ] [ -w <us> ] [ -S <host/ip> ] "
 	       "[ -T <host/ip ]\n"
@@ -298,7 +298,6 @@ static void pingip_recv(const char *unused, struct pcap_pkthdr *h,
 			strerror(errno));
 		sigint(0);
 	}
-
 	heth = (void*)packet;
 	harp = (void*)((char*)heth + LIBNET_ETH_H);
 
@@ -691,6 +690,7 @@ int main(int argc, char **argv)
 	}
 	
 
+
 	parm = argv[optind];
 
 	/*
@@ -733,7 +733,7 @@ int main(int argc, char **argv)
 	 * parse parm into dstmac
 	 */
 	if (mode == PINGMAC) {
-		u_int32_t n[6]; // 32bit because of alignment
+		unsigned char n[6];
 		if (optind + 1 != argc) {
 			usage(1);
 		}
@@ -773,6 +773,13 @@ int main(int argc, char **argv)
 			fprintf(stderr, "arping: pcap_lookupdev(): %s\n",ebuf);
 			exit(1);
 		}
+		// FIXME: check for other probably-not interfaces
+		if (!strncmp(ifname, "ipsec", 5)) {
+			fprintf(stderr, "arping: Um.. %s looks like the wrong "
+				"interface to use. Is it? "
+				"(-i switch)\n", ifname);
+			fprintf(stderr, "arping: using it anyway this time\n");
+		}
 	}
 
 	/*
@@ -782,7 +789,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "arping: pcap_open_live(): %s\n",ebuf);
 		exit(1);
 	}
-#ifdef HAVE_WEIRD_BSD
+#ifdef HAVE_NET_BPF_H
 	{
 		u_int32_t on = 1;
 		if (0 < (ioctl(pcap_fileno(pcap), BIOCIMMEDIATE,

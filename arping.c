@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 704 2002-08-27 00:57:19Z marvin $
+ * $Id: arping.c 737 2002-11-03 19:47:58Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -90,8 +90,8 @@ static struct timeval lastpacketsent;
 static const u_int ip_xmas = 0xffffffff;
 
 static pcap_t *pcap;
-static struct bpf_program bpf_prog;
-static struct in_addr net,mask;
+//static struct bpf_program bpf_prog;
+//static struct in_addr net,mask;
 #if 0
 // Use this if you want to hard-code a default interface
 static char *ifname = "eth0";
@@ -298,7 +298,8 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 		}
 	} else {
 		/* ping ip */
-		harp = (struct arphdr*)((char*)eth + sizeof(struct libnet_ethernet_hdr));
+		harp = (struct arphdr*)((char*)eth
+					+ sizeof(struct libnet_ethernet_hdr));
 		if ((htons(harp->ar_op) == ARPOP_REPLY)
 		    && (htons(harp->ar_pro) == ETH_P_IP)
 		    && (htons(harp->ar_hrd) == ARPHRD_ETHER)) {
@@ -545,6 +546,13 @@ int main(int argc, char **argv)
 		if (!(ifname = pcap_lookupdev(ebuf))) {
 			fprintf(stderr, "pcap_lookupdev(): %s\n", ebuf);
 			exit(1);
+		}
+		// FIXME: check for other probably-not interfaces
+		if (!strncmp(ifname, "ipsec", 5)) {
+			fprintf(stderr, "arping: Um.. %s looks like the wrong "
+				"interface to use. Is it? "
+				"(-i switch)\n", ifname);
+			fprintf(stderr, "arping: using it anyway this time\n");
 		}
 	}
 

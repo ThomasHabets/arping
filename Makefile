@@ -1,4 +1,4 @@
-# $Id: Makefile 713 2002-08-31 12:31:43Z marvin $
+# $Id: Makefile 737 2002-11-03 19:47:58Z marvin $
 TARGETS=arping
 
 USE_NETIF=0
@@ -19,6 +19,17 @@ usage:
 	@echo
 	@echo "Make doc will re-create the manpage"
 	@echo "You may use make install after"
+	@echo
+	@echo "Important note!"
+	@echo
+	@echo "   Arping will only work with libnet 1.0.x, not 1.1.x"
+	@echo "   BUT, arping2 will work with 1.1.x."
+	@echo
+	@echo "   Create the BETA arping2 by typing 'make arping2'"
+	@echo "   Arping2 has been known to work on linux, I'm still working"
+	@echo "   on BSD and other support."
+	@echo
+	@echo "   Read README for more details."
 	@echo
 
 doc: arping.yodl
@@ -54,10 +65,10 @@ O_arping=arping.o
 arping: $(O_arping)
 	gcc $(CFLAGS) -g -o $@ $(O_arping) `libnet-config --libs` -lpcap
 
-O_arping2=arping2.c
-arping2: $(O_arping2)
-	gcc -I/home/thompa/src/Libnet-1.1.0/include -L/home/thompa/src/Libnet-1.1.0/src -o arping2 arping2.c -lnet -lpcap
-#	gcc -I/home/thompa/src/Libnet-1.1.0/include -L/home/thompa/src/Libnet-1.1.0rc -o arping2 arping2.c -lnet -lpcap -lresolv -lnsl -lsocket
+O_arping2=arping-2/arping.c
+arping2: arping-2/arping
+arping-2/arping: $(O_arping2)
+	gcc -I/usr/src/Libnet-1.1.0/include -L/usr/src/Libnet-1.1.0/src -o arping arping-2/arping.c -lnet -lpcap
 
 clean:
 	rm -f *.o $(TARGETS)

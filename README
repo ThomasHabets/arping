@@ -1,4 +1,4 @@
-$Id: README 699 2002-08-19 23:28:46Z marvin $
+$Id: README 737 2002-11-03 19:47:58Z marvin $
 
  ARP Ping
 
@@ -47,6 +47,23 @@ See 'Technical' at the bottom of this file.
 
 FAQ
 ---
+Q: It doesn't compile!
+
+A: Arping won't work with libnet 1.1.x. This is due to a libnet 1.1.x
+   being completely different from 1.0.x. There is no real way to
+   write code that works on both 1.0.x and 1.1.x.
+
+   Since I wanted to do some other things a bit differently, I wrote
+   arping 2.x. It doesn't support as many architectures yet, but I'm
+   working on it.
+
+   Arping 2.x (BETA) is included in this release and can be created
+   with "make arping2". If it doesn't compile, check the Makefile and
+   adjust paths.
+
+   Once I get Arping2 working on all architectures I'll setup so that
+   the right version is compiled automatically.
+---
 Q: After compiling arping without any problem, i test it first with
    localhost... but it doesn't respond. Isn't that strange?
 
@@ -55,6 +72,11 @@ A: Not really, as you can see by typing 'ifconfig' the lo (local) interface
    there to differentiate computers on a shared medium (the aether, or ether)
    and since packets to localhost does not go over any wire there is no need
    to identify which box is talking to which. There is only one.
+---
+Q: Arping can't ping anything!
+
+A: Check which interface is active with -v. If it's the wrong one, use -i
+   to set it right.
 ---
 Q: Arping finds some hosts, but not others. why?   BTW, I have several NICs.
 

@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 41 2000-05-17 23:32:38Z marvin $
+ * $Id: arping.c 42 2000-05-17 23:34:06Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -353,9 +353,7 @@ int main(int argc, char **argv)
 	signal(SIGALRM, alasend);
 	signal(SIGINT, sigint);
 	if (searchmac) {
-		int c;
 		printf("ARPING %s\n", argv[optind]);
-
 	} else {
 		printf("ARPING %s\n", libnet_host_lookup(dip,0));
 	}

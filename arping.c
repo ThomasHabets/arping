@@ -10,12 +10,24 @@
  * you don't yet have routing to. Then again, if you have no idea what I'm
  * talking about then you prolly don't need it.
  *
- * Changelog:
- * 2000-02-25: Told pcap to filter !arp
- *             Cleaned up error messages
- * 2000-02-24: ------ Released 0.1 --------
+ * $Id: arping.c 28 2000-05-02 02:01:57Z marvin $
+ */
+/*
+ *  Copyright (C) 2000   Marvin (marvin@nss.nu)
  *
- * $Id: arping.c 24 2000-04-24 20:30:21Z marvin $
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  */
 #include <getopt.h>
 #include <libnet.h>

@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 699 2002-08-19 23:28:46Z marvin $
+ * $Id: arping.c 704 2002-08-27 00:57:19Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -90,8 +90,8 @@ static struct timeval lastpacketsent;
 static const u_int ip_xmas = 0xffffffff;
 
 static pcap_t *pcap;
-struct bpf_program bpf_prog;
-struct in_addr net,mask;
+static struct bpf_program bpf_prog;
+static struct in_addr net,mask;
 #if 0
 // Use this if you want to hard-code a default interface
 static char *ifname = "eth0";
@@ -100,7 +100,7 @@ static char *ifname = NULL;
 #endif
 static u_int32_t dip = 0;
 static u_char *packet;
-struct libnet_link_int *linkint;
+static struct libnet_link_int *linkint;
 
 static unsigned int beep = 0;
 static unsigned int verbose = 0;
@@ -670,8 +670,7 @@ int main(int argc, char **argv)
 			fprintf(stderr, "libnet_build_arp(): error\n");
 			exit(1);
 		}
-		
-	}
+      	}
 	/*
 	 * pcap init
 	 */

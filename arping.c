@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 974 2003-08-03 22:57:59Z marvin $
+ * $Id: arping.c 975 2003-08-03 23:06:58Z marvin $
  */
 /*
  *  Copyright (C) 2000-2003 Thomas Habets <thomas@habets.pp.se>
@@ -46,6 +46,7 @@
  *    arping -t mac -A host     pongs
  *    arping -T ip -A mac       pongs
  *    arping -T ip -A cmac      pongs
+ *    arping -T bcast mac       pongs    # bcast of current net
  *    arping -r host            mac
  *    arping -R host            ip
  *    arping -r mac             ip

@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: arping-scan-net.sh 974 2003-08-03 22:57:59Z marvin $
+# $Id: arping-scan-net.sh 975 2003-08-03 23:06:58Z marvin $
 #
 #  Copyright (C) 2002 Thomas Habets <thomas@habets.pp.se>
 #
@@ -45,7 +45,7 @@ for a in $(seq 192 192); do
     for b in $(seq 168 168); do
 	for c in $(seq 42 42); do
 	    for d in $(seq 0 255); do
-		sh -c "arping -A -q -c 1 -T $a.$b.$c.$d $TARGET_MAC
+		sh -c "./arping -A -q -c 1 -T $a.$b.$c.$d $TARGET_MAC
 		if [ \$? = 0 ]; then
 		    echo Got answer with address: $a.$b.$c.$d
 		fi" &

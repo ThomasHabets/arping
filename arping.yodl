@@ -1,9 +1,9 @@
-manpage(arping)(8)(8th July, 2001)(arping)()
+manpage(arping)(8)(21th Jan, 2002)(arping)()
 
 manpagename(arping)(sends arp and/or ip pings to a given host)
 
 manpagesynopsis()
-    bf(arping) [-hqvrRd0bp] [-S em(host/ip)] [-S em(host/ip)] [-s em(MAC)]    \
+    bf(arping) [-hqavrRd0bp] [-S em(host/ip)] [-S em(host/ip)] [-s em(MAC)]    \
 [-t em(MAC)] [-c em(count)] [-i em(interface)] <em(host) | -B>
 
 manpagedescription()
@@ -11,40 +11,47 @@ manpagedescription()
 
     One request is sent each second.
 
+    em(Important note on timing)
+
+    ARP packets are usually replied to (on a LAN) so fast that the OS task
+    scheduler can't keep up to get exact enough timing.
+    On an idle system the roundtrip times will be pretty much accurate, but
+    with more load the timing gets less exact.
+
+    To get more exact timing on a non-idle system, re-nice arping to -15 or so.
+
+    # nice -n -15 arping foobar
+
+    This is not just an issue with arping, it is with normal ping also
+    (at least it is on my system). But it doesn't show up as much with ping
+    since arping packets (when pinging IP) doesn't traverse the IP stack when
+    received and are therefore replied to faster.
+
 manpageoptions()
 
 startdit()
 
     dit(-h) Displays a help message and exits.
-
     dit(-q) Does not display messages, except error messages.
-
+    dit(-a) Audiable ping.
     dit(-v) Verbose output. Use twice for more messages.
-
     dit(-r) Raw output: only the MAC/IP address is displayed for each reply.
-
     dit(-R) Raw output: Like -r but shows "the other one", can be combined with
 -r.
-
     dit(-d) Find duplicate replies.
-
     dit(-B) Use instead of host if you want to address 255.255.255.255.
-
     dit(-0) Use this option to ping with source IP address 0.0.0.0. Use this
 	when you haven't configured your interface yet.
 	Note that this may get the MAC-ping unanswered.
 	This is an alias for -S 0.0.0.0.
-
     dit(-b) Like -0 but source broadcast source address (255.255.255.255).
 Note that this may get the arping unanswered since it's not normal behavior
 for a host.
-
     dit(-S em(IP)) Like -b and -0 but with set source address.
 Note that this may get the arping unanswered if the target does not have
 routing to the IP. If you don't own the IP you are using, you may need to turn
 on promiscious mode on the interface (with -p). With this switch you can find
 out what IP-address a host has without taking an IP-address yourself.
-
     dit(-T em(IP)) Use -T as target address when pinging MACs that won't
 respond to a broadcast ping but perhaps to a directed broadcast.
 
@@ -52,18 +59,12 @@ em(Example):                                                                \
 	To check the address of MAC-A, use knowledge of MAC-B and IP-B.
 
 	$ arping -S <IP-B> -s <MAC-B> -p <MAC-A>
-
     dit(-p) Turn on promiscious mode on interface, use this if you don't
             "own" the MAC address you are using.
-
     dit(-s em(MAC)) Set source MAC address. You may need to use -p with this.
-
     dit(-t em(MAC)) Set target MAC address to use when pinging IP address.
-
     dit(-c em(count)) Only send em(count) requests.
-
     dit(-i em(interface)) Use the specified interface.
-
 enddit()
 
 manpagebugs()
@@ -77,4 +78,5 @@ manpageseealso()
 
 manpageauthor()
 
-    Arping was written by Thomas Habets <thomas@habets.pp.se>.
+    Arping was written by Thomas Habets <thomas@habets.pp.se> aka
+<marvin@rootbusters.net>

@@ -1,4 +1,4 @@
-$Id: README 532 2002-01-20 19:44:00Z marvin $
+$Id: README 533 2002-01-20 23:14:08Z marvin $
 
  ARP Ping
 
@@ -130,7 +130,11 @@ A: I know.
      I can't tell when a packet arrives on the wire, only when arping gets
      it from the kernel. Just make sure neither the network (whole segment
      if you are hubbed, just your NIC if you are switched) nor your box is
-     loaded when you care about timing.
+     loaded when you care about timing, and/or run arping with higher
+     priority.
+
+     # nice -n -15 arping foobar
+
      But if you find way to get more exact timing portably (or just for one
      OS really), let me know.
 ---

@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 531 2002-01-20 19:35:32Z marvin $
+ * $Id: arping.c 533 2002-01-20 23:14:08Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -102,6 +102,7 @@ static u_int32_t dip = 0;
 static u_char *packet;
 struct libnet_link_int *linkint;
 
+static unsigned int beep = 0;
 static unsigned int verbose = 0;
 static unsigned int numsent = 0;
 static unsigned int numrecvd = 0;
@@ -275,7 +276,6 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 					u_int32_t tmp;
 					memcpy(&tmp, &hip->saddr, sizeof(u_int32_t));
 					printf("%s",libnet_host_lookup(tmp,0));
-//					printf("%p\n", &hip->saddr);
 					printf(" (");
 					for (c = 0; c < ETH_ALEN-1; c++) {
 						printf("%.2x:", *cp++);
@@ -284,11 +284,14 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 					       hicmp->un.echo.sequence,
 					       tvtoda(&lastpacketsent, &recvtime));
 				}
+				if (beep) {
+					printf("\a");
+				}
 				printf("\n");
 			}
 		}
 	} else {
-		// ping ip
+		/* ping ip */
 		harp = (struct arphdr*)((char*)eth + sizeof(struct libnet_ethernet_hdr));
 		if ((htons(harp->ar_op) == ARPOP_REPLY)
 		    && (htons(harp->ar_pro) == ETH_P_IP)
@@ -321,16 +324,17 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 						}
 						printf("%.2x", *cp);
 					}
-				}
-				if (!rawoutput) {
-					printf(" (%s): index=%d time=%s",
-					       libnet_host_lookup(ip, 0),
-					       numrecvd, tvtoda(&lastpacketsent, &recvtime));
-				}
-				numrecvd++;
-				if (!quiet) {
+					if (!rawoutput) {
+						printf(" (%s): index=%d time=%s",
+						       libnet_host_lookup(ip, 0),
+						       numrecvd, tvtoda(&lastpacketsent, &recvtime));
+					}
+					if (beep) {
+						printf("\a");
+					}
 					printf("\n");
 				}
+				numrecvd++;
 			}
 		}
 	}
@@ -361,8 +365,11 @@ int main(int argc, char **argv)
 
 	memcpy(eth_target, eth_xmas, ETH_ALEN);
 
-	while ((c = getopt(argc, argv, "0bdS:T:Bvhi:rRc:qs:t:p")) != EOF) {
+	while ((c = getopt(argc, argv, "0bdS:T:Bvhi:rRc:qs:t:pa")) != EOF) {
 		switch (c) {
+		case 'a':
+			beep = 1;
+			break;
 		case 'v':
 			verbose++;
 			break;

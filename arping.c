@@ -106,11 +106,6 @@ int main(int argc, char **argv)
 	int c;
 	struct bpf_program bp;
 	
-	if (getuid() && geteuid()) {
-		fprintf(stderr, "Must be r00t\n");
-		return 1;
-	}
-  
 	while ((c = getopt(argc, argv, "vhi:")) != EOF) {
 		switch (c) {
 		case 'v':
@@ -129,6 +124,11 @@ int main(int argc, char **argv)
 		usage(1);
 		exit(1);
 	}
+	if (getuid() && geteuid()) {
+		fprintf(stderr, "Must be r00t\n");
+		return 1;
+	}
+  
 	dip = libnet_name_resolve((u_char*)argv[optind], LIBNET_RESOLVE);
 		
 	/*

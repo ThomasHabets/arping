@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: arping-scan-net.sh 975 2003-08-03 23:06:58Z marvin $
+# $Id: arping-scan-net.sh 984 2003-08-07 20:11:36Z marvin $
 #
 #  Copyright (C) 2002 Thomas Habets <thomas@habets.pp.se>
 #
@@ -30,7 +30,8 @@ if [ "$1" = "" ]; then
 fi
 TARGET_MAC="$1"
 
-# seq doesnt exist on some boxen
+# seq doesnt exist on some retarded boxen, comment out if your box is too
+# stupid to have bc and/or tr
 seq() { echo "for (i=$1; i<=$2; i++) i;" | bc | tr "\012" " "; }
 
 #
@@ -43,9 +44,9 @@ seq() { echo "for (i=$1; i<=$2; i++) i;" | bc | tr "\012" " "; }
 #
 for a in $(seq 192 192); do
     for b in $(seq 168 168); do
-	for c in $(seq 42 42); do
+	for c in $(seq 0 0); do
 	    for d in $(seq 0 255); do
-		sh -c "./arping -A -q -c 1 -T $a.$b.$c.$d $TARGET_MAC
+		sh -c "arping -A -q -c 1 -T $a.$b.$c.$d $TARGET_MAC
 		if [ \$? = 0 ]; then
 		    echo Got answer with address: $a.$b.$c.$d
 		fi" &

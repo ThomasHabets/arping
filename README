@@ -1,4 +1,4 @@
-$Id: README 922 2003-06-21 16:26:53Z marvin $
+$Id: README 984 2003-08-07 20:11:36Z marvin $
 
  ARP Ping
 
@@ -40,7 +40,12 @@ If you have some other OS, try all before mailing me.
 
 'make install' will copy arping to /usr/local/bin, and put the manpage where
 it belongs.
- 
+
+Mailing list
+------------
+Check out http://www.habets.pp.se/synscan/mailinglists.php for information
+on how to subscribe to help- and announce-lists.
+
 How it does it
 --------------
 See 'Technical' at the bottom of this file.
@@ -60,7 +65,6 @@ A: Arping 2.x will not work with Libnet 1.0.x. This is This is due to
    Arping 2.x is now the default target, but arping 1.x is still here.
    Arping 1.x is included in this release and can be created
    with "make arping1" and follow instructions.
-
 ---
 Q: After compiling arping without any problem, i test it first with
    localhost... but it doesn't respond. Isn't that strange?

@@ -1,4 +1,4 @@
-# $Id: Makefile 925 2003-06-21 16:42:02Z marvin $
+# $Id: Makefile 984 2003-08-07 20:11:36Z marvin $
 TARGETS=arping
 
 USE_NETIF=0
@@ -21,6 +21,11 @@ message:
 	@echo "(as opposed to 1.1.x) then this will fail and you should try"
 	@echo "compiling arping 1.x."
 	@echo ""
+	@echo "Note that arping 1.x has been tested *A LOT* more than "
+	@echo "arping 2.x, so if you have problems (especially compilation"
+	@echo "problems), then try arping 1.x with libnet 1.0.x. Also, mail"
+	@echo "me about it. thomas@habets.pp.se"
+	@echo ""
 	@echo "For information on how to compile arping 1.x, type "
 	@echo "'make arping1'"
 	@echo ""
@@ -37,9 +42,10 @@ arping1:
 	@echo "   Arping 1.x will only work with libnet 1.0.x, not 1.1.x"
 	@echo "   BUT, arping 2.x will work with 1.1.x."
 	@echo
-	@echo "   Create the arping 2.x by typing 'make'"
-	@echo "   Arping 2.x has been known to work on linux, I'm still "
-	@echo "   working on BSD and other support."
+	@echo "   Create arping 2.x by typing 'make'"
+	@echo "   Arping 2.x has been known to work most architectures"
+	@echo "   that arping 1.x works on, but arping 1.x has been tested"
+	@echo "   more"
 	@echo
 	@echo "   Read README for more details."
 	@echo

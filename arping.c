@@ -1,4 +1,10 @@
 /*
+ * NOTE: This is arping 1.x, arping 2.x is in arping-2/
+ */
+
+
+
+/*
  * arping
  *
  * By Thomas Habets <thomas@habets.pp.se>
@@ -12,7 +18,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 975 2003-08-03 23:06:58Z marvin $
+ * $Id: arping.c 984 2003-08-07 20:11:36Z marvin $
  */
 /*
  *  Copyright (C) 2000-2003 Thomas Habets <thomas@habets.pp.se>

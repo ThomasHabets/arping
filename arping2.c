@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping2.c 704 2002-08-27 00:57:19Z marvin $
+ * $Id: arping2.c 705 2002-08-27 22:35:25Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -55,7 +55,11 @@
 
 const float version = 2.0;
 
-libnet_t *libnet;
+static libnet_t *libnet;
+
+static struct timeval lastpacketsent;
+
+static u_int32_t srcip,dstip;
 
 static int beep = 0;
 static int verbose = 0;
@@ -63,9 +67,13 @@ static int pingmac = 0;
 static int finddup = 0;
 static unsigned int numsent = 0;
 static unsigned int numrecvd = 0;
-static enum { NORMAL,QUIET,RAW,RRAW,SELF } display = NORMAL;
+// RAWRAW is RAW|RRAW
+static enum { NORMAL,QUIET,RAW,RRAW,RAWRAW } display = NORMAL;
 static char *target = "huh? bug in arping?";
 static u_int8_t ethnull[ETH_ALEN];
+static u_int8_t ethxmas[ETH_ALEN];
+static char srcmac[ETH_ALEN];
+static char dstmac[ETH_ALEN];
 
 volatile int time_to_die = 0;
 
@@ -195,14 +203,12 @@ static void pingmac_send(u_int8_t *srcmac, u_int8_t *dstmac,
 			libnet_geterror(libnet));
 		sigint(0);
 	}
+	if (-1 == gettimeofday(&lastpacketsent, NULL)) {
+		fprintf(stderr, "arping: gettimeofday(): %s\n",
+			strerror(errno));
+		sigint(0);
+	}
 	numsent++;
-}
-
-/*
- *
- */
-static void pingmac_recv()
-{
 }
 
 /*
@@ -246,15 +252,224 @@ static void pingip_send(u_int8_t *srcmac, u_int8_t *dstmac,
 			libnet_geterror(libnet));
 		sigint(0);
 	}
+	if (-1 == gettimeofday(&lastpacketsent, NULL)) {
+		fprintf(stderr, "arping: gettimeofday(): %s\n",
+			strerror(errno));
+		sigint(0);
+	}
 	numsent++;
 }
 
 /*
  *
  */
-static void pingip_recv(void)
+static void pingip_recv(const char *unused, struct pcap_pkthdr *h,
+			u_int8_t *packet)
 {
+	struct libnet_802_3_hdr *heth;
+	struct libnet_arp_hdr *harp;
+	struct timeval arrival;
+	int c;
 
+	if (-1 == gettimeofday(&arrival, NULL)) {
+		fprintf(stderr, "arping: gettimeofday(): %s\n",
+			strerror(errno));
+		sigint(0);
+	}
+
+	heth = (void*)packet;
+	harp = (void*)((char*)heth + LIBNET_ETH_H);
+
+	if ((htons(harp->ar_op) == ARPOP_REPLY)
+	    && (htons(harp->ar_pro) == ETHERTYPE_IP)
+	    && (htons(harp->ar_hrd) == ARPHRD_ETHER)) {
+		u_int32_t ip;
+		memcpy(&ip, (char*)harp + harp->ar_hln
+		       + LIBNET_ARP_H,4);
+		if (dstip == ip) {
+			switch(display) {
+			case NORMAL: {
+				char buf[128];
+				printf("%d bytes from ", h->len);
+				for (c = 0; c < 6; c++) {
+					printf("%.2x%c", heth->_802_3_shost[c],
+					       (c<5)?':':' ');
+				}
+				
+				printf("(%s): index=%d time=%s\n",
+				       libnet_addr2name4(ip,0),
+				       numrecvd,
+				       tv2str(&lastpacketsent,
+					      &arrival,buf));
+				break; }
+			case QUIET:
+				break;
+			case RAWRAW:
+				for (c = 0; c < 6; c++) {
+					printf("%.2x%c", heth->_802_3_shost[c],
+					       (c<5)?':':' ');
+				}
+				printf("%s\n", libnet_addr2name4(ip,0));
+				break;
+			case RAW:
+				printf("%s\n", libnet_addr2name4(ip,0));
+				break;
+			case RRAW:
+				for (c = 0; c < 6; c++) {
+					printf("%.2x%c", heth->_802_3_shost[c],
+					       (c<5)?':':'\n');
+				}
+				break;
+			default:
+				fprintf(stderr, "arping: can't happen!\n");
+			}
+			numrecvd++;
+		}
+	}
+}
+
+/*
+ * 
+ */
+static void pingmac_recv(const char *unused, struct pcap_pkthdr *h,
+			u_int8_t *packet)
+{
+	struct libnet_802_3_hdr *heth;
+	struct libnet_ipv4_hdr *hip;
+	struct libnet_icmpv4_hdr *hicmp;
+	struct timeval arrival;
+	int c;
+
+	if (-1 == gettimeofday(&arrival, NULL)) {
+		fprintf(stderr, "arping: gettimeofday(): %s\n",
+			strerror(errno));
+		sigint(0);
+	}
+
+	heth = (void*)packet;
+	hip = (void*)((char*)heth + LIBNET_ETH_H);
+	hicmp = (void*)((char*)hip + LIBNET_IPV4_H);
+
+	if ((htons(hicmp->icmp_type) == ICMP_ECHOREPLY)
+	    && ((!memcmp(heth->_802_3_shost, dstmac,ETH_ALEN)
+		 || !memcmp(dstmac, ethxmas, ETH_ALEN)))
+	    && !memcmp(heth->_802_3_dhost, srcmac, ETH_ALEN)) {
+		u_int8_t *cp = heth->_802_3_shost;
+		switch(display) {
+		case QUIET:
+			break;
+		case NORMAL: {
+			char buf[128];
+			printf("%d bytes from %s (",h->len,
+			       libnet_addr2name4(*(int*)&hip->ip_src, 0));
+			for (c = 0; c < 6; c++) {
+				printf("%.2x%c", heth->_802_3_shost[c],
+				       (c<5)?':':')');
+			}
+			printf(": icmp_seq=%d time=%s\n",
+			       hicmp->icmp_seq,tv2str(&lastpacketsent,
+						      &arrival,buf));
+			break; }
+		case RAW:
+			printf("%s\n",
+			       libnet_addr2name4(hip->ip_src.s_addr, 0));
+			break;
+		case RRAW:
+			for (c = 0; c < 6; c++) {
+				printf("%.2x%c", heth->_802_3_shost[c],
+				       (c<5)?':':'\n');
+			}
+			break;
+		case RAWRAW:
+			for (c = 0; c < 6; c++) {
+				printf("%.2x%c", heth->_802_3_shost[c],
+				       (c<5)?':':' ');
+			}
+			printf("%s\n",
+			       libnet_addr2name4(hip->ip_src.s_addr, 0));
+			break;
+		default:
+			fprintf(stderr, "arping: can't-happen-bug\n");
+			sigint(0);
+		}
+	}
+}
+
+
+/*
+ * 
+ */
+static void ping_recv(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
+{
+	struct timeval tv,tv2;
+	char done = 0;
+	fd_set fds;
+
+	tv.tv_sec = packetwait / 1000000;
+	tv.tv_usec = packetwait % 1000000;
+	for (;!done;) {
+		FD_ZERO(&fds);
+		FD_SET(pcap_fileno(pcap), &fds);
+		if (-1 == gettimeofday(&tv2,NULL)) {
+			fprintf(stderr, "arping: "
+				"gettimeofday(): %s\n",
+				strerror(errno));
+			sigint(0);
+		}
+		switch(select(pcap_fileno(pcap)+1,
+			      &fds,
+			      NULL,NULL,&tv)) {
+		case -1:
+			if (errno == EINTR) {
+				return;
+			}
+			fprintf(stderr, "arping: select(): "
+				"%s\n", strerror(errno));
+			sigint(0);
+		case 0:
+			done = 1;
+			break;
+		default:
+			if (1 != pcap_dispatch(pcap, 1,
+					       func,
+					       NULL)) {
+				fprintf(stderr, "Fuck!\n");
+			}
+			break;
+		}
+		
+		if (-1 == gettimeofday(&tv,NULL)) {
+			fprintf(stderr, "arping: "
+				"gettimeofday(): %s\n",
+				strerror(errno));
+			sigint(0);
+		}
+		/*
+		 * setup next timeval, not very exact
+		 */
+		tv.tv_sec  = (packetwait / 1000000)
+			- (tv.tv_sec - tv2.tv_sec);
+		tv.tv_usec = (packetwait % 1000000)
+			- (tv.tv_usec - tv2.tv_usec);
+		while (tv.tv_usec < 0) {
+			tv.tv_sec--;
+			tv.tv_usec += 1000000;
+		}
+		if (tv.tv_sec < 0) {
+			tv.tv_sec = tv.tv_usec = 0;
+		}
+		
+	}
+//	if (tv.tv_usec == 0) {
+//		tv.tv_usec = 1;
+//	}
+	if (-1 == select(0, NULL,NULL,NULL, &tv)) {
+		if (errno == EINTR) {
+			return;
+		}
+		fprintf(stderr, "arping: select(delay): %s\n",strerror(errno));
+		sigint(0);
+	}
 }
 
 /*
@@ -263,9 +478,6 @@ static void pingip_recv(void)
 int main(int argc, char **argv)
 {
 	char ebuf[LIBNET_ERRBUF_SIZE];
-	char srcmac[ETH_ALEN];
-	char dstmac[ETH_ALEN];
-	u_int32_t srcip,dstip;
 	char *cp;
 	int nullip = 0;
 	int promisc = 0;
@@ -279,13 +491,14 @@ int main(int argc, char **argv)
 	struct bpf_program bp;
 	pcap_t *pcap;
 	static enum { NONE, PINGMAC, PINGIP } mode = NONE;
-	unsigned int packetwait = 1000;
-	
+	unsigned int packetwait = 1000000;
+
 	memset(ethnull, 0, ETH_ALEN);
 
 	srcip = 0;
 	dstip = 0xffffffff;
 	memset(dstmac, 0xff, ETH_ALEN);
+	memset(ethxmas, 0xff, ETH_ALEN);
 
 	while ((c = getopt(argc, argv, "0bdS:T:Bvhi:rRc:qs:t:paw:")) != EOF) {
 		switch(c) {
@@ -308,10 +521,10 @@ int main(int argc, char **argv)
 			ifname = optarg;
 			break;
 		case 'r':
-			display = RAW;
+			display = (display==RRAW)?RAWRAW:RAW;
 			break;
 		case 'R':
-			display = RRAW;
+			display = (display==RAW)?RAWRAW:RRAW;
 			break;
 		case 'q':
 			display = QUIET;
@@ -465,6 +678,7 @@ int main(int argc, char **argv)
 			fprintf(stderr, "arping: Can't resolve %s\n", parm);
 			exit(1);
 		}
+		parm = strdup(libnet_addr2name4(dstip,0));
 	}
 
 	/*
@@ -558,7 +772,7 @@ int main(int argc, char **argv)
 	}
 	signal(SIGINT, sigint);
 
-	if (display != QUIET) {
+	if (display == NORMAL) {
 		printf("ARPING %s\n", parm);
 	}
 
@@ -569,11 +783,15 @@ int main(int argc, char **argv)
 		unsigned int c;
 		for (c = 0; c < maxcount && !time_to_die; c++) {
 			pingip_send(srcmac, dstmac, srcip, dstip);
+			ping_recv(pcap,packetwait,
+				  (pcap_handler)pingip_recv);
 		}
 	} else { // PINGMAC
 		unsigned int c;
 		for (c = 0; c < maxcount && !time_to_die; c++) {
-			pingmac_send(srcmac, dstmac, srcip, dstip, 0, 0);
+			pingmac_send(srcmac, dstmac, srcip, dstip, rand(), c);
+			ping_recv(pcap,packetwait,
+				  (pcap_handler)pingmac_recv);
 		}
 	}
 	if (display == NORMAL) {

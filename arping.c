@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 149 2000-10-05 22:12:51Z marvin $
+ * $Id: arping.c 221 2001-01-28 03:02:24Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -228,11 +228,10 @@ void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
 		if ((htons(harp->ar_op) == ARPOP_REPLY)
 		    && (htons(harp->ar_pro) == ETH_P_IP)
 		    && (htons(harp->ar_hrd) == ARPHRD_ETHER)) {
-		  int ip;
+			int ip;
 			memcpy(&ip, (char*)harp + harp->ar_hln
 			       + sizeof(struct arphdr), 4);
 			if (dip == ip) {
-
 				cp = (u_char*)harp + sizeof(struct arphdr);
 				if (!rawoutput && !finddup) {
 					printf("%d bytes from ", h->len);
@@ -255,12 +254,11 @@ void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
 			}
 		}
 	}
-
 }
 
 void recvpackets(void)
 {
-  DEBUG(printf("recvpackets()\n"));
+	DEBUG(printf("recvpackets()\n"));
 	if (-1 == pcap_loop(pcap, -1, (pcap_handler)handlepacket, NULL)) {
 		fprintf(stderr, "pcap_loop(): error\n");
 		exit(1);

@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping2.c 712 2002-08-30 23:23:12Z marvin $
+ * $Id: arping2.c 713 2002-08-31 12:31:43Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -691,7 +691,6 @@ int main(int argc, char **argv)
 	}
 	
 
-
 	parm = argv[optind];
 
 	/*
@@ -734,7 +733,7 @@ int main(int argc, char **argv)
 	 * parse parm into dstmac
 	 */
 	if (mode == PINGMAC) {
-		unsigned char n[6];
+		u_int32_t n[6]; // 32bit because of alignment
 		if (optind + 1 != argc) {
 			usage(1);
 		}
@@ -783,7 +782,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "arping: pcap_open_live(): %s\n",ebuf);
 		exit(1);
 	}
-#ifdef HAVE_NET_BPF_H
+#ifdef HAVE_WEIRD_BSD
 	{
 		u_int32_t on = 1;
 		if (0 < (ioctl(pcap_fileno(pcap), BIOCIMMEDIATE,

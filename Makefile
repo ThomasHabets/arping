@@ -1,4 +1,4 @@
-# $Id: Makefile 709 2002-08-30 22:40:41Z marvin $
+# $Id: Makefile 713 2002-08-31 12:31:43Z marvin $
 TARGETS=arping
 
 USE_NETIF=0
@@ -57,6 +57,8 @@ arping: $(O_arping)
 O_arping2=arping2.c
 arping2: $(O_arping2)
 	gcc -I/home/thompa/src/Libnet-1.1.0/include -L/home/thompa/src/Libnet-1.1.0/src -o arping2 arping2.c -lnet -lpcap
+#	gcc -I/home/thompa/src/Libnet-1.1.0/include -L/home/thompa/src/Libnet-1.1.0rc -o arping2 arping2.c -lnet -lpcap -lresolv -lnsl -lsocket
+
 clean:
 	rm -f *.o $(TARGETS)
 

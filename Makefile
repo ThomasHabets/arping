@@ -1,4 +1,4 @@
-# $Id: Makefile 1124 2004-08-29 18:44:15Z marvin $
+# $Id: Makefile 1125 2004-08-29 18:47:37Z marvin $
 TARGETS=arping
 
 CD=cd
@@ -110,7 +110,7 @@ clean:
 distclean: clean
 	rm -f config{.cache,.h,.log,.status}
 
-V=$(shell grep version arping-2/arping.c|grep const|sed 's:[a-z =]*::;s:;::')
+V=$(shell grep version arping-2/arping.c|grep const|sed 's:[a-z =]*::;s:f;::')
 DFILE=arping-$(V).tar.gz
 DDIR=arping-$(V)
 dist:

@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 346 2001-06-02 14:19:30Z marvin $
+ * $Id: arping.c 348 2001-06-02 15:09:25Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@rootbusters.net)
@@ -70,7 +70,7 @@
 #define DEBUG(a)
 #endif
 
-const float version = 0.97;
+const float version = 0.98;
 
 struct ether_addr *mymac;
 static u_char eth_xmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};

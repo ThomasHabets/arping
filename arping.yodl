@@ -1,9 +1,9 @@
-manpage(arping)(8)(21th Jan, 2002)(arping)()
+manpage(arping)(8)(12th Feb, 2002)(arping)()
 
 manpagename(arping)(sends arp and/or ip pings to a given host)
 
 manpagesynopsis()
-    bf(arping) [-hqavrRd0bp] [-S em(host/ip)] [-S em(host/ip)] [-s em(MAC)]    \
+    bf(arping) [-hqavrRd0bp] [-S em(host/ip)] [-T em(host/ip)] [-s em(MAC)]    \
 [-t em(MAC)] [-c em(count)] [-i em(interface)] <em(host) | -B>
 
 manpagedescription()

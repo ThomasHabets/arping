@@ -1,0 +1,40 @@
+
+---
+Q: after compiling arping without any problem, i test it first with
+   localhost... but it doesn't respond. Isn't that strange?
+
+A: Not really, as you can see by typing 'ifconfig' the lo (local) interface
+   does not have a MAC address. It's not a physical device! MAC addresses are
+   there to differentiate computers on a shared medium (the aether, or ether)
+   and since packets to localhost does not go over any wire there is no need
+   to identify which box is talking to which. There is only one.
+---
+Q: Arping find some hosts, but not others. why?   btw, I have several NICs.
+
+A: You have to choose interface with the -i switch if the default is wrong for
+   you.
+---
+Q: I tried to ping my own MAC addr, but it doesn't work.
+
+A: A sane OS will think it's suspicios if you send packets to yourself over
+   the wire and will ignore them.
+
+   And why would you want to lookup the IP or MAC of yourself? ifconfig
+   can tell you that.
+---
+Q: I can't ping any MAC address on my LAN.
+
+A: Are they windows boxen?
+   <technical>
+   Arping sends arp-directed broadcast (so it does NOT go to anyone but the
+   target) pings to the MAC and checks the IP address of the responding
+   packet. I seem to recall windows boxen answer oddly or not at all to
+   broadcast pings, but since I don't have a windows box, I haven't tested.
+   I will test it, but I don't know if there is any good way around it. Sure,
+   if I get a broadcast address back at least I can tell the machine is on the
+   LAN but then again, the OS will probably cache the MAC so you can just run
+   'arp' and see if the MAC is in there after the packet should have come back.
+   </technical>
+   <non-technical>
+   Windows sucks
+   </non-technical>

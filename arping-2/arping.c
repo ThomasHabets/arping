@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 923 2003-06-21 16:28:11Z marvin $
+ * $Id: arping.c 974 2003-08-03 22:57:59Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -184,6 +184,38 @@ static void usage(int ret)
 }
 
 /*
+ *
+ */
+static int is_mac_addr(const char *p)
+{
+	unsigned int n[6];
+	if(6==sscanf(p, "%2x%x.%2x%x.%2x%x",
+		     &n[0],&n[1],&n[2],&n[3],&n[4],&n[5])){
+		return 1;
+	}
+	return strchr(p, ':') ? 1 : 0;
+}
+
+/*
+ * lots of parms since C arrays suck
+ */
+static int get_mac_addr(const char *in,
+			unsigned int *n0,
+			unsigned int *n1,
+			unsigned int *n2,
+			unsigned int *n3,
+			unsigned int *n4,
+			unsigned int *n5)
+{
+	if (6 == sscanf(in, "%x:%x:%x:%x:%x:%x",n0,n1,n2,n3,n4,n5)) {
+		return 1;
+	} else if(6 == sscanf(in, "%2x%x.%2x%x.%2x%x",n0,n1,n2,n3,n4,n5)) {
+		return 1;
+	}
+	return 0;
+}
+
+/*
  * as always, the answer is 42
  *
  * in this case the question is how many bytes buf needs to be.
@@ -285,7 +317,7 @@ static void pingmac_send(u_int8_t *srcmac, u_int8_t *dstmac,
 		printf("arping: sending packet\n");
 	}
 	if (-1 == (c = libnet_write(libnet))) {
-		fprintf(stderr, "libnet_write(): %s\n",
+		fprintf(stderr, "arping: libnet_write(): %s\n",
 			libnet_geterror(libnet));
 		sigint(0);
 	}
@@ -317,7 +349,7 @@ static void pingip_send(u_int8_t *srcmac, u_int8_t *dstmac,
 					  0,
 					  libnet,
 					  arp))) {
-		fprintf(stderr, "libnet_build_arp(): %s\n",
+		fprintf(stderr, "arping: libnet_build_arp(): %s\n",
 			libnet_geterror(libnet));
 		sigint(0);
 	}
@@ -328,7 +360,7 @@ static void pingip_send(u_int8_t *srcmac, u_int8_t *dstmac,
 					       0,
 					       libnet,
 					       eth))) {
-		fprintf(stderr, "libnet_build_ethernet(): %s\n",
+		fprintf(stderr, "arping: libnet_build_ethernet(): %s\n",
 			libnet_geterror(libnet));
 		sigint(0);
 	}
@@ -392,7 +424,7 @@ static void pingip_recv(const char *unused, struct pcap_pkthdr *h,
 					       (c<5)?':':' ');
 				}
 				
-				printf("(%s): index=%d time=%s\n",
+				printf("(%s): index=%d time=%s",
 				       libnet_addr2name4(ip,0),
 				       numrecvd,
 				       tv2str(&lastpacketsent,
@@ -405,20 +437,21 @@ static void pingip_recv(const char *unused, struct pcap_pkthdr *h,
 					printf("%.2x%c", heth->_802_3_shost[c],
 					       (c<5)?':':' ');
 				}
-				printf("%s\n", libnet_addr2name4(ip,0));
+				printf("%s", libnet_addr2name4(ip,0));
 				break;
 			case RRAW:
-				printf("%s\n", libnet_addr2name4(ip,0));
+				printf("%s", libnet_addr2name4(ip,0));
 				break;
 			case RAW:
 				for (c = 0; c < 6; c++) {
-					printf("%.2x%c", heth->_802_3_shost[c],
-					       (c<5)?':':'\n');
+					printf("%.2x%s", heth->_802_3_shost[c],
+					       (c<5)?":":"");
 				}
 				break;
 			default:
 				fprintf(stderr, "arping: can't happen!\n");
 			}
+			printf(beep?"\a\n":"\n");
 			numrecvd++;
 		}
 	}
@@ -473,18 +506,18 @@ static void pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 				printf("%.2x%c", heth->_802_3_shost[c],
 				       (c<5)?':':')');
 			}
-			printf(": icmp_seq=%d time=%s\n",
+			printf(": icmp_seq=%d time=%s",
 			       hicmp->icmp_seq,tv2str(&lastpacketsent,
 						      &arrival,buf));
 			break; }
 		case RAW:
-			printf("%s\n",
+			printf("%s",
 			       libnet_addr2name4(hip->ip_src.s_addr, 0));
 			break;
 		case RRAW:
 			for (c = 0; c < 6; c++) {
-				printf("%.2x%c", heth->_802_3_shost[c],
-				       (c<5)?':':'\n');
+				printf("%.2x%s", heth->_802_3_shost[c],
+				       (c<5)?":":"");
 			}
 			break;
 		case RAWRAW:
@@ -492,13 +525,14 @@ static void pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 				printf("%.2x%c", heth->_802_3_shost[c],
 				       (c<5)?':':' ');
 			}
-			printf("%s\n",
+			printf("%s",
 			       libnet_addr2name4(hip->ip_src.s_addr, 0));
 			break;
 		default:
 			fprintf(stderr, "arping: can't-happen-bug\n");
 			sigint(0);
 		}
+		printf(beep?"\a\n":"\n");
 		numrecvd++;
 	}
 }
@@ -681,15 +715,9 @@ int main(int argc, char **argv)
 			break;
 		case 's': {// spoof source MAC
 			unsigned int n[6];
-			   
-			if (sscanf(optarg, "%x:%x:%x:%x:%x:%x",
-				   &n[0],
-				   &n[1],
-				   &n[2],
-				   &n[3],
-				   &n[4],
-				   &n[5]
-				    ) != 6) {
+			if (!get_mac_addr(optarg,
+					  &n[0],&n[1],&n[2],
+					  &n[3],&n[4],&n[5])){
 				fprintf(stderr, "arping: Weird MAC addr %s\n",
 					optarg);
 				exit(1);
@@ -717,15 +745,9 @@ int main(int argc, char **argv)
 					"in IP ping mode\n");
 				exit(1);
 			}
-			
-			if (sscanf(optarg, "%x:%x:%x:%x:%x:%x",
-				   &n[0],
-				   &n[1],
-				   &n[2],
-				   &n[3],
-				   &n[4],
-				   &n[5]
-				    ) != 6) {
+			if (!get_mac_addr(optarg,
+					  &n[0],&n[1],&n[2],
+					  &n[3],&n[4],&n[5])){
 				fprintf(stderr, "Illegal MAC addr %s\n",
 					optarg);
 				exit(1);
@@ -786,8 +808,9 @@ int main(int argc, char **argv)
 	 * Handle dstip_given instead of ip address after parms (-B really)
 	 */
 	if (mode == NONE) {
+		unsigned char n[6];
 		if (optind + 1 == argc) {
-			mode = strchr(parm, ':')?PINGMAC:PINGIP;
+			mode = is_mac_addr(parm)?PINGMAC:PINGIP;
 		} else if (dstip_given) {
 			mode = PINGIP;
 			parm = strdup(libnet_addr2name4(dstip,
@@ -803,7 +826,7 @@ int main(int argc, char **argv)
 	 * Make sure dstip and parm like eachother
 	 */
 	if (mode == PINGIP && (!dstip_given)) {
-		if (strchr(parm, ':')) {
+		if (is_mac_addr(parm)) {
 			fprintf(stderr, "arping: Options given only apply to "
 				"IP ping, but MAC address given as argument"
 				"\n");
@@ -822,25 +845,21 @@ int main(int argc, char **argv)
 	 * parse parm into dstmac
 	 */
 	if (mode == PINGMAC) {
-		unsigned char n[6];
+		unsigned int n[6];
 		if (optind + 1 != argc) {
 			usage(1);
 		}
-		if (!strchr(parm, ':')) {
+		if (!is_mac_addr(parm)) {
 			fprintf(stderr, "arping: Options given only apply to "
 				"MAC ping, but no MAC address given as "
 				"argument\n");
 			exit(1);
 		}
-		if (sscanf(argv[optind], "%x:%x:%x:%x:%x:%x", 
-			   &n[0],
-			   &n[1],
-			   &n[2],
-			   &n[3],
-			   &n[4],
-			   &n[5]
-			   ) != 6) {
-			fprintf(stderr, "Illegal mac addr %s\n", argv[optind]);
+		if (!get_mac_addr(argv[optind],
+				  &n[0],&n[1],&n[2],
+				  &n[3],&n[4],&n[5])) {
+			fprintf(stderr, "arping: Illegal mac addr %s\n",
+				argv[optind]);
 			return 1;
 		}
 		for (c = 0; c < 6; c++) {
@@ -920,7 +939,7 @@ int main(int argc, char **argv)
 	 */
 	if (!srcmac_given) {
 		if (!(cp = (char*)libnet_get_hwaddr(libnet))) {
-			fprintf(stderr, "libnet_get_hwaddr(): %s\n",
+			fprintf(stderr, "arping: libnet_get_hwaddr(): %s\n",
 				libnet_geterror(libnet));
 			exit(1);
 		}

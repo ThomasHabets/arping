@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 925 2003-06-21 16:42:02Z marvin $
+ * $Id: arping.c 974 2003-08-03 22:57:59Z marvin $
  */
 /*
  *  Copyright (C) 2000-2003 Thomas Habets <thomas@habets.pp.se>
@@ -33,30 +33,34 @@
  */
 /*
  * Note to self:
- *  Test checklist:
+ *  Test checklist:  (cmac = mac in cisco format (0000.0000.0000)
  *    command                   expected response
  *    arping host               pongs
  *    arping -a host            audiable pongs
  *    arping mac                pongs
+ *    arping cmac               pongs
  *    arping -a mac             audiable pongs
  *    arping -A host            nothing
  *    arping -A mac             nothing
- *    arping -t mac -A host     nothing
- *    arping -T ip -A mac       nothing
+ *    arping -t cmac -A host    pongs
+ *    arping -t mac -A host     pongs
+ *    arping -T ip -A mac       pongs
+ *    arping -T ip -A cmac      pongs
  *    arping -r host            mac
  *    arping -R host            ip
  *    arping -r mac             ip
  *    arping -R mac             mac
  *    arping -rR mac            mac ip
+ *    arping -rR ip             mac ip
  *    ./arping-scan-net.sh mac  ip
  * 
  * Arch checklist:
+ *   Linux/x86         test with debian package libnet0-dev and libnet1-dev
+ *   Linux/sparc
+ *   Linux/hppa
  *   Solaris/sparc
  *   NetBSD/alpha      (is libnet or arping unaligned? -- libnet I think)
  *   OpenBSD/sparc64   (libnet a bit buggy here)
- *   Linux/x86
- *   Linux/sparc
- *   Linux/hppa
  *
  */
 #include <stdio.h>
@@ -445,8 +449,10 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 					}
 					if (!rawoutput) {
 						printf(" (%s): index=%d time=%s",
-						       libnet_host_lookup(ip, 0),
-						       numrecvd, tvtoda(&lastpacketsent, &recvtime));
+						       libnet_host_lookup(ip,0),
+						       numrecvd,
+						       tvtoda(&lastpacketsent,
+							      &recvtime));
 					}
 					if (beep) {
 						printf("\a");
@@ -477,6 +483,7 @@ int main(int argc, char **argv)
 	struct bpf_program bp;
 	char must_be_pingip = 0;
 	char have_eth_source = 0;
+	unsigned int n[6];
 	int dont_use_arping_lookupdev=0;
 	
 	DEBUG(printf("main()\n"));
@@ -503,7 +510,7 @@ int main(int argc, char **argv)
 		case 'F':
 #if !defined(FINDIF)
 			fprintf(stderr, "arping: find-interface support not "
-				"compiled in\n";
+				"compiled in\n");
 #endif
 			dont_use_arping_lookupdev=1;
 			break;
@@ -532,9 +539,8 @@ int main(int argc, char **argv)
 			quiet = rawoutput = 1;
 			break;
 		case 'S':
-			if ((myip = libnet_name_resolve(optarg,
-							LIBNET_RESOLVE))
-			    == -1) {
+			if (-1==(myip = libnet_name_resolve(optarg,
+							    LIBNET_RESOLVE))){
 				fprintf(stderr,"arping: Can't to resolve %s\n",
 					optarg);
 				exit(1);
@@ -544,8 +550,12 @@ int main(int argc, char **argv)
 			}
 			break;
 		case 'T': // destination IP in mac ping (default: 0xffffffff)
-			dip = libnet_name_resolve(optarg,
-						  LIBNET_RESOLVE);
+			if (-1 == (dip = libnet_name_resolve(optarg,
+							     LIBNET_RESOLVE))){
+				fprintf(stderr, "arping: can't resolve: %s\n",
+					optarg);
+				exit(1);
+			}
 			searchmac = 1;
 			break;
 		case 'b':
@@ -558,47 +568,62 @@ int main(int argc, char **argv)
 			nullip = 1;
 			break;
 		case 's': // spoofed source MAC
-			{
-                           unsigned int n[6];
-			   
-			   if (sscanf(optarg, "%x:%x:%x:%x:%x:%x",
-				      &n[0],
-				      &n[1],
-				      &n[2],
-				      &n[3],
-				      &n[4],
-				      &n[5]
-				   ) != 6) {
-				   fprintf(stderr, "Illegal MAC addr %s\n",
-					   optarg);
-				   exit(1);
-			   }
-			   for (c = 0; c < 6; c++) {
-				   eth_source[c] = n[c] & 0xff;
-			   }
-			   have_eth_source = 1;
+			if (sscanf(optarg, "%x:%x:%x:%x:%x:%x",
+				   &n[0],
+				   &n[1],
+				   &n[2],
+				   &n[3],
+				   &n[4],
+				   &n[5]
+				    ) == 6) {
+				;
+			} else if(sscanf(optarg, "%2x%x.%2x%x.%2x%x",
+					  &n[0],
+					  &n[1],
+					  &n[2],
+					  &n[3],
+					  &n[4],
+					  &n[5]
+					   ) == 6) {
+				   ;
+			} else {
+				fprintf(stderr, "arping: Illegal MAC addr "
+					"%s\n", optarg);
+				exit(1);
 			}
+			for (c = 0; c < 6; c++) {
+				eth_source[c] = n[c] & 0xff;
+			}
+			have_eth_source = 1;
 			break;
 		case 't':
 			must_be_pingip = 1;
-			{
-                           unsigned int n[6];
-			   
-			   if (sscanf(optarg, "%x:%x:%x:%x:%x:%x",
-				      &n[0],
-				      &n[1],
-				      &n[2],
-				      &n[3],
-				      &n[4],
-				      &n[5]
-				   ) != 6) {
-				   fprintf(stderr, "Illegal MAC addr %s\n",
-					   optarg);
-				   exit(1);
-			   }
-			   for (c = 0; c < 6; c++) {
-				   eth_target[c] = n[c] & 0xff;
-			   }
+			if (sscanf(optarg, "%x:%x:%x:%x:%x:%x",
+				   &n[0],
+				   &n[1],
+				   &n[2],
+				   &n[3],
+				   &n[4],
+				   &n[5]
+				    ) == 6) {
+				;
+			} else if(sscanf(optarg, "%2x%x.%2x%x.%2x%x",
+					 &n[0],
+					 &n[1],
+					 &n[2],
+					 &n[3],
+					 &n[4],
+					 &n[5]
+					  ) == 6) {
+				;    
+			} else {
+				fprintf(stderr,"arping: Illegal MAC addr %s\n",
+					optarg);
+				exit(1);
+			}
+			
+			for (c = 0; c < 6; c++) {
+				eth_target[c] = n[c] & 0xff;
 			}
 			break;
 		case 'p':
@@ -623,40 +648,51 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if (searchmac || (!dip && strchr(argv[optind], ':'))) {
-		unsigned int n[6];
-		if (!dip) {
-			dip = ip_xmas;
-		}
-
-		if (must_be_pingip) {
-			fprintf(stderr, "Specified switch can't be used in "
-				"MAC-ping mode\n");
-			exit(1);
-		}
-
-		if (sscanf(argv[optind], "%x:%x:%x:%x:%x:%x", 
-			   &n[0],
-			   &n[1],
-			   &n[2],
-			   &n[3],
-			   &n[4],
-			   &n[5]
-			   ) != 6) {
-			fprintf(stderr, "Illegal mac addr %s\n", argv[optind]);
-			return 1;
-		}
-		for (c = 0; c < 6; c++) {
-			eth_target[c] = n[c] & 0xff;
-		}
+	if (sscanf(argv[optind], "%x:%x:%x:%x:%x:%x", 
+		   &n[0],
+		   &n[1],
+		   &n[2],
+		   &n[3],
+		   &n[4],
+		   &n[5]
+		   ) == 6) {
+		searchmac = 1;
+	} else if(sscanf(argv[optind], "%2x%x.%2x%x.%2x%x",
+		   &n[0],
+		   &n[1],
+		   &n[2],
+		   &n[3],
+		   &n[4],
+		   &n[5]
+		   ) == 6) {
 		searchmac = 1;
 	} else if (!dip) {
-		
-		if (-1 == (dip = libnet_name_resolve((u_char*)argv[optind],
-						     LIBNET_RESOLVE))) {
+		if (-1 == (dip=libnet_name_resolve((u_char*)argv[optind],
+						   LIBNET_RESOLVE))) {
 			fprintf(stderr, "arping: Can't resolve %s\n",
 				argv[optind]);
 			exit(1);
+		}
+	} else if (must_be_pingip) {
+		fprintf(stderr, "arping: Illegal IP %s\n", argv[optind]);
+		exit(1);
+	} else {
+		fprintf(stderr, "arping: Illegal mac %s\n", argv[optind]);
+		exit(1);
+	}
+	if (searchmac && !dip) {
+		dip = ip_xmas;
+	}
+
+	if (searchmac && must_be_pingip) {
+		fprintf(stderr, "arping: Specified switch can't be used in "
+			"MAC-ping mode\n");
+		exit(1);
+	}
+
+	if (searchmac) {
+		for (c = 0; c < 6; c++) {
+			eth_target[c] = n[c] & 0xff;
 		}
 	}
 	if (finddup && maxcount == -1) {

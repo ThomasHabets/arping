@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 45 2000-05-18 00:19:24Z marvin $
+ * $Id: arping.c 46 2000-05-18 08:15:14Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -113,21 +113,24 @@ void alasend(int i)
 
 void sigint(int i)
 {
-	if (searchmac) {
-		u_char *cp=eth_target;
-		int c;
-		printf("\n--- ");
-		for (c = 0; c < ETH_ALEN-1; c++) {
-			printf("%.2x:", (u_char)*cp++);
+	if (!rawoutput) {
+		if (searchmac) {
+			u_char *cp=eth_target;
+			int c;
+			printf("\n--- ");
+			for (c = 0; c < ETH_ALEN-1; c++) {
+				printf("%.2x:", (u_char)*cp++);
+			}
+			printf("%.2x statistics ---\n", *cp);
+		} else {
+			printf("\n--- %s statistics ---\n",
+			       libnet_host_lookup(dip,0));
 		}
-		printf("%.2x statistics ---\n", *cp);
-	} else {
-		printf("\n--- %s statistics ---\n", libnet_host_lookup(dip,0));
+		printf("%d packets transmitted, %d packets recieved, %3.0f%% "
+		       "unanswered\n",
+		       numsent, numrecvd,
+		       100.0 - 100.0 * (float)(numrecvd)/(float)numsent);
 	}
-	printf("%d packets transmitted, %d packets recieved, %3.0f%% "
-	       "unanswered\n",
-	       numsent, numrecvd,
-	       100.0 - 100.0 * (float)(numrecvd)/(float)numsent);
 	exit(1);
 }
 
@@ -152,15 +155,19 @@ void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
 			&& !memcmp(eth->h_dest, mymac->ether_addr_octet,
 				   ETH_ALEN)) {
 			u_char *cp = eth->h_source;
-			
-			printf("%d bytes from %s (", h->len,
-			       libnet_host_lookup(hip->saddr, 0));
-			
-			for (c = 0; c < ETH_ALEN-1; c++) {
-				printf("%.2x:", *cp++);
+			if (!rawoutput) {
+				printf("%d bytes from ", h->len);
 			}
-			printf("%.2x): icmp_seq=%d\n", *cp,
-			       hicmp->un.echo.sequence);
+			printf("%s",libnet_host_lookup(hip->saddr, 0));
+			if (!rawoutput) {
+				printf(" (");
+				for (c = 0; c < ETH_ALEN-1; c++) {
+					printf("%.2x:", *cp++);
+				}
+				printf("%.2x): icmp_seq=%d", *cp,
+				       hicmp->un.echo.sequence);
+			}
+			printf("\n");
 		}
 	} else {
 		harp = (struct arphdr*)((char*)eth + sizeof(struct ethhdr));
@@ -379,10 +386,12 @@ int main(int argc, char **argv)
 	 */
 	signal(SIGALRM, alasend);
 	signal(SIGINT, sigint);
-	if (searchmac) {
-		printf("ARPING %s\n", argv[optind]);
-	} else {
-		printf("ARPING %s\n", libnet_host_lookup(dip,0));
+	if (!rawoutput) {
+		if (searchmac) {
+			printf("ARPING %s\n", argv[optind]);
+		} else {
+			printf("ARPING %s\n", libnet_host_lookup(dip,0));
+		}
 	}
 	alasend(0);
 	for(;;) {

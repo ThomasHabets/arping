@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 1052 2003-11-14 14:04:24Z marvin $
+ * $Id: arping.c 1055 2003-11-28 02:13:40Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -752,6 +752,7 @@ int main(int argc, char **argv)
 			for (c = 0; c < 6; c++) {
 				srcmac[c] = n[c] & 0xff;
 			}
+			srcmac_given = 1;
 			break;
 		}
 		case 'S': // set source IP, may be null for don't-know
@@ -783,8 +784,8 @@ int main(int argc, char **argv)
 			for (c = 0; c < 6; c++) {
 				dstmac[c] = n[c] & 0xff;
 			}
-			break;
 			mode = PINGIP;
+			break;
 		}
 		case 'T': // set destination IP
 			if (mode == PINGIP) {

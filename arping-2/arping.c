@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 902 2003-06-02 08:23:47Z marvin $
+ * $Id: arping.c 922 2003-06-21 16:26:53Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -66,7 +66,7 @@
 #define IP_ALEN 4
 #endif
 
-const float version = 2.0;
+const float version = 2.01;
 
 static libnet_t *libnet;
 
@@ -80,6 +80,7 @@ static int verbose = 0;
 static int finddup = 0;
 static unsigned int numsent = 0;
 static unsigned int numrecvd = 0;
+static int addr_must_be_same = 0;
 // RAWRAW is RAW|RRAW
 static enum { NORMAL,QUIET,RAW,RRAW,RAWRAW } display = NORMAL;
 static char *target = "huh? bug in arping?";
@@ -89,6 +90,75 @@ static char srcmac[ETH_ALEN];
 static char dstmac[ETH_ALEN];
 
 volatile int time_to_die = 0;
+
+
+const char *arping_lookupdev_default(u_int32_t srcip, u_int32_t dstip,
+				     char *ebuf)
+{
+	static const char *ifname;
+	if (!(ifname = pcap_lookupdev(ebuf))) {
+		return 0;
+	}
+	return ifname;
+}
+
+#if defined(FINDIF) && defined(linux)
+const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip, char *ebuf)
+{
+	FILE *f;
+	static const char buf[1024];
+	char buf1[1024];
+	char buf2[1024];
+	char *p,*p2;
+	int n;
+
+	libnet_host_lookup_r(dstip,0,buf2);
+	libnet_host_lookup_r(srcip,0,buf1);
+
+	/*
+	 * Construct and run command
+	 */
+	snprintf(buf, 1023, "/sbin/ip route get %s from %s 2>&1",
+		 buf2,buf1);
+	DEBUG(printf("%s\n",buf));
+	if (!(f = popen(buf, "r"))) {
+		goto failed;
+	}
+	if (0>(n = fread(buf, 1, sizeof(buf)-1, f))) {
+		pclose(f);
+		goto failed;
+	}
+	buf[n] = 0;
+	if (-1 == pclose(f)) {
+		perror("arping: pclose()");
+		goto failed;
+	}
+
+	/*
+	 * Parse out device
+	 */
+	p = strstr(buf, "dev ");
+	if (!p) {
+		goto failed;
+	}
+
+	p+=4;
+
+	p2 = strchr(p, ' ');
+	if (!p2) {
+		goto failed;
+	}
+	*p2 = 0;
+	return p;
+ failed:
+	return arping_lookupdev_default(srcip,dstip,ebuf);
+}
+#else
+const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip, char *ebuf)
+{
+	return arping_lookupdev_default(srcip,dstip,ebuf);
+}
+#endif
 
 /*
  *
@@ -103,9 +173,9 @@ static void sigint(int i)
  */
 static void usage(int ret)
 {
-	printf("ARPing %1.2f BETA, by Thomas Habets <thomas@habets.pp.se>\n",
+	printf("ARPing %1.2f, by Thomas Habets <thomas@habets.pp.se>\n",
 	       version);
-	printf("usage: arping [ -qvrRd0bp ] [ -w <us> ] [ -S <host/ip> ] "
+	printf("usage: arping [ -0aAbdFpqrRv ] [ -w <us> ] [ -S <host/ip> ] "
 	       "[ -T <host/ip ]\n"
 	       "              [ -s <MAC> ] [ -t <MAC> ] [ -c <count> ] "
 	       "[ -i <interface> ]\n"
@@ -307,6 +377,11 @@ static void pingip_recv(const char *unused, struct pcap_pkthdr *h,
 		u_int32_t ip;
 		memcpy(&ip, (char*)harp + harp->ar_hln
 		       + LIBNET_ARP_H,4);
+		if (addr_must_be_same
+		    && (memcmp((u_char*)harp+sizeof(struct libnet_arp_hdr),
+			       dstmac, ETH_ALEN))) {
+			return;
+		}
 		if (dstip == ip) {
 			switch(display) {
 			case NORMAL: {
@@ -380,6 +455,13 @@ static void pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 		 || !memcmp(dstmac, ethxmas, ETH_ALEN)))
 	    && !memcmp(heth->_802_3_dhost, srcmac, ETH_ALEN)) {
 /*		u_int8_t *cp = heth->_802_3_shost; */
+		if (addr_must_be_same) {
+			u_int32_t tmp;
+			memcpy(&tmp, &hip->ip_src, 4);
+			if (dstip != tmp) {
+				return;
+			}
+		}
 		switch(display) {
 		case QUIET:
 			break;
@@ -531,6 +613,7 @@ int main(int argc, char **argv)
 	char *parm;
 	int c;
 	unsigned int maxcount = -1;
+	int dont_use_arping_lookupdev=0;
 	struct bpf_program bp;
 	pcap_t *pcap;
 	static enum { NONE, PINGMAC, PINGIP } mode = NONE;
@@ -543,13 +626,34 @@ int main(int argc, char **argv)
 	memset(dstmac, 0xff, ETH_ALEN);
 	memset(ethxmas, 0xff, ETH_ALEN);
 
-	while ((c = getopt(argc, argv, "0bdS:T:Bvhi:rRc:qs:t:paw:")) != EOF) {
+	while (EOF!=(c = getopt(argc, argv, "0aAbBc:dFhi:pqrRs:S:t:T:vw:"))) {
 		switch(c) {
+		case '0':
+			srcip = 0;
+			srcip_given = 1;
+			break;
 		case 'a':
 			beep = 1;
 			break;
-		case 'v':
-			verbose++;
+		case 'A':
+			addr_must_be_same = 1;
+			break;
+		case 'b':
+			srcip = 0xffffffff;
+			srcip_given = 1;
+			break;
+		case 'B':
+			dstip = 0xffffffff;
+			dstip_given = 1;
+			break;
+		case 'c':
+			maxcount = atoi(optarg);
+			break;
+		case 'd':
+			finddup = 1;
+			break;
+		case 'F':
+			dont_use_arping_lookupdev=1;
 			break;
 		case 'h':
 			usage(0);
@@ -563,59 +667,17 @@ int main(int argc, char **argv)
 			}
 			ifname = optarg;
 			break;
+		case 'p':
+			promisc = 1;
+			break;
+		case 'q':
+			display = QUIET;
+			break;
 		case 'r':
 			display = (display==RRAW)?RAWRAW:RAW;
 			break;
 		case 'R':
 			display = (display==RAW)?RAWRAW:RRAW;
-			break;
-		case 'q':
-			display = QUIET;
-			break;
-		case 'c':
-			maxcount = atoi(optarg);
-			break;
-		case 'd':
-			finddup = 1;
-			break;
-		case 'S': // set source IP, may be null for don't-know
-			if (-1 == (srcip = libnet_name2addr4(libnet,
-							     optarg,
-							     LIBNET_RESOLVE))){
-				fprintf(stderr, "arping: Can't resolve %s, or "
-					"%s is broadcast. If it is, use -b"
-					" instead of -S\n", optarg,optarg);
-				exit(1);
-			}
-			srcip_given = 1;
-			break;
-		case 'T': // set destination IP
-			if (mode == PINGIP) {
-				fprintf(stderr, "arping: -T can only be used "
-					"in MAC ping mode\n");
-				exit(1);
-			}
-			if (-1 == (dstip = libnet_name2addr4(libnet,
-							     optarg,
-							     LIBNET_RESOLVE))){
-				fprintf(stderr,"arping: Can't resolve %s, or "
-					"%s is broadcast. If it is, use -B "
-					"instead of -T\n",optarg,optarg);
-				exit(1);
-			}
-			mode = PINGMAC;
-			break;
-		case 'b':
-			srcip = 0xffffffff;
-			srcip_given = 1;
-			break;
-		case 'B':
-			dstip = 0xffffffff;
-			dstip_given = 1;
-			break;
-		case '0':
-			srcip = 0;
-			srcip_given = 1;
 			break;
 		case 's': {// spoof source MAC
 			unsigned int n[6];
@@ -637,6 +699,17 @@ int main(int argc, char **argv)
 			}
 			break;
 		}
+		case 'S': // set source IP, may be null for don't-know
+			if (-1 == (srcip = libnet_name2addr4(libnet,
+							     optarg,
+							     LIBNET_RESOLVE))){
+				fprintf(stderr, "arping: Can't resolve %s, or "
+					"%s is broadcast. If it is, use -b"
+					" instead of -S\n", optarg,optarg);
+				exit(1);
+			}
+			srcip_given = 1;
+			break;
 		case 't': { // set taget mac
 			unsigned int n[6];
 			if (mode == PINGMAC) {
@@ -663,8 +736,24 @@ int main(int argc, char **argv)
 			break;
 			mode = PINGIP;
 		}
-		case 'p':
-			promisc = 1;
+		case 'T': // set destination IP
+			if (mode == PINGIP) {
+				fprintf(stderr, "arping: -T can only be used "
+					"in MAC ping mode\n");
+				exit(1);
+			}
+			if (-1 == (dstip = libnet_name2addr4(libnet,
+							     optarg,
+							     LIBNET_RESOLVE))){
+				fprintf(stderr,"arping: Can't resolve %s, or "
+					"%s is broadcast. If it is, use -B "
+					"instead of -T\n",optarg,optarg);
+				exit(1);
+			}
+			mode = PINGMAC;
+			break;
+		case 'v':
+			verbose++;
 			break;
 		case 'w':
 			packetwait = (unsigned)atoi(optarg);
@@ -769,12 +858,19 @@ int main(int argc, char **argv)
 	 * right one.
 	 */
 	if (!ifname) {
-		if (!(ifname = pcap_lookupdev(ebuf))) {
-			fprintf(stderr, "arping: pcap_lookupdev(): %s\n",ebuf);
+		if (dont_use_arping_lookupdev) {
+			ifname = arping_lookupdev_default(srcip,dstip,ebuf);
+		} else {
+			ifname = arping_lookupdev(srcip,dstip,ebuf);
+		}
+		if (!ifname) {
+			fprintf(stderr, "arping: arping_lookupdev(): %s\n",
+				ebuf);
 			exit(1);
 		}
 		// FIXME: check for other probably-not interfaces
-		if (!strncmp(ifname, "ipsec", 5)) {
+		if (!strcmp(ifname, "ipsec")
+		    || !strcmp(ifname,"lo")) {
 			fprintf(stderr, "arping: Um.. %s looks like the wrong "
 				"interface to use. Is it? "
 				"(-i switch)\n", ifname);

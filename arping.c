@@ -12,24 +12,24 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 861 2003-04-07 18:05:59Z marvin $
+ * $Id: arping.c 922 2003-06-21 16:26:53Z marvin $
  */
 /*
- *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
+ *  Copyright (C) 2000-2003 Thomas Habets <thomas@habets.pp.se>
  *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU General Public
- *  License as published by the Free Software Foundation; either
- *  version 2 of the License, or (at your option) any later version.
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
  *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  General Public License for more details.
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 /*
  * Note to self:
@@ -52,10 +52,11 @@
  * 
  * Arch checklist:
  *   Solaris/sparc
- *   NetBSD/alpha      (is libnet or I unaligned? -- libnet I think)
- *   OpenBSD/sparc64   (libnet a bit buggy)
+ *   NetBSD/alpha      (is libnet or arping unaligned? -- libnet I think)
+ *   OpenBSD/sparc64   (libnet a bit buggy here)
  *   Linux/x86
  *   Linux/sparc
+ *   Linux/hppa
  *
  */
 #include <stdio.h>
@@ -105,7 +106,7 @@
 #define DEBUG(a)
 #endif
 
-const float version = 1.07;
+const float version = 1.08;
 
 struct ether_addr *mymac;
 static u_char eth_xmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -141,6 +142,75 @@ static unsigned int quiet = 0;
 static unsigned int nullip = 0;
 static unsigned int is_promisc = 0;
 static unsigned int addr_must_be_same = 0;
+
+
+const char *arping_lookupdev_default(u_int32_t srcip, u_int32_t dstip,
+				     char *ebuf)
+{
+	static const char *ifname;
+	if (!(ifname = pcap_lookupdev(ebuf))) {
+		return 0;
+	}
+	return ifname;
+}
+
+#if defined(FINDIF) && defined(linux)
+const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip, char *ebuf)
+{
+	FILE *f;
+	static char buf[1024];
+	char buf1[1024];
+	char buf2[1024];
+	char *p,*p2;
+	int n;
+
+	libnet_host_lookup_r(dstip,0,buf2);
+	libnet_host_lookup_r(srcip,0,buf1);
+
+	/*
+	 * Construct and run command
+	 */
+	snprintf(buf, 1023, "/sbin/ip route get %s from %s 2>&1",
+		 buf2,buf1);
+	DEBUG(printf("%s\n",buf));
+	if (!(f = popen(buf, "r"))) {
+		goto failed;
+	}
+	if (0 > (n = fread(buf, 1, sizeof(buf)-1, f))) {
+		pclose(f);
+		goto failed;
+	}
+	buf[n] = 0;
+	if (-1 == pclose(f)) {
+		perror("arping: pclose()");
+		goto failed;
+	}
+
+	/*
+	 * Parse out device
+	 */
+	p = strstr(buf, "dev ");
+	if (!p) {
+		goto failed;
+	}
+
+	p+=4;
+
+	p2 = strchr(p, ' ');
+	if (!p2) {
+		goto failed;
+	}
+	*p2 = 0;
+	return p;
+ failed:
+	return arping_lookupdev_default(srcip,dstip,ebuf);
+}
+#else
+const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip, char *ebuf)
+{
+	return arping_lookupdev_default(srcip,dstip,ebuf);
+}
+#endif
 
 static void sigint(int i)
 {
@@ -187,7 +257,7 @@ static void alasend(int i)
 	if (searchmac) {
 		libnet_build_icmp_echo(ICMP_ECHO,      /* type */ 
 				       0,              /* code */ 
-				       (short)random(),           /* id */ 
+				       (short)rand(),           /* id */ 
 				       htons(numsent-1), /* seq */ 
 				       NULL,           /* pointer to payload */
 				       0,              /* payload length */ 
@@ -407,6 +477,7 @@ int main(int argc, char **argv)
 	struct bpf_program bp;
 	char must_be_pingip = 0;
 	char have_eth_source = 0;
+	int dont_use_arping_lookupdev=0;
 	
 	DEBUG(printf("main()\n"));
 
@@ -415,13 +486,26 @@ int main(int argc, char **argv)
 
 	memcpy(eth_target, eth_xmas, ETH_ALEN);
 
-	while ((c = getopt(argc, argv, "0bdS:T:Bvhi:rRc:qs:t:paA")) != EOF) {
+	while ((c = getopt(argc, argv, "aAbBc:dF0S:T:hi:rRqs:t:pv")) != EOF) {
 		switch (c) {
 		case 'A':
 			addr_must_be_same = 1;
 			break;
 		case 'a':
 			beep = 1;
+			break;
+		case 'c':
+			maxcount = atoi(optarg);
+			break;
+		case 'd':
+			finddup = 1;
+			break;	
+		case 'F':
+#if !defined(FINDIF)
+			fprintf(stderr, "arping: find-interface support not "
+				"compiled in\n";
+#endif
+			dont_use_arping_lookupdev=1;
 			break;
 		case 'v':
 			verbose++;
@@ -447,12 +531,6 @@ int main(int argc, char **argv)
 		case 'q':
 			quiet = rawoutput = 1;
 			break;
-		case 'c':
-			maxcount = atoi(optarg);
-			break;
-		case 'd':
-			finddup = 1;
-			break;	
 		case 'S':
 			if ((myip = libnet_name_resolve(optarg,
 							LIBNET_RESOLVE))
@@ -588,12 +666,18 @@ int main(int argc, char **argv)
 	 * libnet init
 	 */
 	if (!ifname) {
-		if (!(ifname = pcap_lookupdev(ebuf))) {
-			fprintf(stderr, "pcap_lookupdev(): %s\n", ebuf);
+		if (dont_use_arping_lookupdev) {
+			ifname = arping_lookupdev_default(myip,dip,ebuf);
+		} else {
+			ifname = arping_lookupdev(myip,dip,ebuf);
+		}
+		if (!ifname) {
+			fprintf(stderr,"arping_lookupdev(): %s\n", ebuf);
 			exit(1);
 		}
 		// FIXME: check for other probably-not interfaces
-		if (!strncmp(ifname, "ipsec", 5)) {
+		if (!strcmp(ifname, "ipsec")
+		    || !strcmp(ifname, "lo")) {
 			fprintf(stderr, "arping: Um.. %s looks like the wrong "
 				"interface to use. Is it? "
 				"(-i switch)\n", ifname);

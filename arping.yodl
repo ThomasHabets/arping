@@ -4,7 +4,7 @@ manpagename(arping)(sends arp and/or ip pings to a given host)
 
 manpagesynopsis()
     bf(arping) [-hqvrRd0bp] [-S em(host/ip)] [-s em(MAC)] [-t em(MAC)]       \
-[-c em(count)] [-i em(interface)] em(host)
+[-c em(count)] [-i em(interface)] <em(host) | -B>
 
 manpagedescription()
     The em(arping) utility sends bf(ARP) and/or bf(ICMP) requests to the specified em(host) and displays the replies. The em(host) may be specified by its bf(hostname), its bf(IP) address, or its bf(MAC) address.
@@ -19,7 +19,7 @@ startdit()
 
     dit(-q) Does not display messages, except error messages.
 
-    dit(-v) Verbose output.
+    dit(-v) Verbose output. Use twice for more messages.
 
     dit(-r) Raw output: only the MAC/IP address is displayed for each reply.
 
@@ -28,10 +28,12 @@ startdit()
 
     dit(-d) Find duplicate replies.
 
+    dit(-B) Use instead of host if you want to address 255.255.255.255.
+
     dit(-0) Use this option to ping with source IP address 0.0.0.0. Use this
-	when you haven't configured your interface yet (so it has the IP
-	0.0.0.0, but libnet returns 0 for error so blah blah blah...).
+	when you haven't configured your interface yet.
 	Note that this may get the MAC-ping unanswered.
+	This is an alias for -S 0.0.0.0.
 
     dit(-b) Like -0 but source broadcast source address (255.255.255.255).
 Note that this may get the arping unanswered since it's not normal behavior
@@ -51,7 +53,7 @@ em(Example):                                                                \
     dit(-p) Turn on promiscious mode on interface, use this if you don't
             "own" the MAC address you are using.
 
-    dit(-s em(MAC)) Set source MAC address.
+    dit(-s em(MAC)) Set source MAC address. You may need to use -p with this.
 
     dit(-t em(MAC)) Set target MAC address to use when pinging IP address.
 
@@ -60,6 +62,11 @@ em(Example):                                                                \
     dit(-i em(interface)) Use the specified interface.
 
 enddit()
+
+manpagebugs()
+
+	You have to use -B instead of arpinging 255.255.255.255, and -b
+	instead of -S 255.255.255.255. This is libnets fault.
 
 manpageseealso()
 

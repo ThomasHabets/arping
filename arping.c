@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 359 2001-07-08 00:34:18Z marvin $
+ * $Id: arping.c 360 2001-07-08 01:49:03Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@rootbusters.net)
@@ -70,7 +70,7 @@
 #define DEBUG(a)
 #endif
 
-const float version = 0.99;
+const float version = 1.0;
 
 struct ether_addr *mymac;
 static u_char eth_xmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -102,8 +102,6 @@ static unsigned int maxcount = -1;
 static unsigned int rawoutput = 0;
 static unsigned int quiet = 0;
 static unsigned int nullip = 0;
-static unsigned int bcaip = 0;
-static unsigned int sourceip = 0;
 static unsigned int is_promisc = 0;
 
 static void sigint(int i)
@@ -135,7 +133,7 @@ static void usage(int ret)
 	printf("arping %1.2f [ -qvrRd0bp ] [ -S <host/ip> ]"
 	       "[ -s <MAC> ] [ -t <MAC> ]\n"
 	       "            [ -c <count> ] [ -i <interface> ] "
-	       "<host/ip/MAC>\n",
+	       "<host/ip/MAC | -B>\n",
 	       version);
 	exit(ret);
 }
@@ -299,7 +297,7 @@ static void recvpackets(void)
 
 int main(int argc, char **argv)
 {
-	u_long myip;
+	u_long myip = 0;
 	char ebuf[LIBNET_ERRBUF_SIZE];
 	int c;
 	struct bpf_program bp;
@@ -312,7 +310,7 @@ int main(int argc, char **argv)
 
 	memcpy(eth_target, eth_xmas, ETH_ALEN);
 
-	while ((c = getopt(argc, argv, "0bdS:vhi:rRc:qs:t:p")) != EOF) {
+	while ((c = getopt(argc, argv, "0bdS:Bvhi:rRc:qs:t:p")) != EOF) {
 		switch (c) {
 		case 'v':
 			verbose++;
@@ -345,19 +343,27 @@ int main(int argc, char **argv)
 			finddup = 1;
 			break;
 		case 'S':
-			sourceip = libnet_name_resolve(optarg,
-						       LIBNET_RESOLVE);
-			if (!sourceip) {
+			if ((myip = libnet_name_resolve(optarg,
+							LIBNET_RESOLVE))
+			    == -1) {
+				fprintf(stderr,"arping: Can't to resolve %s\n",
+					optarg);
+				exit(1);
+			}
+			if (!myip) {
 				nullip = 1;
 			}
 			break;
 		case 'b':
-			bcaip = 1;
+			myip = 0xffffffff;
+			break;
+		case 'B':
+			dip = 0xffffffff;
 			break;
 		case '0':
 			nullip = 1;
 			break;
-		case 's':
+		case 's': // spoofed source MAC
 			{
                            unsigned int n[6];
 			   
@@ -408,7 +414,7 @@ int main(int argc, char **argv)
 			usage(1);
 		}
 	}
-	if (optind + 1 != argc) {
+	if (!dip && (optind + 1 != argc)) {
 		usage(1);
 		exit(1);
 	}
@@ -417,12 +423,12 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	if (nullip + bcaip > 1 || (sourceip && (nullip || bcaip))) {
+	if (myip && nullip) {
 		fprintf(stderr, "-S, -b and -0 are mutually exclusive\n");
 		exit(1);
 	}
 
-	if (strchr(argv[optind], ':')) {
+	if (!dip && strchr(argv[optind], ':')) {
 		unsigned int n[6];
 		dip = ip_xmas;
 
@@ -447,9 +453,14 @@ int main(int argc, char **argv)
 			eth_target[c] = n[c] & 0xff;
 		}
 		searchmac = 1;
-	} else {
-		dip = libnet_name_resolve((u_char*)argv[optind],
-					  LIBNET_RESOLVE);
+	} else if (!dip) {
+		
+		if (-1 == (dip = libnet_name_resolve((u_char*)argv[optind],
+						     LIBNET_RESOLVE))) {
+			fprintf(stderr, "arping: Can't resolve %s\n",
+				argv[optind]);
+			exit(1);
+		}
 	}
 	if (finddup && maxcount == -1) {
 		maxcount = 3;
@@ -481,10 +492,8 @@ int main(int argc, char **argv)
 
 	if (nullip) {
 		myip = 0;
-	} else if (bcaip) {
-		myip = 0xffffffff;
-	} else if (sourceip) {
-		myip = sourceip;
+	} else if (myip) {
+		// myip set, don't touch it
 	} else if  (!(myip = htonl(libnet_get_ipaddr(linkint,(u_char*)ifname,
 						     ebuf)))) {
 		fprintf(stderr, "libnet_get_ipaddr(): %s\n", ebuf);

@@ -1,4 +1,4 @@
-$Id: README 351 2001-06-21 17:06:38Z marvin $
+$Id: README 360 2001-07-08 01:49:03Z marvin $
 
  ARP Ping
 
@@ -37,7 +37,8 @@ Type 'make linux' to compile under linux and 'make openbsd' to compile under
 openbsd. Follow this pattern for compilation under solaris and freebsd.
 If you have some other OS, try all before mailing me.
 
-'make install' will copy arping to /usr/local/bin.
+'make install' will copy arping to /usr/local/bin, and put the manpage where
+it belongs.
  
 How it does it
 --------------
@@ -45,7 +46,7 @@ Bah, just read the source. Or the help text.
 
 FAQ
 ---
-Q: after compiling arping without any problem, i test it first with
+Q: After compiling arping without any problem, i test it first with
    localhost... but it doesn't respond. Isn't that strange?
 
 A: Not really, as you can see by typing 'ifconfig' the lo (local) interface
@@ -53,15 +54,6 @@ A: Not really, as you can see by typing 'ifconfig' the lo (local) interface
    there to differentiate computers on a shared medium (the aether, or ether)
    and since packets to localhost does not go over any wire there is no need
    to identify which box is talking to which. There is only one.
----
-Q: I run the program and it segfaults no matter which address I try to ping.
-
-A: Libnet segfaults when given a non-existing interface, I'm looking for how
-   to check the validity of an interface before sending it to libnet but for
-   now just give it an existing interface or change the default in the source.
-
-   Update (version 0.9): arping should now pick an interface that exists, so
-   there should be no more segfaults unless you override it with the -i switch.
 ---
 Q: Arping finds some hosts, but not others. why?   btw, I have several NICs.
 
@@ -76,7 +68,7 @@ A: A sane OS will think it's suspicios if you send packets to yourself over
    And why would you want to lookup the IP or MAC of yourself? ifconfig
    can tell you that.
 ---
-Q: I can't ping any MAC address on my LAN.
+Q: I can't ping any/some MAC address on my LAN.
 
 A: Arping when pinging a MAC relies on the host to answer a broadcast ping
    (icmp echo request) properly (IIRC: not the windows way). If you want a
@@ -90,14 +82,46 @@ A: Arping depends on libnet and libpcap, get libnet at:
    http://www.packetfactory.net/libnet and libpcap from your distribution.
    (alt. you can search for libpcap on freshmeat.net)
 ---
+Q: I get this when I compile: "/bin/sh: libnet-config: command not found"
+
+A: You didn't really read the last question, did you? Go back up 6 lines.
+---
 Q: I get bus error on my bigendian box
 
 A: Damn, I thought I fixed those. Tell me how you got it and I'll try to fix
    it.
 ---
-Q: I get "libnet_get_ipaddr(): no error" when I run arping with ip 0.0.0.0.
+Q: I get "libnet_get_ipaddr(): no error" when I run arping with ip (src or dst)
+   255.255.255.255.
 
-A: Use the -0 switch.
+A: Use the -b/-B switches. Libnet sucks (haha only serious) and returns -1 for
+   error == int32 encoded 255.255.255.255.
+---
+Q: I used to be able to use -S 255.255.255.255, now it fails. What's going on?
+Q: Why can't I arping 255.255.255.255?
+
+A: Argh! Why would you want to? Anyway, this one is due to libnets resolving,
+   and my unwillingness to reimplement it (in a portable manner, ugh).
+
+   -S 255.255.255.255 can be replaced with -b, and pinging broadcast (why you
+   would eludes me) -B.
+
+   To be extra perverted, try:
+   # ./arping -b -B
+   (yes, I added -b and -B just so that version 1.0 should be complete)
+---
+Q: Is it OK to make arping suid root?
+
+A: Be my guest, but if care about security *at all* you will have to restrict
+   execution of arping to trusted users. I could remove "dangerous" features
+   from the code when it's running suid, but I honestly don't want to. This is
+   a network debugging tool, which generates low-level network packets that
+   ordinary users have absolutely no business generating.
+
+   If you are honestly debugging the network then I don't see why you aren't
+   root already.
+
+   If you think I'm wrong, tell me why.
 ---
 Q: Arping used to work (0.97 and down) for pinging MACs, but not with 0.98 and
    up. What did you screw up?
@@ -105,10 +129,14 @@ Q: Arping used to work (0.97 and down) for pinging MACs, but not with 0.98 and
 A: Ah, I see. A broadcast was changed to unicast, I don't know why I set it to
    be broadcast in the first place, and even wrote a comment justifying it.
    It still worked for me when I tested it now (with unicast) but if it
-   doens't for you, search the source for KEYWORD and you'll find
+   doesn't for you, search the source for KEYWORD and you'll find
    instructions on how to change it back.
    ... Or you can run arping -s ff:ff:ff:ff:ff:ff <host>.
    If this fixes it please LET ME KNOW.
+---
+Q: What exactly does -d do?
+
+A: I forget...
 ---
 
 License

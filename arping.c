@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 143 2000-09-28 20:45:19Z marvin $
+ * $Id: arping.c 144 2000-10-01 11:32:43Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -70,7 +70,7 @@
 #define DEBUG(a)
 #endif
 
-const float version = 0.92;
+const float version = 0.94;
 
 struct ether_addr *mymac;
 u_char eth_xmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -99,6 +99,7 @@ unsigned int searchmac = 0;
 unsigned int finddup = 0;
 unsigned int maxcount = -1;
 unsigned int rawoutput = 0;
+unsigned int quiet = 0;
 unsigned int nullip = 0;
 
 void sigint(int i);
@@ -106,7 +107,7 @@ void sigint(int i);
 
 void usage(int ret)
 {
-	printf("arping %1.2f [ -v ] [ -r ] [ -d ] [ -0 ] [ -c count ] "
+	printf("arping %1.2f [-q ] [ -v ] [ -r ] [ -d ] [ -0 ] [ -c count ] "
 	       "[ -i <interface> ] <host/ip/MAC>\n", version);
 	exit(ret);
 }
@@ -162,7 +163,7 @@ void alasend(int i)
 
 void sigint(int i)
 {
-  DEBUG(printf("sigint()\n"));
+	DEBUG(printf("sigint()\n"));
 	if (!rawoutput) {
 		if (searchmac) {
 			u_char *cp=eth_target;
@@ -205,19 +206,22 @@ void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
 		    && !memcmp(eth->h_dest, mymac->ether_addr_octet,
 			       ETH_ALEN)) {
 			u_char *cp = eth->h_source;
+			numrecvd++;
 			if (!rawoutput) {
 				printf("%d bytes from ", h->len);
 			}
-			printf("%s",libnet_host_lookup(hip->saddr, 0));
-			if (!rawoutput) {
-				printf(" (");
-				for (c = 0; c < ETH_ALEN-1; c++) {
-					printf("%.2x:", *cp++);
+			if (!quiet) {
+				printf("%s",libnet_host_lookup(hip->saddr, 0));
+				if (!rawoutput) {
+					printf(" (");
+					for (c = 0; c < ETH_ALEN-1; c++) {
+						printf("%.2x:", *cp++);
+					}
+					printf("%.2x): icmp_seq=%d", *cp,
+					       hicmp->un.echo.sequence);
 				}
-				printf("%.2x): icmp_seq=%d", *cp,
-				       hicmp->un.echo.sequence);
+				printf("\n");
 			}
-			printf("\n");
 		}
 	} else {
 		harp = (struct arphdr*)((char*)eth + sizeof(struct ethhdr));
@@ -225,24 +229,29 @@ void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
 		    && (htons(harp->ar_pro) == ETH_P_IP)
 		    && (htons(harp->ar_hrd) == ARPHRD_ETHER)) {
 		  int ip;
-			memcpy(&ip, (char*)harp + harp->ar_hln + sizeof(struct arphdr), 4);
+			memcpy(&ip, (char*)harp + harp->ar_hln
+			       + sizeof(struct arphdr), 4);
 			if (dip == ip) {
 
 				cp = (u_char*)harp + sizeof(struct arphdr);
 				if (!rawoutput && !finddup) {
 					printf("%d bytes from ", h->len);
 				}
-				for (c = 0; c < harp->ar_hln -1; c++) {
-					printf("%.2x:", *cp++);
+				if (!quiet) {
+					for (c = 0; c < harp->ar_hln -1; c++) {
+						printf("%.2x:", *cp++);
+					}
+					printf("%.2x", *cp);
 				}
-				printf("%.2x", *cp);
 				if (!rawoutput) {
 					printf(" (%s): index=%d",
 					       libnet_host_lookup(ip, 0),
 					       numrecvd);
 				}
 				numrecvd++;
-				printf("\n");
+				if (!quiet) {
+					printf("\n");
+				}
 			}
 		}
 	}
@@ -267,7 +276,7 @@ int main(int argc, char **argv)
 	
 	DEBUG(printf("main()\n"));
 
-	while ((c = getopt(argc, argv, "0dvhi:rc:")) != EOF) {
+	while ((c = getopt(argc, argv, "0dvhi:rc:q")) != EOF) {
 		switch (c) {
 		case 'v':
 			verbose++;
@@ -286,6 +295,9 @@ int main(int argc, char **argv)
 			break;
 		case 'r':
 			rawoutput = 1;
+			break;
+		case 'q':
+			quiet = rawoutput = 1;
 			break;
 		case 'c':
 			maxcount = atoi(optarg);

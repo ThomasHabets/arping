@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 42 2000-05-17 23:34:06Z marvin $
+ * $Id: arping.c 43 2000-05-17 23:40:03Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -142,10 +142,15 @@ void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
 			&& !memcmp(eth->h_source, eth_target, ETH_ALEN)
 			&& !memcmp(eth->h_dest, mymac->ether_addr_octet,
 				   ETH_ALEN)) {
+			u_char *cp = eth->h_source;
 			
-			cp = (u_char*)harp + sizeof(struct arphdr);
-			printf("%d bytes from %s: icmp_seq=%d\n",
-			       h->len, libnet_host_lookup(hip->saddr, 0),
+			printf("%d bytes from %s (", h->len,
+			       libnet_host_lookup(hip->saddr, 0));
+			
+			for (c = 0; c < ETH_ALEN-1; c++) {
+				printf("%.2x:", *cp++);
+			}
+			printf("%.2x): icmp_seq=%d\n", *cp,
 			       hicmp->un.echo.sequence);
 		}
 	} else {

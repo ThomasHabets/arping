@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping2.c 709 2002-08-30 22:40:41Z marvin $
+ * $Id: arping2.c 710 2002-08-30 22:58:23Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -782,7 +782,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "arping: pcap_open_live(): %s\n",ebuf);
 		exit(1);
 	}
-#ifndef HAVE_NET_BPF_H
+#ifdef HAVE_NET_BPF_H
 	{
 		u_int32_t on = 1;
 		if (0 < (ioctl(pcap_fileno(pcap), BIOCIMMEDIATE,

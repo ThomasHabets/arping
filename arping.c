@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 144 2000-10-01 11:32:43Z marvin $
+ * $Id: arping.c 145 2000-10-01 11:35:23Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -107,8 +107,8 @@ void sigint(int i);
 
 void usage(int ret)
 {
-	printf("arping %1.2f [-q ] [ -v ] [ -r ] [ -d ] [ -0 ] [ -c count ] "
-	       "[ -i <interface> ] <host/ip/MAC>\n", version);
+	printf("arping %1.2f [ -q ] [ -v ] [ -r ] [ -d ] [ -0 ] [ -c count ]\n"
+	       "            [ -i <interface> ] <host/ip/MAC>\n", version);
 	exit(ret);
 }
 

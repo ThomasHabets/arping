@@ -1,4 +1,4 @@
-# $Id: Makefile 924 2003-06-21 16:36:14Z marvin $
+# $Id: Makefile 925 2003-06-21 16:42:02Z marvin $
 TARGETS=arping
 
 USE_NETIF=0
@@ -13,23 +13,31 @@ CC=gcc
 # explicit pcap include dir is for redhat which is fux0red
 CFLAGS=-g -I/usr/local/include -L/usr/local/lib -DFINDIF=$(FINDIF) -DUSE_NETIF=$(USE_NETIF) -DOPENBSD=$(OPENBSD) -DLINUX=$(LINUX) -DSOLARIS=$(SOLARIS) -DFREEBSD=$(FREEBSD) -DMACOSX=$(MACOSX) -I/usr/include/pcap
 
-all: arping2
+all: message arping2
 
-arping1-usage:
+message:
+	@echo ""
+	@echo "Will now try to compile arping 2.x. If you have Libnet 1.0.x"
+	@echo "(as opposed to 1.1.x) then this will fail and you should try"
+	@echo "compiling arping 1.x."
+	@echo ""
+	@echo "For information on how to compile arping 1.x, type "
+	@echo "'make arping1'"
+	@echo ""
+	sleep 3
+
+arping1:
 	@echo
 	@echo "usage: make [ target ]"
 	@echo "Target can be one of: "
 	@echo "freebsd, openbsd, netbsd, linux, solaris or macosx"
-	@echo
-	@echo "Make doc will re-create the manpage"
-	@echo "You may use make install after"
 	@echo
 	@echo "Important note!"
 	@echo
 	@echo "   Arping 1.x will only work with libnet 1.0.x, not 1.1.x"
 	@echo "   BUT, arping 2.x will work with 1.1.x."
 	@echo
-	@echo "   Create the arping2 by typing 'make'"
+	@echo "   Create the arping 2.x by typing 'make'"
 	@echo "   Arping 2.x has been known to work on linux, I'm still "
 	@echo "   working on BSD and other support."
 	@echo

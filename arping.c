@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 922 2003-06-21 16:26:53Z marvin $
+ * $Id: arping.c 925 2003-06-21 16:42:02Z marvin $
  */
 /*
  *  Copyright (C) 2000-2003 Thomas Habets <thomas@habets.pp.se>
@@ -240,8 +240,8 @@ static void usage(int ret)
 {
 	printf("ARPing %1.2f, by Thomas Habets <thomas@habets.pp.se>\n",
 	       version);
-	printf("usage: arping [ -qvrRd0bpAa ] [ -S <host/ip> ] [ -T <host/ip ]"
-	       " [ -s <MAC> ]\n"
+	printf("usage: arping [ -0aAbdFpqrRv ] [ -S <host/ip> ] "
+	       "[ -T <host/ip ] [ -s <MAC> ]\n"
 	       "              [ -t <MAC> ] [ -c <count> ] [ -i <interface> ] "
 	       "<host/ip/MAC | -B>\n");
 	exit(ret);

@@ -1,4 +1,4 @@
-$Id: README 138 2000-09-15 17:22:30Z marvin $
+$Id: README 143 2000-09-28 20:45:19Z marvin $
 
  ARP Ping
 
@@ -33,9 +33,11 @@ call on his cellphone about 15 secs after he accidentally 'stole' an IP, oops).
 
 Compiling
 ---------
-Type make linux to compile under linux and make openbsd to compile under
-openbsd. Follow this pattern for compilation under solaris.
+Type 'make linux' to compile under linux and 'make openbsd' to compile under
+openbsd. Follow this pattern for compilation under solaris and freebsd.
 If you have some other OS, try all before mailing me.
+
+'make install' will copy arping to /usr/local/bin.
  
 How it does it
 --------------

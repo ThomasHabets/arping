@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 139 2000-09-18 19:12:17Z marvin $
+ * $Id: arping.c 143 2000-09-28 20:45:19Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -34,14 +34,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#if USE_NETIF
-#include <net/if.h>
-#include <net/if_arp.h>
-#endif
-
-#include <libnet.h>
-#include <pcap.h>
-
 #ifndef ETH_ALEN
 #define ETH_ALEN 6
 #endif
@@ -49,6 +41,19 @@
 #ifndef ETH_P_IP
 #define ETH_P_IP 0x0800
 #endif
+
+#if FREEBSD
+#include <sys/socket.h>
+#include "freebsd.h" 
+#endif
+
+#if USE_NETIF
+#include <net/if.h>
+#include <net/if_arp.h>
+#endif
+
+#include <libnet.h>
+#include <pcap.h>
 
 #if OPENBSD
 #include "openbsd.h"

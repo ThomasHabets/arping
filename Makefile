@@ -1,4 +1,4 @@
-# $Id: Makefile 411 2001-09-03 13:49:00Z marvin $
+# $Id: Makefile 416 2001-09-05 21:42:53Z marvin $
 TARGETS=arping
 
 USE_NETIF=0
@@ -41,7 +41,7 @@ install:
 all: $(TARGETS)
 
 arping.o: arping.c
-	/usr/local/gcc3/bin/gcc -Wall $(CFLAGS) -c `libnet-config --defines` `libnet-config --cflags` arping.c
+	gcc -Wall $(CFLAGS) -c `libnet-config --defines` `libnet-config --cflags` arping.c
 
 O_arping=arping.o
 arping: $(O_arping)

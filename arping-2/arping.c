@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 1100 2004-05-23 15:08:42Z marvin $
+ * $Id: arping.c 1116 2004-08-05 02:36:34Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -232,7 +232,7 @@ static void usage(int ret)
 static int is_mac_addr(const char *p)
 {
 	unsigned int n[6];
-	if(6==sscanf(p, "%2x%x.%2x%x.%2x%x",
+	if(6==sscanf(p, "%2x%2x.%2x%2x.%2x%2x",
 		     &n[0],&n[1],&n[2],&n[3],&n[4],&n[5])){
 		return 1;
 	}

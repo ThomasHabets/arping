@@ -84,6 +84,10 @@ Set target MAC address to use when pinging IP address\&.
 Only send \fIcount\fP requests\&.
 .IP "-i \fIinterface\fP" 
 Use the specified interface\&.
+.IP "-A" 
+Only count addresses matching requested address (This *WILL*
+break most things you do\&. Only useful if you are arpinging many
+hosts at once\&. See arping-scan-net\&.sh for an example)\&.
 .PP 
 .SH "BUGS" 
 .PP 

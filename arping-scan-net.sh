@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: arping-scan-net.sh 546 2002-02-12 18:17:47Z marvin $
+# $Id: arping-scan-net.sh 859 2003-04-07 17:38:44Z marvin $
 #
 #  Copyright (C) 2002 Thomas Habets <thomas@habets.pp.se>
 #
@@ -20,11 +20,15 @@
 
 trap "exit 0" INT
 
-TARGET_MAC="0:60:93:34:91:99"
-
-if [ "$1" != "" ]; then
-    TARGET_MAC="$1"
+if [ "$1" = "" ]; then
+	echo
+	echo "Usage: $0 <mac address>"
+	echo ""
+	echo "   Sorry, it's not more configurable than that, edit the source"
+	echo
+	exit 1
 fi
+TARGET_MAC="$1"
 
 #
 # first number after 'seq' is range start, second is range end
@@ -32,17 +36,18 @@ fi
 # default is [192-192].[168-168].[0-0].[0-255]
 #
 #
-# If you think this is useful, tell me and I'll incorperate it into arping
+# I may put this functionality into ARPing one day if people seem to like it.
 #
 for a in $(seq 192 192); do
     for b in $(seq 168 168); do
-	for c in $(seq 0 0); do
+	for c in $(seq 42 42); do
 	    for d in $(seq 0 255); do
-		arping -q -c 1 -T $a.$b.$c.$d $TARGET_MAC
-		if [ $? == 0 ]; then
-		    echo "Got answer with address: $a.$b.$c.$d"
-		fi
+		sh -c "arping -q -c 1 -T $a.$b.$c.$d $TARGET_MAC -A
+		if [ \$? == 0 ]; then
+		    echo Got answer with address: $a.$b.$c.$d
+		fi" &
 	    done
+	    wait
 	done
     done
 done

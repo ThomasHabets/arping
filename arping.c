@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 793 2003-02-04 20:22:23Z marvin $
+ * $Id: arping.c 859 2003-04-07 17:38:44Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -30,6 +30,26 @@
  *  You should have received a copy of the GNU General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ */
+/*
+ * Note to self:
+ *  Test this on each platform:
+ *    command                   expected response
+ *    arping host               pongs
+ *    arping -a host            audiable pongs
+ *    arping mac                pongs
+ *    arping -a mac             audiable pongs
+ *    arping -A host            nothing
+ *    arping -A mac             nothing
+ *    arping -A host -t mac     nothing
+ *    arping -A mac  -T ip      nothing
+ *    arping -r host            mac
+ *    arping -R host            ip
+ *    arping -r mac             ip
+ *    arping -R mac             mac
+ *    arping -rR mac            mac ip
+ *    ./arping-scan-net.sh mac  ip
+ *    
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -78,7 +98,7 @@
 #define DEBUG(a)
 #endif
 
-const float version = 1.06;
+const float version = 1.07;
 
 struct ether_addr *mymac;
 static u_char eth_xmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -113,6 +133,7 @@ static unsigned int rawoutput = 0;
 static unsigned int quiet = 0;
 static unsigned int nullip = 0;
 static unsigned int is_promisc = 0;
+static unsigned int addr_must_be_same = 0;
 
 static void sigint(int i)
 {
@@ -142,7 +163,7 @@ static void usage(int ret)
 {
 	printf("ARPing %1.2f, by Thomas Habets <thomas@habets.pp.se>\n",
 	       version);
-	printf("usage: arping [ -qvrRd0bp ] [ -S <host/ip> ] [ -T <host/ip ]"
+	printf("usage: arping [ -qvrRd0bpAa ] [ -S <host/ip> ] [ -T <host/ip ]"
 	       " [ -s <MAC> ]\n"
 	       "              [ -t <MAC> ] [ -c <count> ] [ -i <interface> ] "
 	       "<host/ip/MAC | -B>\n");
@@ -255,6 +276,9 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 		    && !memcmp(eth->h_dest, eth_source,
 			       ETH_ALEN)) {
 			u_char *cp = eth->h_source;
+			if (addr_must_be_same && (dip != hip->saddr)) {
+				return;
+			}
 			numrecvd++;
 			if (!rawoutput) {
 				printf("%d bytes from ", h->len);
@@ -306,6 +330,12 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 			u_int32_t ip;
 			memcpy(&ip, (char*)harp + harp->ar_hln
 			       + sizeof(struct arphdr), 4);
+			if (addr_must_be_same
+			    && (memcmp((u_char*)harp+sizeof(struct arphdr),
+				       eth_target, ETH_ALEN))) {
+				return;
+			}
+
 			if (dip == ip) {
 				cp = (u_char*)harp + sizeof(struct arphdr);
 				if (!rawoutput && !finddup) {
@@ -374,8 +404,11 @@ int main(int argc, char **argv)
 
 	memcpy(eth_target, eth_xmas, ETH_ALEN);
 
-	while ((c = getopt(argc, argv, "0bdS:T:Bvhi:rRc:qs:t:pa")) != EOF) {
+	while ((c = getopt(argc, argv, "0bdS:T:Bvhi:rRc:qs:t:paA")) != EOF) {
 		switch (c) {
+		case 'A':
+			addr_must_be_same = 1;
+			break;
 		case 'a':
 			beep = 1;
 			break;

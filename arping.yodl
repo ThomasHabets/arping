@@ -69,6 +69,9 @@ em(Example):                                                                \
     dit(-t em(MAC)) Set target MAC address to use when pinging IP address.
     dit(-c em(count)) Only send em(count) requests.
     dit(-i em(interface)) Use the specified interface.
+    dit(-A) Only count addresses matching requested address (This *WILL*
+	break most things you do. Only useful if you are arpinging many
+	hosts at once. See arping-scan-net.sh for an example).
 enddit()
 
 manpagebugs()

@@ -4,7 +4,7 @@
 arping \- sends arp and/or ip pings to a given host
 .PP 
 .SH "SYNOPSIS" 
-\fBarping\fP [-hqavrRd0bp] [-S \fIhost/ip\fP] [-T \fIhost/ip\fP] [-s \fIMAC\fP]    [-t \fIMAC\fP] [-c \fIcount\fP] [-i \fIinterface\fP] <\fIhost\fP | -B>
+\fBarping\fP [-abhpqrRd0uv] [-S \fIhost/ip\fP] [-T \fIhost/ip\fP] [-s \fIMAC\fP]    [-t \fIMAC\fP] [-c \fIcount\fP] [-i \fIinterface\fP] [ -w \fIus\fP ] <\fIhost\fP | -B>
 .PP 
 .SH "DESCRIPTION" 
 The \fIarping\fP utility sends \fBARP\fP and/or \fBICMP\fP requests to the specified \fIhost\fP and displays the replies\&. The \fIhost\fP may be specified by its \fBhostname\fP, its \fBIP\fP address, or its \fBMAC\fP address\&.
@@ -89,6 +89,9 @@ $ arping -S <IP-B> -s <MAC-B> -p <MAC-A>
 .IP "-p" 
 Turn on promiscious mode on interface, use this if you don\&'t
 "own" the MAC address you are using\&.
+.IP "-u" 
+Show index=received/sent instead of just index=received when
+pinging MACs\&.
 .IP "-v" 
 Verbose output\&. Use twice for more messages\&.
 .IP "-w" 

@@ -3,8 +3,8 @@ manpage(arping)(8)(21th June, 2003)(arping)()
 manpagename(arping)(sends arp and/or ip pings to a given host)
 
 manpagesynopsis()
-    bf(arping) [-hqavrRd0bp] [-S em(host/ip)] [-T em(host/ip)] [-s em(MAC)]    \
-[-t em(MAC)] [-c em(count)] [-i em(interface)] <em(host) | -B>
+    bf(arping) [-abhpqrRd0uv] [-S em(host/ip)] [-T em(host/ip)] [-s em(MAC)]    \
+[-t em(MAC)] [-c em(count)] [-i em(interface)] [ -w em(us) ] <em(host) | -B>
 
 manpagedescription()
     The em(arping) utility sends bf(ARP) and/or bf(ICMP) requests to the specified em(host) and displays the replies. The em(host) may be specified by its bf(hostname), its bf(IP) address, or its bf(MAC) address.
@@ -73,6 +73,8 @@ em(Example):                                                                \
 	$ arping -S <IP-B> -s <MAC-B> -p <MAC-A>
     dit(-p) Turn on promiscious mode on interface, use this if you don't
             "own" the MAC address you are using.
+    dit(-u) Show index=received/sent instead of just index=received when
+	pinging MACs.
     dit(-v) Verbose output. Use twice for more messages.
     dit(-w) (arping 2.x only) Time to wait between pings, in microseconds.
 enddit()

@@ -18,7 +18,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 984 2003-08-07 20:11:36Z marvin $
+ * $Id: arping.c 1123 2004-08-25 13:26:02Z marvin $
  */
 /*
  *  Copyright (C) 2000-2003 Thomas Habets <thomas@habets.pp.se>
@@ -48,6 +48,7 @@
  *    arping -a mac             audiable pongs
  *    arping -A host            nothing
  *    arping -A mac             nothing
+ *    arping -u host            pongs, index n/m
  *    arping -t cmac -A host    pongs
  *    arping -t mac -A host     pongs
  *    arping -T ip -A mac       pongs
@@ -65,6 +66,8 @@
  *   Linux/x86         test with debian package libnet0-dev and libnet1-dev
  *   Linux/sparc
  *   Linux/hppa
+ *   Linux/x86-64
+ *   IRIX/mips         Need IRIX install CD to test this.
  *   Solaris/sparc
  *   NetBSD/alpha      (is libnet or arping unaligned? -- libnet I think)
  *   OpenBSD/sparc64   (libnet a bit buggy here)
@@ -117,7 +120,7 @@
 #define DEBUG(a)
 #endif
 
-const float version = 1.08;
+const float version = 1.09;
 
 struct ether_addr *mymac;
 static u_char eth_xmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -149,10 +152,39 @@ static unsigned int searchmac = 0;
 static unsigned int finddup = 0;
 static unsigned int maxcount = -1;
 static unsigned int rawoutput = 0;
+static unsigned int alsototal = 0;
 static unsigned int quiet = 0;
 static unsigned int nullip = 0;
 static unsigned int is_promisc = 0;
 static unsigned int addr_must_be_same = 0;
+
+
+
+/*
+ * It was unclear from msdn.microsoft.com if their scanf() supported
+ * [0-9a-fA-F], so I'll stay away from it.
+ */
+static int is_mac_addr(const char *p)
+{
+	if (4+1+4+1+4 == strlen(p)) {
+		int c;
+		for (c = 0; c < strlen(p); c++) {
+			if ((9 == c) || (4 == c)) {
+				if (!strchr(".-", p[c])) {
+					goto checkcolon;
+				}
+			} else {
+				if (!isxdigit(p[c])) {
+					goto checkcolon;
+				}
+			}
+		}
+		return 1;
+	}
+
+ checkcolon:
+	return strchr(p, ':') ? 1 : 0;
+}
 
 
 const char *arping_lookupdev_default(u_int32_t srcip, u_int32_t dstip,
@@ -251,7 +283,7 @@ static void usage(int ret)
 {
 	printf("ARPing %1.2f, by Thomas Habets <thomas@habets.pp.se>\n",
 	       version);
-	printf("usage: arping [ -0aAbdFpqrRv ] [ -S <host/ip> ] "
+	printf("usage: arping [ -0aAbdFpqrRuv ] [ -S <host/ip> ] "
 	       "[ -T <host/ip ] [ -s <MAC> ]\n"
 	       "              [ -t <MAC> ] [ -c <count> ] [ -i <interface> ] "
 	       "<host/ip/MAC | -B>\n");
@@ -455,9 +487,13 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 						printf("%.2x", *cp);
 					}
 					if (!rawoutput) {
-						printf(" (%s): index=%d time=%s",
+						printf(" (%s): index=%d",
 						       libnet_host_lookup(ip,0),
-						       numrecvd,
+						       numrecvd);
+						if (alsototal) {
+							printf("/%u",numsent-1);
+						}
+						printf(" time=%s",
 						       tvtoda(&lastpacketsent,
 							      &recvtime));
 					}
@@ -500,7 +536,7 @@ int main(int argc, char **argv)
 
 	memcpy(eth_target, eth_xmas, ETH_ALEN);
 
-	while ((c = getopt(argc, argv, "aAbBc:dF0S:T:hi:rRqs:t:pv")) != EOF) {
+	while ((c = getopt(argc, argv, "0aAbBc:dFhi:I:pqrRs:S:t:T:uv")) != EOF) {
 		switch (c) {
 		case 'A':
 			addr_must_be_same = 1;
@@ -521,6 +557,9 @@ int main(int argc, char **argv)
 #endif
 			dont_use_arping_lookupdev=1;
 			break;
+		case 'u':
+			alsototal=1;
+			break;
 		case 'v':
 			verbose++;
 			break;
@@ -531,9 +570,12 @@ int main(int argc, char **argv)
 				fprintf(stderr, "arping: If you're trying to "
 					"feed me an interface alias then you "
 					"don't really\nknow what this programs"
-					" does, do you?\n");
+					" does, do you?\nUse -I if you really"
+					" mean it (undocumented on "
+					"purpose)\n");
 				exit(1);
 			}
+		case 'I': /* FALL THROUGH */
 			ifname = optarg;
 			break;
 		case 'r':
@@ -584,7 +626,7 @@ int main(int argc, char **argv)
 				   &n[5]
 				    ) == 6) {
 				;
-			} else if(sscanf(optarg, "%2x%x.%2x%x.%2x%x",
+			} else if(sscanf(optarg, "%2x%2x.%2x%2x.%2x%2x",
 					  &n[0],
 					  &n[1],
 					  &n[2],
@@ -614,7 +656,7 @@ int main(int argc, char **argv)
 				   &n[5]
 				    ) == 6) {
 				;
-			} else if(sscanf(optarg, "%2x%x.%2x%x.%2x%x",
+			} else if(sscanf(optarg, "%2x%2x.%2x%2x.%2x%2x",
 					 &n[0],
 					 &n[1],
 					 &n[2],
@@ -655,7 +697,8 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if (sscanf(argv[optind], "%x:%x:%x:%x:%x:%x", 
+	if (is_mac_addr(argv[optind])
+	    && sscanf(argv[optind], "%x:%x:%x:%x:%x:%x", 
 		   &n[0],
 		   &n[1],
 		   &n[2],
@@ -664,7 +707,8 @@ int main(int argc, char **argv)
 		   &n[5]
 		   ) == 6) {
 		searchmac = 1;
-	} else if(sscanf(argv[optind], "%2x%x.%2x%x.%2x%x",
+	} else if(is_mac_addr(argv[optind])
+		  && sscanf(argv[optind], "%2x%2x.%2x%2x.%2x%2x",
 		   &n[0],
 		   &n[1],
 		   &n[2],

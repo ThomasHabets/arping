@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 1116 2004-08-05 02:36:34Z marvin $
+ * $Id: arping.c 1123 2004-08-25 13:26:02Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -34,6 +34,7 @@
 //#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef WIN32
 #include <unistd.h>
 // NOTE: try un-commenting this
 //#include <stdint.h>
@@ -44,10 +45,20 @@
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
-
 #include <libnet.h>
+#endif
+
+#ifdef WIN32
+#include <win32/libnet.h>
+#endif
 #include <pcap.h>
 
+#if defined(WIN32)
+#define HAVE_ESIZE_TYPES 1
+#include "win32.h"
+#include "win32/getopt.h"
+#endif
+ 
 #if defined(linux)
 #define HAVE_ESIZE_TYPES 1
 #define FINDIF 1
@@ -78,7 +89,7 @@
 #define IP_ALEN 4
 #endif
 
-const float version = 2.03;
+const float version = 2.04f;
 
 static libnet_t *libnet = 0;
 
@@ -88,6 +99,7 @@ static u_int32_t srcip,dstip;
 
 static int beep = 0;
 static int verbose = 0;
+static int alsototal = 0;
 /*static int pingmac = 0; */
 static int finddup = 0;
 static unsigned int numsent = 0;
@@ -134,17 +146,28 @@ static void do_libnet_init(const char *ifname)
 /*
  *
  */
-const char *arping_lookupdev_default(u_int32_t srcip, u_int32_t dstip,
+static const char *arping_lookupdev_default(u_int32_t srcip, u_int32_t dstip,
 				     char *ebuf)
 {
+#ifdef WIN32
+	WCHAR buf[LIBNET_ERRBUF_SIZE + PCAP_ERRBUF_SIZE];
+	WCHAR* ret = (WCHAR*)pcap_lookupdev((char*)buf);
+	if (ret != NULL) {
+		wcstombs(ebuf, ret, LIBNET_ERRBUF_SIZE + PCAP_ERRBUF_SIZE);
+		return ebuf;
+	}
+	return NULL;
+#else
 	return pcap_lookupdev(ebuf);
+#endif
 }
 
 #if defined(FINDIF) && defined(linux)
 /*
  *
  */
-const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip, char *ebuf)
+static const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip,
+				    char *ebuf)
 {
 	FILE *f;
 	static char buf[1024];
@@ -153,6 +176,7 @@ const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip, char *ebuf)
 	char *p,*p2;
 	int n;
 
+	do_libnet_init(NULL);
 	libnet_addr2name4_r(dstip,0,buf2);
 	libnet_addr2name4_r(srcip,0,buf1);
 
@@ -197,11 +221,35 @@ const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip, char *ebuf)
 /*
  *
  */
-const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip, char *ebuf)
+static const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip,
+				    char *ebuf)
 {
 	return arping_lookupdev_default(srcip,dstip,ebuf);
 }
 #endif
+
+
+#ifdef WIN32
+static BOOL WINAPI arping_console_ctrl_handler(DWORD dwCtrlType )
+{
+	if(verbose) {
+		printf("arping_console_ctrl_handler( %d )\n", dwCtrlType );
+	}
+	time_to_die = 1;
+
+#if 0
+	/* if SetConsoleCtrlHandler() does what I think, this isn't needed */
+	if (display == NORMAL) {
+		printf("\n--- %s statistics ---\n"
+		       "%d packets transmitted, %d packets received, %3.0f%% "
+		       "unanswered\n",target,numsent,numrecvd,
+		       100.0 - 100.0 * (float)(numrecvd)/(float)numsent);
+		       }
+#endif
+	return TRUE;
+}
+#endif
+
 
 /*
  *
@@ -218,7 +266,7 @@ static void usage(int ret)
 {
 	printf("ARPing %1.2f, by Thomas Habets <thomas@habets.pp.se>\n",
 	       version);
-	printf("usage: arping [ -0aAbdFpqrRv ] [ -w <us> ] [ -S <host/ip> ] "
+	printf("usage: arping [ -0aAbdFpqrRuv ] [ -w <us> ] [ -S <host/ip> ] "
 	       "[ -T <host/ip ]\n"
 	       "              [ -s <MAC> ] [ -t <MAC> ] [ -c <count> ] "
 	       "[ -i <interface> ]\n"
@@ -227,15 +275,46 @@ static void usage(int ret)
 }
 
 /*
- *
+ * It was unclear from msdn.microsoft.com if their scanf() supported
+ * [0-9a-fA-F], so I'll stay away from it.
  */
 static int is_mac_addr(const char *p)
 {
-	unsigned int n[6];
-	if(6==sscanf(p, "%2x%2x.%2x%2x.%2x%2x",
-		     &n[0],&n[1],&n[2],&n[3],&n[4],&n[5])){
+	/* cisco-style */
+	if (3*5-1 == strlen(p)) {
+		int c;
+		for (c = 0; c < strlen(p); c++) {
+			if ((c % 5) == 4) {
+				if ('.' != p[c]) {
+					goto checkcolon;
+				}
+			} else {
+				if (!isxdigit(p[c])) {
+					goto checkcolon;
+				}
+			}
+		}
 		return 1;
 	}
+	/* windows-style */
+	if (6*3-1 == strlen(p)) {
+		int c;
+		for (c = 0; c < strlen(p); c++) {
+			if ((c % 3) == 2) {
+				if ('-' != p[c]) {
+					goto checkcolon;
+				}
+			} else {
+				if (!isxdigit(p[c])) {
+					goto checkcolon;
+				}
+			}
+		}
+		return 1;
+	}
+
+ checkcolon:
+	/* unix */
 	return strchr(p, ':') ? 1 : 0;
 }
 
@@ -253,6 +332,8 @@ static int get_mac_addr(const char *in,
 	if (6 == sscanf(in, "%x:%x:%x:%x:%x:%x",n0,n1,n2,n3,n4,n5)) {
 		return 1;
 	} else if(6 == sscanf(in, "%2x%x.%2x%x.%2x%x",n0,n1,n2,n3,n4,n5)) {
+		return 1;
+	} else if(6 == sscanf(in, "%x-%x-%x-%x-%x-%x",n0,n1,n2,n3,n4,n5)) {
 		return 1;
 	}
 	return 0;
@@ -467,9 +548,13 @@ static void pingip_recv(const char *unused, struct pcap_pkthdr *h,
 					       (c<5)?':':' ');
 				}
 				
-				printf("(%s): index=%d time=%s",
+				printf("(%s): index=%d",
 				       libnet_addr2name4(ip,0),
-				       numrecvd,
+				       numrecvd);
+				if (alsototal) {
+					printf("/%u", numsent-1);
+				}
+				printf(" time=%s",
 				       tv2str(&lastpacketsent,
 					      &arrival,buf));
 				break; }
@@ -550,7 +635,7 @@ static void pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 				       (c<5)?':':')');
 			}
 			printf(": icmp_seq=%d time=%s",
-			       hicmp->icmp_seq,tv2str(&lastpacketsent,
+			       htons(hicmp->icmp_seq),tv2str(&lastpacketsent,
 						      &arrival,buf));
 			break; }
 		case RAW:
@@ -586,16 +671,54 @@ static void pingmac_recv(const char *unused, struct pcap_pkthdr *h,
  */
 static void ping_recv(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
 {
-	struct timeval tv,tv2;
-	char done = 0;
-	fd_set fds;
+       struct timeval tv,tv2;
+       char done = 0;
+#ifndef WIN32
+       fd_set fds;
+#endif
 
+       if(verbose>3) {
+               printf("arping: receiving packets...\n");
+       }
+
+#ifdef WIN32
+       /* windows won't let us do select() */
+       if (-1 == gettimeofday(&tv2,NULL)) {
+	       fprintf(stderr, "arping: gettimeofday(): %s\n",
+		       strerror(errno));
+               sigint(0);
+       }
+       while (!done && !time_to_die) {
+	       struct pcap_pkthdr *pkt_header;
+	       u_char *pkt_data;
+	       if (pcap_next_ex(pcap, &pkt_header, &pkt_data) == 1) {
+		       func(pcap, pkt_header, pkt_data);
+	       }
+	       if (-1 == gettimeofday(&tv,NULL)) {
+		       fprintf(stderr, "arping: "
+			       "gettimeofday(): %s\n",
+			       strerror(errno));
+		       sigint(0);
+	       }
+               /*
+                * setup next timeval, not very exact
+                */
+               tv.tv_sec  = (packetwait / 1000000)
+		       - (tv.tv_sec - tv2.tv_sec);
+	       tv.tv_usec = (packetwait % 1000000)
+		       - (tv.tv_usec - tv2.tv_usec);
+	       while (tv.tv_usec < 0) {
+		       tv.tv_sec--;
+		       tv.tv_usec += 1000000;
+	       }
+	       usleep(10);
+	       if (tv.tv_sec < 0) {
+		       done=1;
+	       }
+       }
+#else
 	tv.tv_sec = packetwait / 1000000;
 	tv.tv_usec = packetwait % 1000000;
-
-	if(verbose>3) {
-		printf("arping: receiving packets...\n");
-	}
 
 	for (;!done;) {
 		int sr;
@@ -675,6 +798,7 @@ static void ping_recv(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
 		fprintf(stderr, "arping: select(delay): %s\n",strerror(errno));
 		sigint(0);
 	}
+#endif
 }
 
 /*
@@ -706,7 +830,7 @@ int main(int argc, char **argv)
 	memset(dstmac, 0xff, ETH_ALEN);
 	memset(ethxmas, 0xff, ETH_ALEN);
 
-	while (EOF!=(c = getopt(argc, argv, "0aAbBc:dFhi:pqrRs:S:t:T:vw:"))) {
+	while (EOF!=(c=getopt(argc, argv, "0aAbBc:dFhi:I:pqrRs:S:t:T:uvw:"))) {
 		switch(c) {
 		case '0':
 			srcip = 0;
@@ -741,10 +865,13 @@ int main(int argc, char **argv)
 			if (strchr(optarg, ':')) {
 				fprintf(stderr, "arping: If you're trying to "
 					"feed me an interface alias then you "
-					"don't really\nknow what this program "
-					"does, do you?\n");
+					"don't really\nknow what this programs"
+					" does, do you?\nUse -I if you really"
+					" mean it (undocumented on "
+					"purpose)\n");
 				exit(1);
 			}
+		case 'I': /* FALL THROUGH */
 			ifname = optarg;
 			break;
 		case 'p':
@@ -822,6 +949,9 @@ int main(int argc, char **argv)
 				exit(1);
 			}
 			mode = PINGMAC;
+			break;
+		case 'u':
+			alsototal = 1;
 			break;
 		case 'v':
 			verbose++;
@@ -1001,7 +1131,12 @@ int main(int argc, char **argv)
 			exit(1);
 		}
 	}
+#ifdef WIN32
+	SetConsoleCtrlHandler(NULL, TRUE);
+	SetConsoleCtrlHandler(arping_console_ctrl_handler, TRUE);
+#else
 	signal(SIGINT, sigint);
+#endif
 
 	if (verbose) {
 		printf("This box:   Interface: %s  IP: %s   MAC address: ",

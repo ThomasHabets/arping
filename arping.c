@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 130 2000-09-11 21:39:16Z marvin $
+ * $Id: arping.c 137 2000-09-15 16:36:52Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -60,7 +60,7 @@
 #define DEBUG(a)
 #endif
 
-const float version = 0.91;
+const float version = 0.92;
 
 struct ether_addr *mymac;
 u_char eth_xmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -96,7 +96,7 @@ void sigint(int i);
 
 void usage(int ret)
 {
-	printf("arping %1.1f [ -v ] [ -r ] [ -d ] [-0 ] [ -c count ] "
+	printf("arping %1.2f [ -v ] [ -r ] [ -d ] [ -0 ] [ -c count ] "
 	       "[ -i <interface> ] <host/ip/MAC>\n", version);
 	exit(ret);
 }
@@ -350,11 +350,23 @@ int main(int argc, char **argv)
 		fprintf(stderr, "libnet_get_ipaddr(): %s\n", ebuf);
 		exit(1);
 	}
-	
-	if (-1 == libnet_init_packet(LIBNET_ETH_H + LIBNET_IP_H
-				     + LIBNET_ICMP_H, &packet)) {
-		fprintf(stderr, "libnet_init_packet(): error\n");
-		exit(1);
+
+	if (searchmac) {
+		if (-1 == libnet_init_packet(LIBNET_ETH_H + LIBNET_IP_H
+					     + LIBNET_ICMP_H, &packet)) {
+			fprintf(stderr, "libnet_init_packet(): error\n");
+			exit(1);
+		}
+	} else {
+		/*
+		 * this makes it work on solaris.
+		 * not sure if LIBNET_ICMP_H is needed though, but it works
+		 */
+       		if (-1 == libnet_init_packet(LIBNET_ETH_H + LIBNET_ARP_H
+					     + LIBNET_ICMP_H, &packet)) {
+			fprintf(stderr, "libnet_init_packet(): error\n");
+			exit(1);
+		}
 	}
 	
 	if (verbose) {
@@ -420,7 +432,7 @@ int main(int argc, char **argv)
 					   NULL,
 					   0,
 					   packet + LIBNET_ETH_H)) {
-			fprintf(stderr, "libnet_init_packet(): error\n");
+			fprintf(stderr, "libnet_build_arp(): error\n");
 			exit(1);
 		}
 		

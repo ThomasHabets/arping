@@ -74,7 +74,7 @@ em(Example):                                                                \
     dit(-p) Turn on promiscious mode on interface, use this if you don't
             "own" the MAC address you are using.
     dit(-v) Verbose output. Use twice for more messages.
-    dit(-w) (arping 2.x only) 
+    dit(-w) (arping 2.x only) Time to wait between pings, in microseconds.
 enddit()
 
 manpagebugs()

@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 974 2003-08-03 22:57:59Z marvin $
+ * $Id: arping.c 1052 2003-11-14 14:04:24Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -35,6 +35,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+// NOTE: try un-commenting this
+//#include <stdint.h>
 
 #include <sys/time.h>
 #include <sys/socket.h>
@@ -66,9 +68,9 @@
 #define IP_ALEN 4
 #endif
 
-const float version = 2.01;
+const float version = 2.02;
 
-static libnet_t *libnet;
+static libnet_t *libnet = 0;
 
 static struct timeval lastpacketsent;
 
@@ -91,6 +93,28 @@ static char dstmac[ETH_ALEN];
 
 volatile int time_to_die = 0;
 
+
+/*
+ *
+ */	
+static void do_libnet_init(const char *ifname)
+{
+	char ebuf[LIBNET_ERRBUF_SIZE];
+	if (libnet) {
+		return;
+	}
+	if (getuid() && geteuid()) {
+		fprintf(stderr, "arping: must run as root\n");
+		exit(1);
+	}
+
+	if (!(libnet = libnet_init(LIBNET_LINK,
+				   ifname,
+				   ebuf))) {
+		fprintf(stderr, "arping: libnet_init(): %s\n", ebuf);
+		exit(1);
+	}
+}
 
 const char *arping_lookupdev_default(u_int32_t srcip, u_int32_t dstip,
 				     char *ebuf)
@@ -585,6 +609,9 @@ static void ping_recv(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
 			if (1 != (ret = pcap_dispatch(pcap, 1,
 						      func,
 						      NULL))) {
+				// rest, so we don't take 100% CPU... mostly
+				// hmm... does usleep() exist everywhere?
+				usleep(10);
 #ifndef HAVE_WEIRD_BSD
 				// weird is normal on bsd :)
 				if (verbose) {
@@ -636,7 +663,7 @@ static void ping_recv(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
  */
 int main(int argc, char **argv)
 {
-	char ebuf[LIBNET_ERRBUF_SIZE];
+	char ebuf[LIBNET_ERRBUF_SIZE + PCAP_ERRBUF_SIZE];
 	char *cp;
 /*	int nullip = 0;*/
 	int promisc = 0;
@@ -728,6 +755,7 @@ int main(int argc, char **argv)
 			break;
 		}
 		case 'S': // set source IP, may be null for don't-know
+			do_libnet_init(NULL);
 			if (-1 == (srcip = libnet_name2addr4(libnet,
 							     optarg,
 							     LIBNET_RESOLVE))){
@@ -764,6 +792,7 @@ int main(int argc, char **argv)
 					"in MAC ping mode\n");
 				exit(1);
 			}
+			do_libnet_init(NULL);
 			if (-1 == (dstip = libnet_name2addr4(libnet,
 							     optarg,
 							     LIBNET_RESOLVE))){
@@ -785,23 +814,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (getuid() && geteuid()) {
-		fprintf(stderr, "arping: must run as root\n");
-		exit(1);
-	}
-
-	/*
-	 * libnet init
-	 */
-	if (!(libnet = libnet_init(LIBNET_LINK,
-				   ifname,
-				   ebuf))) {
-		fprintf(stderr, "arping: libnet_init(): %s\n", ebuf);
-		exit(1);
-	}
-	
-
-
 	parm = argv[optind];
 
 	/*
@@ -813,14 +825,26 @@ int main(int argc, char **argv)
 			mode = is_mac_addr(parm)?PINGMAC:PINGIP;
 		} else if (dstip_given) {
 			mode = PINGIP;
-			parm = strdup(libnet_addr2name4(dstip,
-							0));
+			do_libnet_init(NULL);
+			parm = strdup(libnet_addr2name4(dstip,0));
+			if (!parm) {
+				fprintf(stderr, "arping: out of mem\n");
+				exit(1);
+			}
 		}
 	}
 
+	/*
+	 *
+	 */
 	if (mode == NONE) {
 		usage(1);
 	}
+
+	/*
+	 * libnet init (may be done already for resolving)
+	 */
+	do_libnet_init(ifname);
 	
 	/*
 	 * Make sure dstip and parm like eachother

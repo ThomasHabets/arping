@@ -1,4 +1,4 @@
-$Id: README 984 2003-08-07 20:11:36Z marvin $
+$Id: README 1052 2003-11-14 14:04:24Z marvin $
 
  ARP Ping
 
@@ -34,9 +34,8 @@ oops).
 
 Compiling
 ---------
-Type 'make linux' to compile under Linux and 'make openbsd' to compile under
-openbsd. Follow this pattern for compilation under Solaris and FreeBSD.
-If you have some other OS, try all before mailing me.
+Type 'make to compile. You'll get a message saying that you are compiling
+arping 2.x, and how to compile arping 1.x if you want that.
 
 'make install' will copy arping to /usr/local/bin, and put the manpage where
 it belongs.
@@ -53,6 +52,11 @@ See 'Technical' at the bottom of this file.
 FAQ
 ---
 Q: It doesn't compile!
+
+A: Maybe u_int32_t and co. are not defined. Try uncommenting the line:
+   #include <stdint.h> in arping-2/arping.c. This has been an issue on
+   MacOS X, I think. I don't have access to such a box so it's a bit hard
+   to fix.
 
 A: Arping 2.x will not work with Libnet 1.0.x. This is This is due to
    libnet 1.1.x being completely different from 1.0.x. There is no

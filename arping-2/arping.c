@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 1055 2003-11-28 02:13:40Z marvin $
+ * $Id: arping.c 1063 2004-02-02 00:37:34Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -39,6 +39,7 @@
 //#include <stdint.h>
 
 #include <sys/time.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 
 #include <netinet/in.h>
@@ -47,6 +48,11 @@
 #include <libnet.h>
 #include <pcap.h>
 
+#if defined(linux)
+#define HAVE_ESIZE_TYPES 1
+#define FINDIF 1
+#endif
+
 #ifdef HAVE_NET_BPF_H
 #include <net/bpf.h>
 #endif
@@ -54,6 +60,10 @@
 #ifndef HAVE_ESIZE_TYPES
 /*
  * let's hope we at least have these
+ * FIXME: bleh, this is not auto-detected, so fix it with os-dependent stuff
+ * like we have above for linux
+ * But this broken thing compiled on my solaris, openbsd and linux-boxes so
+ * it kinda works.
  */
 #define u_int8_t uint8_t
 #define u_int16_t uint16_t
@@ -68,7 +78,7 @@
 #define IP_ALEN 4
 #endif
 
-const float version = 2.02;
+const float version = 2.03;
 
 static libnet_t *libnet = 0;
 
@@ -100,8 +110,13 @@ volatile int time_to_die = 0;
 static void do_libnet_init(const char *ifname)
 {
 	char ebuf[LIBNET_ERRBUF_SIZE];
+	if (verbose > 1) {
+		printf("libnet_init(%s)\n", ifname);
+	}
 	if (libnet) {
-		return;
+		/* prolly going to switch interface from temp to real */
+		libnet_destroy(libnet);
+		libnet = 0;
 	}
 	if (getuid() && geteuid()) {
 		fprintf(stderr, "arping: must run as root\n");
@@ -109,7 +124,7 @@ static void do_libnet_init(const char *ifname)
 	}
 
 	if (!(libnet = libnet_init(LIBNET_LINK,
-				   ifname,
+				   (char*)ifname,
 				   ebuf))) {
 		fprintf(stderr, "arping: libnet_init(): %s\n", ebuf);
 		exit(1);
@@ -119,32 +134,27 @@ static void do_libnet_init(const char *ifname)
 const char *arping_lookupdev_default(u_int32_t srcip, u_int32_t dstip,
 				     char *ebuf)
 {
-	static const char *ifname;
-	if (!(ifname = pcap_lookupdev(ebuf))) {
-		return 0;
-	}
-	return ifname;
+	return pcap_lookupdev(ebuf);
 }
 
 #if defined(FINDIF) && defined(linux)
 const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip, char *ebuf)
 {
 	FILE *f;
-	static const char buf[1024];
+	static char buf[1024];
 	char buf1[1024];
 	char buf2[1024];
 	char *p,*p2;
 	int n;
 
-	libnet_host_lookup_r(dstip,0,buf2);
-	libnet_host_lookup_r(srcip,0,buf1);
+	libnet_addr2name4_r(dstip,0,buf2);
+	libnet_addr2name4_r(srcip,0,buf1);
 
 	/*
 	 * Construct and run command
 	 */
 	snprintf(buf, 1023, "/sbin/ip route get %s from %s 2>&1",
 		 buf2,buf1);
-	DEBUG(printf("%s\n",buf));
 	if (!(f = popen(buf, "r"))) {
 		goto failed;
 	}
@@ -670,7 +680,7 @@ int main(int argc, char **argv)
 	int srcip_given = 0;
 	int srcmac_given = 0;
 	int dstip_given = 0;
-	char *ifname = NULL;
+	const char *ifname = NULL;
 	char *parm;
 	int c;
 	unsigned int maxcount = -1;
@@ -923,9 +933,15 @@ int main(int argc, char **argv)
 	}
 
 	/*
+	 * Init libnet again, because we now know the interface name.
+	 * We should know it by know at least
+	 */
+	do_libnet_init(ifname);
+
+	/*
 	 * pcap init
 	 */
-	if (!(pcap = pcap_open_live(ifname, 100, promisc, 10, ebuf))) {
+	if (!(pcap = pcap_open_live((char*)ifname, 100, promisc, 10, ebuf))) {
 		fprintf(stderr, "arping: pcap_open_live(): %s\n",ebuf);
 		exit(1);
 	}

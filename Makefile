@@ -1,6 +1,16 @@
-# $Id: Makefile 984 2003-08-07 20:11:36Z marvin $
+# $Id: Makefile 1063 2004-02-02 00:37:34Z marvin $
 TARGETS=arping
 
+CD=cd
+CP=cp
+TAR=tar
+GPG=gpg
+MAKE=make
+RM=rm
+SUDO=sudo
+
+# This is only for arping1, arping2 has it in the .c, and it should prolly
+# be moved to autoconf
 USE_NETIF=0
 FINDIF=1
 OPENBSD=0
@@ -54,23 +64,23 @@ doc: arping.yodl
 	yodl2man -o arping.8 arping.yodl
 
 linux-nofindif:
-	make USE_NETIF=1 LINUX=1 FINDIF=0 arping1-make
+	$(MAKE) USE_NETIF=1 LINUX=1 FINDIF=0 arping1-make
 linux:
-	make USE_NETIF=1 LINUX=1 arping1-make
+	$(MAKE) USE_NETIF=1 LINUX=1 arping1-make
 
 freebsd:
-	make USE_NETIF=1 FREEBSD=1 arping1-make
+	$(MAKE) USE_NETIF=1 FREEBSD=1 arping1-make
 
 macosx:
-	make USE_NETIF=1 MACOSX=1 arping1-make
+	$(MAKE) USE_NETIF=1 MACOSX=1 arping1-make
 
 openbsd:
-	make OPENBSD=1 arping1-make
+	$(MAKE) OPENBSD=1 arping1-make
 netbsd:
-	make openbsd
+	$(MAKE) openbsd
 
 solaris:
-	make USE_NETIF=0 SOLARIS=1 arping1-make
+	$(MAKE) USE_NETIF=0 SOLARIS=1 arping1-make
 
 install:
 	install -c arping /usr/local/bin/arping
@@ -83,16 +93,69 @@ O_arping=arping.o
 arping1-make: $(O_arping)
 	$(CC) $(CFLAGS) -g -o arping $(O_arping) `libnet-config --libs` -lpcap
 
+SYS=$(shell uname -s)
+ifeq ($(SYS),SunOS)
+EXTRA_LIBS=-lsocket -lnsl
+endif
+
 O_arping2=arping-2/arping.c
 arping2: arping-2/arping
 arping-2/arping: $(O_arping2)
-	$(CC) `libnet-config --libs --defines --cflags` -o arping arping-2/arping.c -lnet -lpcap
+#	$(CC) `libnet-config --libs --defines --cflags` -o arping arping-2/arping.c -lnet -lpcap
+	$(CC) -o arping arping-2/arping.c -lnet -lpcap $(EXTRA_LIBS)
 
 clean:
 	rm -f *.o $(TARGETS)
 
 distclean: clean
 	rm -f config{.cache,.h,.log,.status}
+
+V=$(shell grep version arping-2/arping.c|grep const|sed 's:[a-z =]*::;s:;::')
+DFILE=arping-$(V).tar.gz
+DDIR=arping-$(V)
+dist:
+	($(CD) ..; \
+	$(CP) -ax arping $(DDIR); \
+	$(RM) -fr $(DDIR)/{.\#*,CVS,.svn,*~} \
+		$(DDIR)/arping-2/{.\#*,CVS,.svn,*~}; \
+	$(MAKE) -C $(DDIR) doc; \
+	$(TAR) cfz $(DFILE) $(DDIR); \
+	$(GPG) -b -a $(DFILE); \
+	)
+test: arping2
+	@echo Testing with destination host $(HOST) and MAC $(MAC)
+
+#	Easy ones
+	@$(SUDO) ./arping -c 1 -q $(HOST) || echo fail: arping host
+	@$(SUDO) ./arping -c 1 -q $(shell $(SUDO) ./arping -c 1 -r $(HOST)) \
+		|| echo fail: arping mac
+	$(shell $(SUDO) ./arping -c 1 -q -t 00:11:22:33:44:55 $(HOST) \
+		&& echo fail: -t switch)
+
+#	-A
+	$(shell $(SUDO) ./arping -c 1 -q -A $(HOST) \
+		&& echo fail: -A switch)
+	$(shell $(SUDO) ./arping -c 1 -q -A $(MAC) \
+		&& echo fail: -A switch)
+
+#	Directed pings
+	$(shell $(SUDO) ./arping -c 1 -q -t $(MAC) $(HOST) \
+		|| echo fail: -t switch 2)
+	$(shell $(SUDO) ./arping -c 1 -q -T $(HOST) $(MAC) \
+		|| echo fail: -T switch)
+	$(shell $(SUDO) ./arping -c 1 -q -A -t $(MAC) $(HOST) \
+		|| echo fail: -t switch with -A)
+	$(shell $(SUDO) ./arping -c 1 -q -A -T $(HOST) $(MAC) \
+		|| echo fail: -T switch with -A)
+
+#	Ok both ways?
+	$(shell [ `$(SUDO) ./arping -c 1 -r $(HOST)` = $(MAC) ] \
+		|| echo fail: host to MAC translation weird)
+	$(shell [ `$(SUDO) ./arping -c 1 -R $(HOST)` = \
+		  `$(SUDO) ./arping -c 1 -r $(MAC)` ] \
+		|| echo fail: host to MAC translation and back weird)
+
+#	FIXME: more tests listed in arping.c
 
 maintainerclean: distclean
 	rm -f config{.h.in,ure}

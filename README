@@ -1,4 +1,4 @@
-$Id: README 1052 2003-11-14 14:04:24Z marvin $
+$Id: README 1063 2004-02-02 00:37:34Z marvin $
 
  ARP Ping
 
@@ -69,6 +69,13 @@ A: Arping 2.x will not work with Libnet 1.0.x. This is This is due to
    Arping 2.x is now the default target, but arping 1.x is still here.
    Arping 1.x is included in this release and can be created
    with "make arping1" and follow instructions.
+
+A: On BSD, you'll prolly need to type something like:
+   gmake MAKE=gmake openbsd
+---
+Q: On sparc64, the IP shown in the output is 0.0.0.0.
+
+A: Libnets fault, should be fixed there.
 ---
 Q: After compiling arping without any problem, i test it first with
    localhost... but it doesn't respond. Isn't that strange?
@@ -210,14 +217,6 @@ Q: 1.08 and up is broken, 1.07 and down worked. What's up with that?
 A: If there are any problems, it should be with the interface-finding code.
    Try compiling with 'make linux-nofindif'.
    Also, try with the -F switch, and mail me if that worked (or didn't work).
----
-Q: Hey! Wasn't this Marvins program? You thief!
-
-A: We are the same person.
----
-Q: Say hi to Psychad for me.
-
-A: Will do.
 ---
 
 Misc

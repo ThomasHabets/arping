@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 327 2001-05-08 13:48:40Z marvin $
+ * $Id: arping.c 346 2001-06-02 14:19:30Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@rootbusters.net)
@@ -129,9 +129,10 @@ static void sigint(int i)
 
 static void usage(int ret)
 {
-	printf("arping %1.2f [ -q ] [ -v ] [ -r ] [ -d ] [ -0 ] [ -s <MAC> ] "
-	       "[ -c count ]\n"
-	       "            [ -i <interface> ] <host/ip/MAC>\n", version);
+	printf("arping %1.2f [ -q ] [ -v ] [ -r ] [ -R ] [ -d ] [ -0 ] "
+	       "[ -s <MAC> ] [ -t <MAC> ]\n"
+	       "            [ -c <count> ] [ -i <interface> ] <host/ip/MAC>\n",
+	       version);
 	exit(ret);
 }
 
@@ -212,8 +213,19 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 				printf("%d bytes from ", h->len);
 			}
 			if (!quiet) {
-				printf("%s",libnet_host_lookup(hip->saddr, 0));
+				if (rawoutput & 2) {
+					for (c = 0; c < 5; c++) {
+						printf("%.2x:", *cp++);
+					}
+					printf("%.2x ", *cp++);
+				}
+				if (rawoutput & 1) {
+					printf("%s",
+					       libnet_host_lookup(hip->saddr,
+								  0));
+				}
 				if (!rawoutput) {
+					printf("%s",libnet_host_lookup(hip->saddr,0));
 					printf(" (");
 					for (c = 0; c < ETH_ALEN-1; c++) {
 						printf("%.2x:", *cp++);
@@ -238,10 +250,25 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 					printf("%d bytes from ", h->len);
 				}
 				if (!quiet) {
-					for (c = 0; c < harp->ar_hln -1; c++) {
-						printf("%.2x:", *cp++);
+					if (rawoutput & 1) {
+						for (c = 0; c < harp->ar_hln-1;
+						     c++) {
+							printf("%.2x:", *cp++);
+						}
+						printf("%.2x ", *cp++);
 					}
-					printf("%.2x", *cp);
+					if (rawoutput & 2) {
+						printf("%s",
+						       libnet_host_lookup(ip,
+									  0));
+					}
+					if (!rawoutput) {
+						for (c = 0; c < harp->ar_hln-1;
+						     c++) {
+							printf("%.2x:", *cp++);
+						}
+						printf("%.2x", *cp);
+					}
 				}
 				if (!rawoutput) {
 					printf(" (%s): index=%d",
@@ -279,7 +306,7 @@ int main(int argc, char **argv)
 
 	memcpy(eth_target, eth_xmas, ETH_ALEN);
 
-	while ((c = getopt(argc, argv, "0dvhi:rc:qs:t:")) != EOF) {
+	while ((c = getopt(argc, argv, "0dvhi:rRc:qs:t:")) != EOF) {
 		switch (c) {
 		case 'v':
 			verbose++;
@@ -297,7 +324,10 @@ int main(int argc, char **argv)
 			ifname = optarg;
 			break;
 		case 'r':
-			rawoutput = 1;
+			rawoutput |= 1;
+			break;
+		case 'R':
+			rawoutput |= 2;
 			break;
 		case 'q':
 			quiet = rawoutput = 1;

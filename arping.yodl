@@ -1,11 +1,10 @@
-manpage(arping)(8)(15th mars, 2001)(arping)()
+manpage(arping)(8)(2nd June, 2001)(arping)()
 
 manpagename(arping)(sends arp and/or ip pings to a given host)
 
 manpagesynopsis()
-    bf(arping) [-h] [-q] [-v] [-r] [-d] [-0] [-s em(MAC)] [-t em(MAC)]   \
-[-c em(count)]
-	[-i em(interface)]
+    bf(arping) [-h] [-q] [-v] [-r] [-R] [-d] [-0] [-s em(MAC)]      \
+[-t em(MAC)] [-c em(count)] [-i em(interface)]
     em(host)
 
 manpagedescription()
@@ -24,6 +23,9 @@ startdit()
     dit(-v) Verbose output.
 
     dit(-r) Raw output: only the MAC/IP address is displayed for each reply.
+
+    dit(-R) Raw output: Like -r but shows "the other one", can be combined with
+-r.
 
     dit(-d) Find duplicate replies.
 

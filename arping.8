@@ -1,11 +1,10 @@
-.TH "arping" "8" "15th mars, 2001" "arping" "" 
+.TH "arping" "8" "2nd June, 2001" "arping" "" 
 .PP 
 .SH "NAME" 
 arping \- sends arp and/or ip pings to a given host
 .PP 
 .SH "SYNOPSIS" 
-\fBarping\fP [-h] [-q] [-v] [-r] [-d] [-0] [-s \fIMAC\fP] [-t \fIMAC\fP]   [-c \fIcount\fP]
-[-i \fIinterface\fP]
+\fBarping\fP [-h] [-q] [-v] [-r] [-R] [-d] [-0] [-s \fIMAC\fP]      [-t \fIMAC\fP] [-c \fIcount\fP] [-i \fIinterface\fP]
 \fIhost\fP
 .PP 
 .SH "DESCRIPTION" 
@@ -27,6 +26,10 @@ Verbose output\&.
 .IP 
 .IP "-r" 
 Raw output: only the MAC/IP address is displayed for each reply\&.
+.IP 
+.IP "-R" 
+Raw output: Like -r but shows "the other one", can be combined with
+-r\&.
 .IP 
 .IP "-d" 
 Find duplicate replies\&.

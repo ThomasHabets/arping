@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 360 2001-07-08 01:49:03Z marvin $
+ * $Id: arping.c 412 2001-09-03 14:01:49Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@rootbusters.net)
@@ -70,7 +70,7 @@
 #define DEBUG(a)
 #endif
 
-const float version = 1.0;
+const float version = 1.01;
 
 struct ether_addr *mymac;
 static u_char eth_xmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -130,9 +130,9 @@ static void sigint(int i)
 
 static void usage(int ret)
 {
-	printf("arping %1.2f [ -qvrRd0bp ] [ -S <host/ip> ]"
-	       "[ -s <MAC> ] [ -t <MAC> ]\n"
-	       "            [ -c <count> ] [ -i <interface> ] "
+	printf("arping %1.2f [ -qvrRd0bp ] [ -S <host/ip> ] [ -T <host/ip ]"
+	       " [ -s <MAC> ]\n"
+	       "            [ -t <MAC> ] [ -c <count> ] [ -i <interface> ] "
 	       "<host/ip/MAC | -B>\n",
 	       version);
 	exit(ret);
@@ -202,7 +202,8 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 	eth = (struct ethhdr*)packet;
 
 	if (searchmac) {
-		hip = (struct iphdr*)((char*)eth + sizeof(struct ethhdr));
+		// ping mac
+		hip = (struct iphdr*)((char*)eth + sizeof(struct libnet_ethernet_hdr));
 		hicmp = (struct icmphdr*)((char*)hip + sizeof(struct iphdr));
 		if ((htons(hicmp->type) == ICMP_ECHOREPLY)
 		    && ((!memcmp(eth->h_source, eth_target, ETH_ALEN)
@@ -239,7 +240,8 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 			}
 		}
 	} else {
-		harp = (struct arphdr*)((char*)eth + sizeof(struct ethhdr));
+		// ping ip
+		harp = (struct arphdr*)((char*)eth + sizeof(struct libnet_ethernet_hdr));
 		if ((htons(harp->ar_op) == ARPOP_REPLY)
 		    && (htons(harp->ar_pro) == ETH_P_IP)
 		    && (htons(harp->ar_hrd) == ARPHRD_ETHER)) {
@@ -310,7 +312,7 @@ int main(int argc, char **argv)
 
 	memcpy(eth_target, eth_xmas, ETH_ALEN);
 
-	while ((c = getopt(argc, argv, "0bdS:Bvhi:rRc:qs:t:p")) != EOF) {
+	while ((c = getopt(argc, argv, "0bdS:T:Bvhi:rRc:qs:t:p")) != EOF) {
 		switch (c) {
 		case 'v':
 			verbose++;
@@ -341,7 +343,7 @@ int main(int argc, char **argv)
 			break;
 		case 'd':
 			finddup = 1;
-			break;
+			break;	
 		case 'S':
 			if ((myip = libnet_name_resolve(optarg,
 							LIBNET_RESOLVE))
@@ -353,6 +355,11 @@ int main(int argc, char **argv)
 			if (!myip) {
 				nullip = 1;
 			}
+			break;
+		case 'T': // destination IP in mac ping (default: 0xffffffff)
+			dip = libnet_name_resolve(optarg,
+						  LIBNET_RESOLVE);
+			searchmac = 1;
 			break;
 		case 'b':
 			myip = 0xffffffff;
@@ -414,7 +421,7 @@ int main(int argc, char **argv)
 			usage(1);
 		}
 	}
-	if (!dip && (optind + 1 != argc)) {
+	if (!searchmac && !dip && (optind + 1 != argc)) {
 		usage(1);
 		exit(1);
 	}
@@ -428,9 +435,11 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if (!dip && strchr(argv[optind], ':')) {
+	if (searchmac || (!dip && strchr(argv[optind], ':'))) {
 		unsigned int n[6];
-		dip = ip_xmas;
+		if (!dip) {
+			dip = ip_xmas;
+		}
 
 		if (must_be_pingip) {
 			fprintf(stderr, "Specified switch can't be used in "
@@ -549,7 +558,7 @@ int main(int argc, char **argv)
 			fprintf(stderr, "libnet_build_ethernet(): error\n");
 			exit(1);
 		}
-		
+
 		libnet_build_ip(ICMP_ECHO_H,  /* Size of the payload */ 
 				0,  /* IP tos */ 
 				rand(),               /* IP ID */ 
@@ -561,7 +570,7 @@ int main(int argc, char **argv)
 				NULL,               /* pointer to payload */ 
 				0,                  /* payload length */ 
 				packet + LIBNET_ETH_H); /* header memory */ 
-		
+
 		libnet_build_icmp_echo(ICMP_ECHO,     /* type */ 
 				       0,             /* code */ 
 				       4321,          /* id */ 

@@ -4,7 +4,7 @@
 arping \- sends arp and/or ip pings to a given host
 .PP 
 .SH "SYNOPSIS" 
-\fBarping\fP [-hqvrRd0bp] [-S \fIhost/ip\fP] [-s \fIMAC\fP] [-t \fIMAC\fP]       [-c \fIcount\fP] [-i \fIinterface\fP] <\fIhost\fP | -B>
+\fBarping\fP [-hqvrRd0bp] [-S \fIhost/ip\fP] [-S \fIhost/ip\fP] [-s \fIMAC\fP]    [-t \fIMAC\fP] [-c \fIcount\fP] [-i \fIinterface\fP] <\fIhost\fP | -B>
 .PP 
 .SH "DESCRIPTION" 
 The \fIarping\fP utility sends \fBARP\fP and/or \fBICMP\fP requests to the specified \fIhost\fP and displays the replies\&. The \fIhost\fP may be specified by its \fBhostname\fP, its \fBIP\fP address, or its \fBMAC\fP address\&.
@@ -53,6 +53,10 @@ Note that this may get the arping unanswered if the target does not have
 routing to the IP\&. If you don\'t own the IP you are using, you may need to turn
 on promiscious mode on the interface (with -p)\&. With this switch you can find
 out what IP-address a host has without taking an IP-address yourself\&.
+.IP 
+.IP "-T \fIIP\fP" 
+Use -T as target address when pinging MACs that won\'t
+respond to a broadcast ping but perhaps to a directed broadcast\&.
 .IP 
 \fIExample\fP:                                                                To check the address of MAC-A, use knowledge of MAC-B and IP-B\&.
 .IP 

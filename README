@@ -1,4 +1,4 @@
-$Id: README 120 2000-09-09 22:20:30Z marvin $
+$Id: README 121 2000-09-09 22:28:23Z marvin $
 
  ARP Ping
 
@@ -56,6 +56,9 @@ Q: I run the program and it segfaults no matter which address I try to ping.
 A: Libnet segfaults when given a non-existing interface, I'm looking for how
    to check the validity of an interface before sending it to libnet but for
    now just give it an existing interface or change the default in the source.
+
+   Update (version 0.9): arping should now pick an interface that exists, so
+   there should be no more segfaults unless you override it with the -i switch.
 ---
 Q: Arping find some hosts, but not others. why?   btw, I have several NICs.
 

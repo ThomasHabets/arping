@@ -1,5 +1,7 @@
-# $Id: Makefile 24 2000-04-24 20:30:21Z marvin $
+# $Id: Makefile 41 2000-05-17 23:32:38Z marvin $
 TARGETS=arping
+
+all: $(TARGETS)
 
 %.o: %.c
 	gcc -Wall $(CFLAGS) -c $(shell libnet-config --defines) $(shell libnet-config --cflags) $<

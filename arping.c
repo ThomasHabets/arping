@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 737 2002-11-03 19:47:58Z marvin $
+ * $Id: arping.c 793 2003-02-04 20:22:23Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -78,7 +78,7 @@
 #define DEBUG(a)
 #endif
 
-const float version = 1.05;
+const float version = 1.06;
 
 struct ether_addr *mymac;
 static u_char eth_xmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -488,7 +488,8 @@ int main(int argc, char **argv)
 	}
 	if (!searchmac && !dip && (optind + 1 != argc)) {
 		usage(1);
-		exit(1);
+	} else if (searchmac && (optind + 1 != argc)) {
+		usage(1);
 	}
 	if (getuid() && geteuid()) {
 		fprintf(stderr, "arping: must run as root\n");

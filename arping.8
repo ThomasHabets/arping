@@ -1,4 +1,4 @@
-.TH "arping" "8" "12th Feb, 2002" "arping" "" 
+.TH "arping" "8" "4th Feb, 2003" "arping" "" 
 .PP 
 .SH "NAME" 
 arping \- sends arp and/or ip pings to a given host
@@ -10,6 +10,10 @@ arping \- sends arp and/or ip pings to a given host
 The \fIarping\fP utility sends \fBARP\fP and/or \fBICMP\fP requests to the specified \fIhost\fP and displays the replies\&. The \fIhost\fP may be specified by its \fBhostname\fP, its \fBIP\fP address, or its \fBMAC\fP address\&.
 .PP 
 One request is sent each second\&.
+.PP 
+When pinging an IP an ARP who-has query is sent\&. When pinging a MAC
+address a directed broadcast ICMP Echo request is sent\&. For more
+technical explaination, see the README file\&.
 .PP 
 \fIImportant note on timing\fP
 .PP 
@@ -92,5 +96,4 @@ instead of -S 255\&.255\&.255\&.255\&. This is libnets fault\&.
 .PP 
 .SH "AUTHOR" 
 .PP 
-Arping was written by Thomas Habets <thomas@habets\&.pp\&.se> aka
-<marvin@rootbusters\&.net>
+Arping was written by Thomas Habets <thomas@habets\&.pp\&.se>\&.

@@ -1,4 +1,4 @@
-manpage(arping)(8)(12th Feb, 2002)(arping)()
+manpage(arping)(8)(4th Feb, 2003)(arping)()
 
 manpagename(arping)(sends arp and/or ip pings to a given host)
 
@@ -10,6 +10,10 @@ manpagedescription()
     The em(arping) utility sends bf(ARP) and/or bf(ICMP) requests to the specified em(host) and displays the replies. The em(host) may be specified by its bf(hostname), its bf(IP) address, or its bf(MAC) address.
 
     One request is sent each second.
+
+    When pinging an IP an ARP who-has query is sent. When pinging a MAC
+    address a directed broadcast ICMP Echo request is sent. For more
+    technical explaination, see the README file.
 
     em(Important note on timing)
 
@@ -78,5 +82,4 @@ manpageseealso()
 
 manpageauthor()
 
-    Arping was written by Thomas Habets <thomas@habets.pp.se> aka
-<marvin@rootbusters.net>
+    Arping was written by Thomas Habets <thomas@habets.pp.se>.

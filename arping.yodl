@@ -1,6 +1,6 @@
 manpage(arping)(8)(15th mars, 2001)(arping)()
 
-manpagename(arping)(sends arp and/or echo requests to a given host)
+manpagename(arping)(sends arp and/or ip pings to a given host)
 
 manpagesynopsis()
     bf(arping) [-h] [-q] [-v] [-r] [-d] [-0] [-s em(MAC)] [-t em(MAC)]   \

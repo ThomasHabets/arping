@@ -1,5 +1,5 @@
 /*
- * arping 0.3
+ * arping 0.4
  *
  * By marvin@nss.nu
  *
@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 46 2000-05-18 08:15:14Z marvin $
+ * $Id: arping.c 47 2000-05-18 08:16:03Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)

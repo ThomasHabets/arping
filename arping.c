@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 54 2000-05-19 16:38:26Z marvin $
+ * $Id: arping.c 55 2000-05-22 20:46:42Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -55,26 +55,30 @@ u_long dip = 0;
 u_char *packet;
 struct libnet_link_int *linkint;
 
-int verbose = 0;
-int numsent = 0;
-int numrecvd = 0;
-int searchmac = 0;
-int maxcount = 0x7fffffff;
-int rawoutput = 0;
+unsigned int verbose = 0;
+unsigned int numsent = 0;
+unsigned int numrecvd = 0;
+unsigned int searchmac = 0;
+unsigned int finddup = 0;
+unsigned int maxcount = -1;
+unsigned int rawoutput = 0;
 
 void sigint(int i);
 
 
 void usage(int ret)
 {
-	printf("arping %1.1f [ -v ] [ -r ] [ -c count ] [ -i <interface> ] "
-	       " <host/ip/MAC>\n",
-	       version);
+	printf("arping %1.1f [ -v ] [ -r ] [ -d ] [ -c count ] "
+	       "[ -i <interface> ] <host/ip/MAC>\n", version);
 	exit(ret);
 }
 
 void alasend(int i)
 {
+	numsent++;
+	if (numsent > maxcount) {
+		sigint(numrecvd ? 0 : 1);
+	}
 	if (searchmac) {
 		libnet_build_icmp_echo(ICMP_ECHO,      /* type */ 
 				       0,              /* code */ 
@@ -97,16 +101,18 @@ void alasend(int i)
 		} 
 
 	}
+	if (finddup && numrecvd) {
+		sigint(0);
+	}
+	if (verbose > 1) {
+		printf("Sending packet\n");
+	}
 	if (-1 == (libnet_write_link_layer(linkint,
 					   (u_char*)ifname,
 					   (u_char*)packet,
 					   LIBNET_ARP_H + LIBNET_ETH_H))) {
 		fprintf(stderr, "libnet_write_link_layer(): error\n");
 		exit(1);
-	}
-	numsent++;
-	if (numsent > maxcount) {
-		sigint(0);
 	}
 	alarm(1);
 }
@@ -126,12 +132,11 @@ void sigint(int i)
 			printf("\n--- %s statistics ---\n",
 			       libnet_host_lookup(dip,0));
 		}
-		printf("%d packets transmitted, %d packets recieved, %3.0f%% "
-		       "unanswered\n",
-		       numsent, numrecvd,
+		printf("%d packets transmitted, %d packets received, %3.0f%% "
+		       "unanswered\n", numsent, numrecvd,
 		       100.0 - 100.0 * (float)(numrecvd)/(float)numsent);
 	}
-	exit(1);
+	exit(i);
 }
 
 void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
@@ -178,8 +183,9 @@ void handlepacket(const char *unused, struct pcap_pkthdr *h, u_char *packet)
 					      + sizeof(struct arphdr)
 					      + harp->ar_hln);
 			if (dip == ip) {
+				numrecvd;
 				cp = (u_char*)harp + sizeof(struct arphdr);
-				if (!rawoutput) {
+				if (!rawoutput && !finddup) {
 					printf("%d bytes from ", h->len);
 				}
 				for (c = 0; c < harp->ar_hln -1; c++) {
@@ -213,7 +219,7 @@ int main(int argc, char **argv)
 	int c;
 	struct bpf_program bp;
 	
-	while ((c = getopt(argc, argv, "vhi:rc:")) != EOF) {
+	while ((c = getopt(argc, argv, "dvhi:rc:")) != EOF) {
 		switch (c) {
 		case 'v':
 			verbose++;
@@ -228,6 +234,9 @@ int main(int argc, char **argv)
 			break;
 		case 'c':
 			maxcount = atoi(optarg);
+			break;
+		case 'd':
+			finddup = 1;
 			break;
 		default:
 			usage(1);
@@ -253,7 +262,7 @@ int main(int argc, char **argv)
 			   (int*)&n[4],
 			   (int*)&n[5]
 			   ) != 6) {
-			fprintf(stderr, "Illigal mac addr %s\n", argv[optind]);
+			fprintf(stderr, "Illegal mac addr %s\n", argv[optind]);
 			return 1;
 		}
 		for (c = 0; c < 6; c++) {
@@ -265,7 +274,9 @@ int main(int argc, char **argv)
 					  LIBNET_RESOLVE);
 		memcpy(eth_target, eth_xmas, ETH_ALEN);
 	}
-		
+	if (finddup && maxcount == -1) {
+		maxcount = 3;
+	}
 	/*
 	 * libnet init
 	 */
@@ -283,7 +294,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "libnet_get_ipaddr(): %s\n", ebuf);
 		exit(1);
 	}
-
+	
 	if (-1 == libnet_init_packet(LIBNET_ETH_H + LIBNET_IP_H
 				     + LIBNET_ICMP_H, &packet)) {
 		fprintf(stderr, "libnet_init_packet(): error\n");

@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 1063 2004-02-02 00:37:34Z marvin $
+ * $Id: arping.c 1100 2004-05-23 15:08:42Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -131,6 +131,9 @@ static void do_libnet_init(const char *ifname)
 	}
 }
 
+/*
+ *
+ */
 const char *arping_lookupdev_default(u_int32_t srcip, u_int32_t dstip,
 				     char *ebuf)
 {
@@ -138,6 +141,9 @@ const char *arping_lookupdev_default(u_int32_t srcip, u_int32_t dstip,
 }
 
 #if defined(FINDIF) && defined(linux)
+/*
+ *
+ */
 const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip, char *ebuf)
 {
 	FILE *f;
@@ -188,6 +194,9 @@ const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip, char *ebuf)
 	return arping_lookupdev_default(srcip,dstip,ebuf);
 }
 #else
+/*
+ *
+ */
 const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip, char *ebuf)
 {
 	return arping_lookupdev_default(srcip,dstip,ebuf);
@@ -908,8 +917,7 @@ int main(int argc, char **argv)
 	 */
 
 	/*
-	 * Get some good iface. FIXME: traverse routing or something to find
-	 * right one.
+	 * Get some good iface.
 	 */
 	if (!ifname) {
 		if (dont_use_arping_lookupdev) {
@@ -1035,7 +1043,6 @@ int main(int argc, char **argv)
 		       100.0 - 100.0 * (float)(numrecvd)/(float)numsent); 
 	}
 	exit(!numrecvd);
-
 
 	return 0;
 }

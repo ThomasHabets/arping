@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 1123 2004-08-25 13:26:02Z marvin $
+ * $Id: arping.c 1124 2004-08-29 18:44:15Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -964,7 +964,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	parm = argv[optind];
+	parm = (optind < argc) ? argv[optind] : NULL;
 
 	/*
 	 * Handle dstip_given instead of ip address after parms (-B really)
@@ -982,6 +982,10 @@ int main(int argc, char **argv)
 				exit(1);
 			}
 		}
+	}
+
+	if (!parm) {
+		usage(1);
 	}
 
 	/*

@@ -1,4 +1,4 @@
-# $Id: Makefile 1063 2004-02-02 00:37:34Z marvin $
+# $Id: Makefile 1124 2004-08-29 18:44:15Z marvin $
 TARGETS=arping
 
 CD=cd
@@ -102,7 +102,7 @@ O_arping2=arping-2/arping.c
 arping2: arping-2/arping
 arping-2/arping: $(O_arping2)
 #	$(CC) `libnet-config --libs --defines --cflags` -o arping arping-2/arping.c -lnet -lpcap
-	$(CC) -o arping arping-2/arping.c -lnet -lpcap $(EXTRA_LIBS)
+	$(CC) -g -o arping arping-2/arping.c -lnet -lpcap $(EXTRA_LIBS)
 
 clean:
 	rm -f *.o $(TARGETS)
@@ -124,7 +124,6 @@ dist:
 	)
 test: arping2
 	@echo Testing with destination host $(HOST) and MAC $(MAC)
-
 #	Easy ones
 	@$(SUDO) ./arping -c 1 -q $(HOST) || echo fail: arping host
 	@$(SUDO) ./arping -c 1 -q $(shell $(SUDO) ./arping -c 1 -r $(HOST)) \

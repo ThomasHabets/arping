@@ -1,4 +1,4 @@
-$Id: README 55 2000-05-22 20:46:42Z marvin $
+$Id: README 72 2000-07-02 11:20:08Z marvin $
 
  ARP Ping
 
@@ -79,6 +79,12 @@ A: Are they windows boxen?
    <non-technical>
    Windows sucks
    </non-technical>
+---
+Q: It doesn't compile, I get some error message about libnet and/or libpcap
+
+A: Arping depends on libnet and libpcap, get libnet at:
+   http://www.packetfactory.net/libnet and libpcap from your distribution.
+   (alt. you can search for libpcap on freshmeat.net)
 
 License
 -------

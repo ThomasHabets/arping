@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 55 2000-05-22 20:46:42Z marvin $
+ * $Id: arping.c 58 2000-05-23 13:29:11Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -62,13 +62,14 @@ unsigned int searchmac = 0;
 unsigned int finddup = 0;
 unsigned int maxcount = -1;
 unsigned int rawoutput = 0;
+unsigned int nullip = 0;
 
 void sigint(int i);
 
 
 void usage(int ret)
 {
-	printf("arping %1.1f [ -v ] [ -r ] [ -d ] [ -c count ] "
+	printf("arping %1.1f [ -v ] [ -r ] [ -d ] [-0 ] [ -c count ] "
 	       "[ -i <interface> ] <host/ip/MAC>\n", version);
 	exit(ret);
 }
@@ -219,7 +220,7 @@ int main(int argc, char **argv)
 	int c;
 	struct bpf_program bp;
 	
-	while ((c = getopt(argc, argv, "dvhi:rc:")) != EOF) {
+	while ((c = getopt(argc, argv, "0dvhi:rc:")) != EOF) {
 		switch (c) {
 		case 'v':
 			verbose++;
@@ -237,6 +238,9 @@ int main(int argc, char **argv)
 			break;
 		case 'd':
 			finddup = 1;
+			break;
+		case '0':
+			nullip = 1;
 			break;
 		default:
 			usage(1);
@@ -290,7 +294,10 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	
-	if (!(myip = htonl(libnet_get_ipaddr(linkint,(u_char*)ifname,ebuf)))) {
+	if (nullip) {
+		myip = 0;
+	} else if  (!(myip = htonl(libnet_get_ipaddr(linkint,(u_char*)ifname,
+						     ebuf)))) {
 		fprintf(stderr, "libnet_get_ipaddr(): %s\n", ebuf);
 		exit(1);
 	}

@@ -1,11 +1,12 @@
-# $Id: Makefile 120 2000-09-09 22:20:30Z marvin $
+# $Id: Makefile 131 2000-09-11 21:46:58Z marvin $
 TARGETS=arping
 
 USE_NETIF=0
 OPENBSD=0
 LINUX=0
 
-CFLAGS=-g -I/usr/local/include -L/usr/local/lib -DUSE_NETIF=$(USE_NETIF) -DOPENBSD=$(OPENBSD) -DLINUX=$(LINUX)
+# explicit pcap include dir is for redhat which is fux0red
+CFLAGS=-g -I/usr/local/include -L/usr/local/lib -DUSE_NETIF=$(USE_NETIF) -DOPENBSD=$(OPENBSD) -DLINUX=$(LINUX) -I/usr/include/pcap
 
 usage:
 	@echo

@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 138 2000-09-15 17:22:30Z marvin $
+ * $Id: arping.c 139 2000-09-18 19:12:17Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -361,7 +361,7 @@ int main(int argc, char **argv)
 
 	if (searchmac) {
 		if (-1 == libnet_init_packet(LIBNET_ETH_H + LIBNET_IP_H
-					     + LIBNET_ICMP_H, &packet)) {
+					     + LIBNET_ICMP_ECHO_H, &packet)) {
 			fprintf(stderr, "libnet_init_packet(): error\n");
 			exit(1);
 		}

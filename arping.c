@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 59 2000-05-23 15:30:21Z marvin $
+ * $Id: arping.c 70 2000-07-02 11:05:56Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -37,7 +37,7 @@
 #include <net/if.h>
 #include <net/if_arp.h>
 
-const float version = 0.5;
+const float version = 0.6;
 
 struct ether_addr *mymac;
 u_char eth_xmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -227,6 +227,13 @@ int main(int argc, char **argv)
 		case 'h':
 			usage(0);
 		case 'i':
+			if (strchr(optarg, ':')) {
+				fprintf(stderr, "arping: If you're trying to "
+					"feed me an interface alias then you "
+					"don't really\nknow what this programs"
+					" does, do you?\n");
+				exit(1);
+			}
 			ifname = optarg;
 			break;
 		case 'r':

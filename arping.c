@@ -10,10 +10,10 @@
  * you don't yet have routing to. Then again, if you have no idea what I'm
  * talking about then you prolly don't need it.
  *
- * $Id: arping.c 28 2000-05-02 02:01:57Z marvin $
+ * $Id: arping.c 32 2000-05-03 16:22:31Z marvin $
  */
 /*
- *  Copyright (C) 2000   Marvin (marvin@nss.nu)
+ *  Copyright (C) 2000 Marvin (marvin@nss.nu)
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public

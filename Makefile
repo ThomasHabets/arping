@@ -1,4 +1,4 @@
-# $Id: Makefile 922 2003-06-21 16:26:53Z marvin $
+# $Id: Makefile 924 2003-06-21 16:36:14Z marvin $
 TARGETS=arping
 
 USE_NETIF=0
@@ -15,7 +15,7 @@ CFLAGS=-g -I/usr/local/include -L/usr/local/lib -DFINDIF=$(FINDIF) -DUSE_NETIF=$
 
 all: arping2
 
-arping1:
+arping1-usage:
 	@echo
 	@echo "usage: make [ target ]"
 	@echo "Target can be one of: "
@@ -40,23 +40,23 @@ doc: arping.yodl
 	yodl2man -o arping.8 arping.yodl
 
 linux-nofindif:
-	make USE_NETIF=1 LINUX=1 FINDIF=0 all
+	make USE_NETIF=1 LINUX=1 FINDIF=0 arping1-make
 linux:
-	make USE_NETIF=1 LINUX=1 all
+	make USE_NETIF=1 LINUX=1 arping1-make
 
 freebsd:
-	make USE_NETIF=1 FREEBSD=1 all
+	make USE_NETIF=1 FREEBSD=1 arping1-make
 
 macosx:
-	make USE_NETIF=1 MACOSX=1 all
+	make USE_NETIF=1 MACOSX=1 arping1-make
 
 openbsd:
-	make OPENBSD=1 all
+	make OPENBSD=1 arping1-make
 netbsd:
 	make openbsd
 
 solaris:
-	make USE_NETIF=0 SOLARIS=1 all
+	make USE_NETIF=0 SOLARIS=1 arping1-make
 
 install:
 	install -c arping /usr/local/bin/arping
@@ -66,8 +66,8 @@ arping.o: arping.c
 	$(CC) -Wall $(CFLAGS) -c `libnet-config --defines` `libnet-config --cflags` arping.c
 
 O_arping=arping.o
-arping: $(O_arping)
-	$(CC) $(CFLAGS) -g -o $@ $(O_arping) `libnet-config --libs` -lpcap
+arping1-make: $(O_arping)
+	$(CC) $(CFLAGS) -g -o arping $(O_arping) `libnet-config --libs` -lpcap
 
 O_arping2=arping-2/arping.c
 arping2: arping-2/arping

@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 860 2003-04-07 18:02:51Z marvin $
+ * $Id: arping.c 861 2003-04-07 18:05:59Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -33,7 +33,7 @@
  */
 /*
  * Note to self:
- *  Test this on each platform:
+ *  Test checklist:
  *    command                   expected response
  *    arping host               pongs
  *    arping -a host            audiable pongs
@@ -41,15 +41,22 @@
  *    arping -a mac             audiable pongs
  *    arping -A host            nothing
  *    arping -A mac             nothing
- *    arping -A host -t mac     nothing
- *    arping -A mac  -T ip      nothing
+ *    arping -t mac -A host     nothing
+ *    arping -T ip -A mac       nothing
  *    arping -r host            mac
  *    arping -R host            ip
  *    arping -r mac             ip
  *    arping -R mac             mac
  *    arping -rR mac            mac ip
  *    ./arping-scan-net.sh mac  ip
- *    
+ * 
+ * Arch checklist:
+ *   Solaris/sparc
+ *   NetBSD/alpha      (is libnet or I unaligned? -- libnet I think)
+ *   OpenBSD/sparc64   (libnet a bit buggy)
+ *   Linux/x86
+ *   Linux/sparc
+ *
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -276,8 +283,12 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 		    && !memcmp(eth->h_dest, eth_source,
 			       ETH_ALEN)) {
 			u_char *cp = eth->h_source;
-			if (addr_must_be_same && (dip != hip->saddr)) {
-				return;
+			if (addr_must_be_same) {
+				u_int32_t tmp;
+				memcpy(&tmp, &hip->saddr, 4);
+				if (dip != tmp) {
+					return;
+				}
 			}
 			numrecvd++;
 			if (!rawoutput) {
@@ -293,9 +304,7 @@ static void handlepacket(const char *unused, struct pcap_pkthdr *h,
 				if (rawoutput & 1) {
 					u_int32_t tmp;
 					memcpy(&tmp, &hip->saddr, 4);
-					printf("%s",
-					       libnet_host_lookup(tmp,
-								  0));
+					printf("%s",libnet_host_lookup(tmp,0));
 				}
 				if (!rawoutput) {
 					/*

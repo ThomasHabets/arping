@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 738 2002-11-03 19:58:21Z marvin $
+ * $Id: arping.c 902 2003-06-02 08:23:47Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -332,10 +332,10 @@ static void pingip_recv(const char *unused, struct pcap_pkthdr *h,
 				}
 				printf("%s\n", libnet_addr2name4(ip,0));
 				break;
-			case RAW:
+			case RRAW:
 				printf("%s\n", libnet_addr2name4(ip,0));
 				break;
-			case RRAW:
+			case RAW:
 				for (c = 0; c < 6; c++) {
 					printf("%.2x%c", heth->_802_3_shost[c],
 					       (c<5)?':':'\n');

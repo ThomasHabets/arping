@@ -1,4 +1,4 @@
-$Id: README 793 2003-02-04 20:22:23Z marvin $
+$Id: README 902 2003-06-02 08:23:47Z marvin $
 
  ARP Ping
 
@@ -49,19 +49,19 @@ FAQ
 ---
 Q: It doesn't compile!
 
-A: Arping won't work with libnet 1.1.x. This is due to a libnet 1.1.x
+A: Arping 1.x won't work with libnet 1.1.x. This is due to libnet 1.1.x
    being completely different from 1.0.x. There is no real way to
    write code that works on both 1.0.x and 1.1.x.
 
    Since I wanted to do some other things a bit differently, I wrote
-   arping 2.x. It doesn't support as many architectures yet, but I'm
-   working on it.
+   arping 2.x. It doesn't support as many architectures or features yet, but
+   I'm slowly working on it.
 
    Arping 2.x (BETA) is included in this release and can be created
    with "make arping2". If it doesn't compile, check the Makefile and
    adjust paths.
 
-   Once I get Arping2 working on all architectures I'll setup so that
+   Once I get Arping 2.x working on all architectures I'll setup so that
    the right version is compiled automatically.
 ---
 Q: After compiling arping without any problem, i test it first with
@@ -131,7 +131,7 @@ A: Argh! Why would you want to? Anyway, this one is due to libnets resolving,
    and my unwillingness to reimplement it (in a portable manner, ugh).
 
    -S 255.255.255.255 can be replaced with -b, and pinging broadcast (why you
-   would eludes me) -B.
+   would do that eludes me) -B.
 
    To be extra perverted, try:
    # ./arping -b -B
@@ -177,6 +177,17 @@ A: Be my guest, but if care about security *at all* you will have to restrict
 
    If you think I'm wrong, tell me why.
 ---
+Q: What's this -A switch all about, I don't understand it.
+
+A: Normally arping packets are sent out to some kind of broadcast (MAC or IPv4
+   broadcast) and hosts reply with source address == their address.
+
+   If -A is given, only packets coming in with a *source* address equal
+   to the *destination* address in the query is accepted.
+
+   If you don't understand, don't worry. You won't need it. But for an
+   example use, see the arping-scan-net.sh script.
+---
 Q: Arping used to work (0.97 and down) for pinging MACs, but not with 0.98 and
    up. What did you screw up?
 
@@ -208,6 +219,8 @@ Ok, two more were thought of. Both of which are non-trivially-portable.
    opened device.
 
 Arping 2.x solves the second one. Still working on the first.
+But don't use arping 2.x unless you have to. Arping 1.x has more features
+and has been tested a *lot* more.
 
 License
 -------
@@ -273,12 +286,10 @@ For pinging MAC addresses:
  Note that this script will take 1 second per IP since that is how long arping
  waits, so scanning a C-class net will take 256 seconds. If you have a bigger
  net, then write a program that will run several arpings at the same time to
- go through more in less time.
- arping-scan-net.sh is a more capable script for scanning, but you need to
- edit it since the address range it searches is hard-coded.
- If you like this feature, mail me and I may put it into the main arping.
- But no need wasting my time if no-one wants it.
- (I'll probably add it anyway some day, but not soon)
+ go through more in less time, or check out arping-scan-net.sh, which is a
+ more capable script for scanning, but you need to edit it since the address
+ range it searches is hard-coded.
+ I may add this to arping some day, but don't hold your breath. 
 
 ----------------------------------------------------------------------------
-Send questions/suggestions/patches/rants/money/sparcs to thomas@habets.pp.se
+Send questions/suggestions/patches/rants/money/alphas to thomas@habets.pp.se

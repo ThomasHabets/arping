@@ -13,7 +13,7 @@ manpagedescription()
 
     When pinging an IP an ARP who-has query is sent. When pinging a MAC
     address a directed broadcast ICMP Echo request is sent. For more
-    technical explaination, see the README file.
+    technical explaination and an FAQ, see the README file.
 
     em(Important note on timing)
 

@@ -1,4 +1,4 @@
-$Id: README 121 2000-09-09 22:28:23Z marvin $
+$Id: README 138 2000-09-15 17:22:30Z marvin $
 
  ARP Ping
 
@@ -29,12 +29,13 @@ it is, you can ping by MAC to get the IP and fix the problem.
 If you are on someone else's net and want to 'borrow' a real IP address instead
 of using one of those 10.x.x.x-addresses the dhcp hands out you probably want
 to know which ones are taken, or people will get mad (a friend of mine got a
-call about 15 secs after he accidentally 'stole' an IP, oops).
+call on his cellphone about 15 secs after he accidentally 'stole' an IP, oops).
 
 Compiling
 ---------
-Type make linux to compile under linux and make openbsd to compile under openbsd.
-If you have some other OS, try both before mailing me.
+Type make linux to compile under linux and make openbsd to compile under
+openbsd. Follow this pattern for compilation under solaris.
+If you have some other OS, try all before mailing me.
  
 How it does it
 --------------

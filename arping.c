@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 137 2000-09-15 16:36:52Z marvin $
+ * $Id: arping.c 138 2000-09-15 17:22:30Z marvin $
  */
 /*
  *  Copyright (C) 2000 Marvin (marvin@nss.nu)
@@ -52,6 +52,11 @@
 
 #if OPENBSD
 #include "openbsd.h"
+#endif
+
+#if SOLARIS
+#include "solaris.h"
+#include "netinet/arp.h"
 #endif
 
 #if 0
@@ -145,6 +150,9 @@ void alasend(int i)
 		exit(1);
 	}
 	alarm(1);
+#if SOLARIS
+	signal(SIGALRM, alasend);
+#endif
 }
 
 void sigint(int i)
@@ -334,11 +342,11 @@ int main(int argc, char **argv)
 	}
 
 	if (!(linkint = libnet_open_link_interface(ifname, ebuf))) {
-		fprintf(stderr, "libnet_get_hwaddr(): %s\n", ebuf);
+		fprintf(stderr, "libnet_open_link_interface(): %s\n", ebuf);
 		exit(1);
 	}
 	
-	if (!(mymac = libnet_get_hwaddr(NULL, (u_char*)ifname,  ebuf))) {
+	if (!(mymac = libnet_get_hwaddr(linkint, (u_char*)ifname,  ebuf))) {
 		fprintf(stderr, "libnet_get_hwaddr(): %s\n", ebuf);
 		exit(1);
 	}
@@ -362,7 +370,7 @@ int main(int argc, char **argv)
 		 * this makes it work on solaris.
 		 * not sure if LIBNET_ICMP_H is needed though, but it works
 		 */
-       		if (-1 == libnet_init_packet(LIBNET_ETH_H + LIBNET_ARP_H
+		if (-1 == libnet_init_packet(LIBNET_ETH_H + LIBNET_ARP_H
 					     + LIBNET_ICMP_H, &packet)) {
 			fprintf(stderr, "libnet_init_packet(): error\n");
 			exit(1);

@@ -1,8 +1,8 @@
-/* $Id: openbsd.h 138 2000-09-15 17:22:30Z marvin $ */
+/* $Id: solaris.h 138 2000-09-15 17:22:30Z marvin $ */
 
-#define __u8 u_int8_t
-#define __u16 u_int16_t
-#define __u32 u_int32_t
+#define __u8 uint8_t
+#define __u16 uint16_t
+#define __u32 uint32_t
 
 struct ethhdr 
 {
@@ -37,14 +37,14 @@ struct iphdr
 	unsigned int version:4;
 	unsigned int ihl:4;
 #endif
-	u_int8_t tos;
-	u_int16_t tot_len;
-	u_int16_t id;
-	u_int16_t frag_off;
-	u_int8_t ttl;
-	u_int8_t protocol;
-	u_int16_t check;
-	u_int32_t saddr;
-	u_int32_t daddr;
+	uint8_t tos;
+	uint16_t tot_len;
+	uint16_t id;
+	uint16_t frag_off;
+	uint8_t ttl;
+	uint8_t protocol;
+	uint16_t check;
+	uint32_t saddr;
+	uint32_t daddr;
 	/*The options start here. */
 };

@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping2.c 710 2002-08-30 22:58:23Z marvin $
+ * $Id: arping2.c 712 2002-08-30 23:23:12Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -418,6 +418,7 @@ static void pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 			fprintf(stderr, "arping: can't-happen-bug\n");
 			sigint(0);
 		}
+		numrecvd++;
 	}
 }
 
@@ -871,7 +872,7 @@ int main(int argc, char **argv)
 		       "unanswered\n",target,numsent,numrecvd,
 		       100.0 - 100.0 * (float)(numrecvd)/(float)numsent); 
 	}
-	exit(numrecvd);
+	exit(!numrecvd);
 
 
 	return 0;

@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 922 2003-06-21 16:26:53Z marvin $
+ * $Id: arping.c 923 2003-06-21 16:28:11Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -31,7 +31,7 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  */
-#include "config.h"
+//#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

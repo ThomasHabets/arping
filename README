@@ -1,4 +1,45 @@
+$Id: README 53 2000-05-19 16:37:43Z marvin $
 
+ ARP Ping
+
+    By Marvin (marvin@nss.nu)
+
+
+Introduction
+------------
+Arping is a util to find out it a specific IP address on the LAN is 'taken'
+and what MAC address owns it. Sure, you *could* just use 'ping' to find out if
+it's taken and even if the computer blocks ping (and everything else) you still
+get an entry in your arp cache. But what if you aren't on a routable net? Then
+you're screwed. Or you use arping.
+
+Why it's not stupid
+-------------------
+Say you have a block of N real ARIN-assigned IP-addresses. You want to debug
+the net and you don't know which IP addresses are taken. You can't ping anyone
+before you take the IP, and you can't pick an IP before you know which are
+already taken. But with arping you can 'ping' the IP and if you get no
+responce, the IP is availible.
+
+Example uses
+------------
+If some box is dumping non-IP (like IPX) garbage and you don't know which box
+it is, you can ping by MAC to get the IP and fix the problem.
+
+If you are on someone else's net and want to 'borrow' a real IP address instead
+of using one of those 10.x.x.x-addresses the dhcp hands out you probably want
+to know which ones are taken, or people will get mad (a friend of mine got a
+call about 15 secs after he accidentally 'stole' an IP, oops).
+
+Compiling
+---------
+Improvise.
+
+How it does it
+--------------
+Bah, just read the source
+
+FAQ
 ---
 Q: after compiling arping without any problem, i test it first with
    localhost... but it doesn't respond. Isn't that strange?
@@ -38,3 +79,10 @@ A: Are they windows boxen?
    <non-technical>
    Windows sucks
    </non-technical>
+
+License
+-------
+It's GPL, see the LICENSE file.
+
+-------------------------------------------------------------------------------
+Send questions/suggestions/patches/rants/money/sparcs/whatever to marvin@nss.nu

@@ -14,6 +14,8 @@
  * 2000-02-25: Told pcap to filter !arp
  *             Cleaned up error messages
  * 2000-02-24: ------ Released 0.1 --------
+ *
+ * $Id: arping.c 24 2000-04-24 20:30:21Z marvin $
  */
 #include <getopt.h>
 #include <libnet.h>

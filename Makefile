@@ -1,3 +1,4 @@
+# $Id: Makefile 24 2000-04-24 20:30:21Z marvin $
 TARGETS=arping
 
 %.o: %.c

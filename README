@@ -1,4 +1,4 @@
-$Id: README 737 2002-11-03 19:47:58Z marvin $
+$Id: README 738 2002-11-03 19:58:21Z marvin $
 
  ARP Ping
 
@@ -170,7 +170,7 @@ A: Be my guest, but if care about security *at all* you will have to restrict
    ordinary users have absolutely no business generating.
 
    For example, I don't protect against an ALRM signal flood, which will result
-   in a packet flood.
+   in a packet flood. (arping 2.x doesn't have this issue)
 
    If you are honestly debugging the network then I don't see why you aren't
    root already.
@@ -201,12 +201,14 @@ A: Will do.
 Misc
 ----
 There, I added the stupid roundtrip time feature. Now I dare you to think of
-any other applicable features. (IPv4 only, for now)
+any other applicable features. (IPv4 only, for now and probably forever)
 
 Ok, two more were thought of. Both of which are non-trivially-portable.
 1) Automatically select interface depending on IP address pinged.
 2) Don't use SIGARLM. Non-trivial because you can't (AFAIK) select() on a pcap-
    opened device.
+
+Arping 2.x solves the second one. Still working on the first.
 
 License
 -------

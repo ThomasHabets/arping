@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 737 2002-11-03 19:47:58Z marvin $
+ * $Id: arping.c 738 2002-11-03 19:58:21Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -76,7 +76,7 @@ static u_int32_t srcip,dstip;
 
 static int beep = 0;
 static int verbose = 0;
-static int pingmac = 0;
+/*static int pingmac = 0; */
 static int finddup = 0;
 static unsigned int numsent = 0;
 static unsigned int numrecvd = 0;
@@ -379,7 +379,7 @@ static void pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 	    && ((!memcmp(heth->_802_3_shost, dstmac,ETH_ALEN)
 		 || !memcmp(dstmac, ethxmas, ETH_ALEN)))
 	    && !memcmp(heth->_802_3_dhost, srcmac, ETH_ALEN)) {
-		u_int8_t *cp = heth->_802_3_shost;
+/*		u_int8_t *cp = heth->_802_3_shost; */
 		switch(display) {
 		case QUIET:
 			break;
@@ -522,7 +522,7 @@ int main(int argc, char **argv)
 {
 	char ebuf[LIBNET_ERRBUF_SIZE];
 	char *cp;
-	int nullip = 0;
+/*	int nullip = 0;*/
 	int promisc = 0;
 	int srcip_given = 0;
 	int srcmac_given = 0;

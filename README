@@ -1,4 +1,4 @@
-$Id: README 363 2001-07-08 02:31:20Z marvin $
+$Id: README 411 2001-09-03 13:49:00Z marvin $
 
  ARP Ping
 
@@ -75,6 +75,10 @@ A: Arping when pinging a MAC relies on the host to answer a broadcast ping
    host to pop up on MAC ping, you have to config it to respond to broadcast
    pings.
    (for linux, make sure /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts is 0)
+A: -T <ip/host> allows you to restrict the arping to a limited subnet, which
+   may or may not work for you. For example if the box 00:01:02:03:04:05 is on
+   192.168.0.0/24 then the broadcast probably is 192.168.0.255, so try:
+   # arping -T 192.168.0.255 00:01:02:03:04:05
 ---
 Q: It doesn't compile, I get some error message about libnet and/or libpcap
 
@@ -109,6 +113,10 @@ A: Argh! Why would you want to? Anyway, this one is due to libnets resolving,
    To be extra perverted, try:
    # ./arping -b -B
    (yes, I added -b and -B just so that version 1.0 should be complete)
+---
+Q: 1.01 is out, didn't you just say 1.0 was supposed to be the last one?
+
+A: Shut up.
 ---
 Q: Is it OK to make arping suid root?
 

@@ -1,4 +1,4 @@
-# $Id: Makefile 1125 2004-08-29 18:47:37Z marvin $
+# $Id: Makefile 1520 2006-04-07 20:02:08Z marvin $
 TARGETS=arping
 
 CD=cd
@@ -21,7 +21,7 @@ MACOSX=0
 
 CC=gcc
 # explicit pcap include dir is for redhat which is fux0red
-CFLAGS=-g -I/usr/local/include -L/usr/local/lib -DFINDIF=$(FINDIF) -DUSE_NETIF=$(USE_NETIF) -DOPENBSD=$(OPENBSD) -DLINUX=$(LINUX) -DSOLARIS=$(SOLARIS) -DFREEBSD=$(FREEBSD) -DMACOSX=$(MACOSX) -I/usr/include/pcap
+CFLAGS=-g -I/usr/local/include -L/usr/local/lib -DFINDIF=$(FINDIF) -DUSE_NETIF=$(USE_NETIF) -DOPENBSD=$(OPENBSD) -DLINUX=$(LINUX) -DSOLARIS=$(SOLARIS) -DFREEBSD=$(FREEBSD) -DMACOSX=$(MACOSX) -I/usr/include/pcap -L/opt/csw/lib -R/opt/csw/lib
 
 all: message arping2
 

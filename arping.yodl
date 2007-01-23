@@ -39,7 +39,7 @@ startdit()
 	when you haven't configured your interface yet.
 	Note that this may get the MAC-ping unanswered.
 	This is an alias for -S 0.0.0.0.
-    dit(-a) Audiable ping.
+    dit(-a) Audible ping.
     dit(-A) Only count addresses matching requested address (This *WILL*
 	break most things you do. Only useful if you are arpinging many
 	hosts at once. See arping-scan-net.sh for an example).

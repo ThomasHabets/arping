@@ -18,7 +18,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 1123 2004-08-25 13:26:02Z marvin $
+ * $Id: arping.c 1753 2007-01-27 14:20:42Z marvin $
  */
 /*
  *  Copyright (C) 2000-2003 Thomas Habets <thomas@habets.pp.se>
@@ -42,10 +42,10 @@
  *  Test checklist:  (cmac = mac in cisco format (0000.0000.0000)
  *    command                   expected response
  *    arping host               pongs
- *    arping -a host            audiable pongs
+ *    arping -a host            audible pongs
  *    arping mac                pongs
  *    arping cmac               pongs
- *    arping -a mac             audiable pongs
+ *    arping -a mac             audible pongs
  *    arping -A host            nothing
  *    arping -A mac             nothing
  *    arping -u host            pongs, index n/m

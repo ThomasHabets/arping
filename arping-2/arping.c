@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 1892 2007-07-09 22:13:13Z marvin $
+ * $Id: arping.c 1893 2007-07-09 22:23:28Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -769,7 +769,9 @@ ping_recv_unix(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
 		       tv.tv_usec = 1;
 		       done = 1;
 	       }
-	
+	       if (time_to_die) {
+		       return;
+	       }
 #ifndef HAVE_WEIRD_BSD
 	       switch((sr = select(pcap_fileno(pcap)+1,
 				   &fds,

@@ -1,4 +1,4 @@
-# $Id: Makefile 1890 2007-07-09 22:04:24Z marvin $
+# $Id: Makefile 1891 2007-07-09 22:12:22Z marvin $
 TARGETS=arping
 
 CD=cd
@@ -126,35 +126,36 @@ dist:
 	$(GPG) -b -a $(DFILE); \
 	)
 test: arping2
-	@echo Testing with destination host $(HOST) and MAC $(MAC)
+	@echo Testing with destination host=$(HOST) and MAC=$(MAC)
+	@echo IF=$(IF)
 #	Easy ones
-	@$(SUDO) ./arping -c 1 -q $(HOST) || echo fail: arping host
-	@$(SUDO) ./arping -c 1 -q $(shell $(SUDO) ./arping -c 1 -r $(HOST)) \
+	$(SUDO) ./arping -i $(IF) -c 1 -q $(HOST) || echo fail: arping host
+	$(SUDO) ./arping -i $(IF) -c 1 -q $(shell $(SUDO) ./arping -i $(IF)  -c 1 -r $(HOST)) \
 		|| echo fail: arping mac
-	$(shell $(SUDO) ./arping -c 1 -q -t 00:11:22:33:44:55 $(HOST) \
+	$(shell $(SUDO) ./arping -i $(IF) -c 1 -q -t 00:11:22:33:44:55 $(HOST) \
 		&& echo fail: -t switch)
 
 #	-A
-	$(shell $(SUDO) ./arping -c 1 -q -A $(HOST) \
+	$(shell $(SUDO) ./arping -i $(IF) -c 1 -q -A $(HOST) \
 		&& echo fail: -A switch)
-	$(shell $(SUDO) ./arping -c 1 -q -A $(MAC) \
+	$(shell $(SUDO) ./arping -i $(IF) -c 1 -q -A $(MAC) \
 		&& echo fail: -A switch)
 
 #	Directed pings
-	$(shell $(SUDO) ./arping -c 1 -q -t $(MAC) $(HOST) \
+	$(shell $(SUDO) ./arping -i $(IF) -c 1 -q -t $(MAC) $(HOST) \
 		|| echo fail: -t switch 2)
-	$(shell $(SUDO) ./arping -c 1 -q -T $(HOST) $(MAC) \
+	$(shell $(SUDO) ./arping -i $(IF) -c 1 -q -T $(HOST) $(MAC) \
 		|| echo fail: -T switch)
-	$(shell $(SUDO) ./arping -c 1 -q -A -t $(MAC) $(HOST) \
+	$(shell $(SUDO) ./arping -i $(IF) -c 1 -q -A -t $(MAC) $(HOST) \
 		|| echo fail: -t switch with -A)
-	$(shell $(SUDO) ./arping -c 1 -q -A -T $(HOST) $(MAC) \
+	$(shell $(SUDO) ./arping -i $(IF) -c 1 -q -A -T $(HOST) $(MAC) \
 		|| echo fail: -T switch with -A)
 
 #	Ok both ways?
-	$(shell [ `$(SUDO) ./arping -c 1 -r $(HOST)` = $(MAC) ] \
+	$(shell [ `$(SUDO) ./arping -i $(IF) -c 1 -r $(HOST)` = $(MAC) ] \
 		|| echo fail: host to MAC translation weird)
-	$(shell [ `$(SUDO) ./arping -c 1 -R $(HOST)` = \
-		  `$(SUDO) ./arping -c 1 -r $(MAC)` ] \
+	$(shell [ `$(SUDO) ./arping -i $(IF) -c 1 -R $(HOST)` = \
+		  `$(SUDO) ./arping -i $(IF) -c 1 -r $(MAC)` ] \
 		|| echo fail: host to MAC translation and back weird)
 
 #	FIXME: more tests listed in arping.c

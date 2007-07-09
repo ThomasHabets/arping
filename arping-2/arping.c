@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 1890 2007-07-09 22:04:24Z marvin $
+ * $Id: arping.c 1892 2007-07-09 22:13:13Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -93,7 +93,7 @@
 #define IP_ALEN 4
 #endif
 
-const float version = 2.05f;
+const float version = 2.06f;
 
 static libnet_t *libnet = 0;
 

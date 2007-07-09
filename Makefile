@@ -1,4 +1,4 @@
-# $Id: Makefile 1520 2006-04-07 20:02:08Z marvin $
+# $Id: Makefile 1890 2007-07-09 22:04:24Z marvin $
 TARGETS=arping
 
 CD=cd
@@ -22,6 +22,9 @@ MACOSX=0
 CC=gcc
 # explicit pcap include dir is for redhat which is fux0red
 CFLAGS=-g -I/usr/local/include -L/usr/local/lib -DFINDIF=$(FINDIF) -DUSE_NETIF=$(USE_NETIF) -DOPENBSD=$(OPENBSD) -DLINUX=$(LINUX) -DSOLARIS=$(SOLARIS) -DFREEBSD=$(FREEBSD) -DMACOSX=$(MACOSX) -I/usr/include/pcap -L/opt/csw/lib -R/opt/csw/lib
+
+CFLAGS2=-g -I/usr/local/include -I/usr/local/include/libnet-1.1 -I/usr/include/pcap
+LDFLAGS2=-g -L/usr/local/lib -L/usr/local/lib/libnet-1.1 -L/opt/csw/lib
 
 all: message arping2
 
@@ -102,7 +105,7 @@ O_arping2=arping-2/arping.c
 arping2: arping-2/arping
 arping-2/arping: $(O_arping2)
 #	$(CC) `libnet-config --libs --defines --cflags` -o arping arping-2/arping.c -lnet -lpcap
-	$(CC) -g -o arping arping-2/arping.c -lnet -lpcap $(EXTRA_LIBS)
+	$(CC) $(CFLAGS2) $(LDFLAGS2) -o arping arping-2/arping.c -lnet -lpcap $(EXTRA_LIBS)
 
 clean:
 	rm -f *.o $(TARGETS)

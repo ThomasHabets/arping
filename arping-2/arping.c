@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 1210 2005-01-28 13:22:59Z marvin $
+ * $Id: arping.c 1890 2007-07-09 22:04:24Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -57,6 +57,10 @@
 #define HAVE_ESIZE_TYPES 1
 #include "win32.h"
 #include "win32/getopt.h"
+#endif
+
+#if !defined(linux)
+#define HAVE_WEIRD_BSD 1
 #endif
  
 #if defined(linux)
@@ -670,22 +674,12 @@ static void pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 }
 
 
-/*
- * 
- */
-static void ping_recv(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
+#ifdef WIN32
+static void
+ping_recv_win32(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
 {
        struct timeval tv,tv2;
        char done = 0;
-#ifndef WIN32
-       fd_set fds;
-#endif
-
-       if(verbose>3) {
-               printf("arping: receiving packets...\n");
-       }
-
-#ifdef WIN32
        /* windows won't let us do select() */
        if (-1 == gettimeofday(&tv2,NULL)) {
 	       fprintf(stderr, "arping: gettimeofday(): %s\n",
@@ -720,88 +714,122 @@ static void ping_recv(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
 		       done=1;
 	       }
        }
-#else
-	tv.tv_sec = packetwait / 1000000;
-	tv.tv_usec = packetwait % 1000000;
-
-	for (;!done;) {
-		int sr;
-		FD_ZERO(&fds);
-		FD_SET(pcap_fileno(pcap), &fds);
-		
-		if (-1 == gettimeofday(&tv2,NULL)) {
-			fprintf(stderr, "arping: "
-				"gettimeofday(): %s\n",
-				strerror(errno));
-			sigint(0);
-		}
-//		printf("running select()\n");
-
-		switch(sr = select(pcap_fileno(pcap)+1,
-				   &fds,
-				   NULL,NULL,&tv)) {
-		case -1:
-			if (errno == EINTR) {
-				return;
-			}
-			fprintf(stderr, "arping: select(): "
-				"%s\n", strerror(errno));
-			sigint(0);
-		case 0:
-			done = 1;
-			break;
-		default: {
-			int ret;
-			if (1 != (ret = pcap_dispatch(pcap, 1,
-						      func,
-						      NULL))) {
-				// rest, so we don't take 100% CPU... mostly
-				// hmm... does usleep() exist everywhere?
-				usleep(10);
-#ifndef HAVE_WEIRD_BSD
-				// weird is normal on bsd :)
-				if (verbose) {
-					fprintf(stderr, "arping: select=%d "
-						"pcap_dispatch=%d!\n",
-						sr, ret);
-				}
+}
 #endif
-			}
-			break; }
-		}
-		
-		if (-1 == gettimeofday(&tv,NULL)) {
-			fprintf(stderr, "arping: "
-				"gettimeofday(): %s\n",
-				strerror(errno));
-			sigint(0);
-		}
-		/*
-		 * setup next timeval, not very exact
-		 */
-		tv.tv_sec  = (packetwait / 1000000)
-			- (tv.tv_sec - tv2.tv_sec);
-		tv.tv_usec = (packetwait % 1000000)
-			- (tv.tv_usec - tv2.tv_usec);
-		while (tv.tv_usec < 0) {
-			tv.tv_sec--;
-			tv.tv_usec += 1000000;
-		}
-		if (tv.tv_sec < 0) {
-			tv.tv_sec = tv.tv_usec = 0;
-		}
-		
+
+static void
+fixup_timeval(struct timeval *tv)
+{
+	while (tv->tv_usec < 0) {
+		tv->tv_sec--;
+		tv->tv_usec += 1000000;
 	}
-//	if (tv.tv_usec == 0) {
-//		tv.tv_usec = 1;
-//	}
-	if (-1 == select(0, NULL,NULL,NULL, &tv)) {
-		if (errno == EINTR) {
-			return;
-		}
-		fprintf(stderr, "arping: select(delay): %s\n",strerror(errno));
+}
+
+
+static void
+gettv(struct timeval *tv)
+{
+	if (-1 == gettimeofday(tv,NULL)) {
+		fprintf(stderr, "arping: "
+			"gettimeofday(): %s\n",
+			strerror(errno));
 		sigint(0);
 	}
+}
+
+
+/*
+ * 
+ */
+static void
+ping_recv_unix(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
+{
+       struct timeval tv;
+       struct timeval endtime;
+       char done = 0;
+       fd_set fds;
+
+       gettv(&tv);
+       endtime.tv_sec = tv.tv_sec + (packetwait / 1000000);
+       endtime.tv_usec = tv.tv_usec + (packetwait % 1000000);
+       fixup_timeval(&endtime);
+
+       for (;!done;) {
+	       int sr;
+	       FD_ZERO(&fds);
+	       FD_SET(pcap_fileno(pcap), &fds);
+
+	       gettv(&tv);
+	       tv.tv_sec = endtime.tv_sec - tv.tv_sec;
+	       tv.tv_usec = endtime.tv_usec - tv.tv_usec;
+	       fixup_timeval(&tv);
+	       if (tv.tv_sec < 0) {
+		       tv.tv_sec = 0;
+		       tv.tv_usec = 1;
+		       done = 1;
+	       }
+	
+#ifndef HAVE_WEIRD_BSD
+	       switch((sr = select(pcap_fileno(pcap)+1,
+				   &fds,
+				   NULL,NULL,&tv))) {
+	       case -1:
+		       if (errno == EINTR) {
+			       return;
+		       }
+		       fprintf(stderr, "arping: select(%lu.%lu): "
+			       "%s\n",
+			       tv.tv_sec,
+			       tv.tv_usec,
+			       strerror(errno));
+		       sigint(0);
+	       case 0:
+		       done = 1;
+		       break;
+	       default: {
+#else
+	       usleep(10);
+	       {{
+#endif
+		       int ret;
+		       if (1 != (ret = pcap_dispatch(pcap, 1,
+						     func,
+						     NULL))) {
+			       // rest, so we don't take 100% CPU... mostly
+			       // hmm... does usleep() exist everywhere?
+			       usleep(10);
+#ifndef HAVE_WEIRD_BSD
+			       // weird is normal on bsd :)
+			       if (verbose) {
+				       fprintf(stderr, "arping: select=%d "
+					       "pcap_dispatch=%d!\n",
+					       sr, ret);
+			       }
+		       }
+		       break;
+#else
+	               }
+#endif
+		       }
+	       }
+       }
+}
+
+/*
+ * 
+ */
+static void
+ping_recv(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
+{
+       if(verbose>3) {
+               printf("arping: receiving packets...\n");
+       }
+
+#ifdef WIN32
+       ping_recv_win32(pcap,packetwait,func);
+#else
+       ping_recv_unix(pcap,packetwait,func);
 #endif
 }
 

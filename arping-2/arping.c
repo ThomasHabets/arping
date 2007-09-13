@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 1893 2007-07-09 22:23:28Z marvin $
+ * $Id: arping.c 1969 2007-09-13 16:51:17Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -234,10 +234,10 @@ static const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip,
 
 
 #ifdef WIN32
-static BOOL WINAPI arping_console_ctrl_handler(DWORD dwCtrlType )
+static BOOL WINAPI arping_console_ctrl_handler(DWORD dwCtrlType)
 {
 	if(verbose) {
-		printf("arping_console_ctrl_handler( %d )\n", dwCtrlType );
+		printf("arping_console_ctrl_handler( %d )\n", (int)dwCtrlType);
 	}
 	time_to_die = 1;
 
@@ -263,6 +263,56 @@ static void sigint(int i)
 	time_to_die = 1;
 }
 
+static void
+extended_usage()
+{
+	printf("\nOptions:\n");
+	printf("\n"
+	       "    -0     Use this option to ping with source IP address 0.0.0.0. Use this\n"
+	       "           when you haven't configured your interface yet.  Note that  this\n"
+	       "           may  get  the  MAC-ping  unanswered.   This  is  an alias for -S\n"
+	       "           0.0.0.0.\n"
+	       "    -a     Audiable ping.\n"
+	       "    -A     Only count addresses matching  requested  address  (This  *WILL*\n"
+	       "           break  most things you do. Only useful if you are arpinging many\n"
+	       "           hosts at once. See arping-scan-net.sh for an example).\n"
+	       "    -b     Like -0 but source broadcast source  address  (255.255.255.255).\n"
+	       "           Note that this may get the arping unanswered since it's not nor-\n"
+	       "           mal behavior for a host.\n"
+	       "    -B     Use instead of host if you want to address 255.255.255.255.\n"
+	       "    -c count\n"
+	       "           Only send count requests.\n"
+	       "    -d     Find duplicate replies.\n"
+	       "    -F     Don't try to be smart about the interface name.  (even  if  this\n"
+	       "           switch is not given, -i overrides smartness.\n"
+	       "    -h     Displays a help message and exits.\n"
+	       "    -i interface\n"
+	       "           Use the specified interface.\n"
+	       "    -q     Does not display messages, except error messages.\n"
+	       "    -r     Raw output: only the MAC/IP address is displayed for each reply.\n"
+	       "    -R     Raw output: Like -r but shows \"the other one\", can  be  combined\n"
+	       "           with -r.\n"
+	       "    -s MAC Set source MAC address. You may need to use -p with this.\n"
+	       "    -S IP  Like  -b and -0 but with set source address.  Note that this may\n"
+	       "       	   get the arping unanswered if the target does not have routing to\n"
+	       "           the  IP.  If you don't own the IP you are using, you may need to\n"
+	       "           turn on promiscious mode on the interface (with -p).  With  this\n"
+	       "           switch  you can find out what IP-address a host has without tak-\n"
+	       "           ing an IP-address yourself.\n"
+	       "    -t MAC Set target MAC address to use when pinging IP address.\n"
+	       "    -T IP  Use -T as target address when pinging MACs that won't respond to\n"
+	       "           a broadcast ping but perhaps to a directed broadcast.\n"
+	       "           Example:\n"
+	       "           To check the address of MAC-A, use knowledge of MAC-B and  IP-B.\n"
+	       "           $ arping -S <IP-B> -s <MAC-B> -p <MAC-A>\n"
+	       "    -p     Turn  on  promiscious  mode  on interface, use this if you don't\n"
+	       "           \"own\" the MAC address you are using.\n"
+	       "    -u     Show index=received/sent instead  of  just  index=received  when\n"
+	       "           pinging MACs.\n"
+	       "    -v     Verbose output. Use twice for more messages.\n"
+	       "    -w     (arping 2.x only) Time to wait between pings, in microseconds.\n");
+}
+
 /*
  *
  */
@@ -275,6 +325,9 @@ static void usage(int ret)
 	       "              [ -s <MAC> ] [ -t <MAC> ] [ -c <count> ] "
 	       "[ -i <interface> ]\n"
 	       "              <host/ip/MAC | -B>\n");
+#ifdef WIN32
+	extended_usage();
+#endif
 	exit(ret);
 }
 
@@ -1004,7 +1057,6 @@ int main(int argc, char **argv)
 	 * Handle dstip_given instead of ip address after parms (-B really)
 	 */
 	if (mode == NONE) {
-		unsigned char n[6];
 		if (optind + 1 == argc) {
 			mode = is_mac_addr(parm)?PINGMAC:PINGIP;
 		} else if (dstip_given) {
@@ -1170,7 +1222,7 @@ int main(int argc, char **argv)
 		}
 	}
 #ifdef WIN32
-	SetConsoleCtrlHandler(NULL, TRUE);
+	//SetConsoleCtrlHandler(NULL, TRUE);
 	SetConsoleCtrlHandler(arping_console_ctrl_handler, TRUE);
 #else
 	signal(SIGINT, sigint);

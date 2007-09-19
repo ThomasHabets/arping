@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 1969 2007-09-13 16:51:17Z marvin $
+ * $Id: arping.c 1972 2007-09-19 12:35:16Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -61,6 +61,7 @@
 
 #if !defined(linux)
 #define HAVE_WEIRD_BSD 1
+#define FINDIF 1
 #endif
  
 #if defined(linux)
@@ -213,6 +214,58 @@ static const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip,
 	p+=4;
 
 	p2 = strchr(p, ' ');
+	if (!p2) {
+		goto failed;
+	}
+	*p2 = 0;
+	return p;
+ failed:
+	return arping_lookupdev_default(srcip,dstip,ebuf);
+}
+#elif defined(FINDIF) && defined(HAVE_WEIRD_BSD)
+static
+const char *
+arping_lookupdev(u_int32_t srcip, u_int32_t dstip, char *ebuf)
+{
+	FILE *f;
+	static char buf[10240];
+	char buf1[1024];
+	char *p,*p2;
+	int n;
+
+	do_libnet_init(NULL);
+	libnet_addr2name4_r(dstip,0,buf1);
+	//libnet_addr2name4_r(srcip,0,buf1);
+
+	/*
+	 * Construct and run command
+	 */
+	snprintf(buf, 1023, "/sbin/route -n get %s 2>&1",
+		 buf1);
+	if (!(f = popen(buf, "r"))) {
+		goto failed;
+	}
+	if (0 > (n = fread(buf, 1, sizeof(buf)-1, f))) {
+		pclose(f);
+		goto failed;
+	}
+	buf[n] = 0;
+	if (-1 == pclose(f)) {
+		perror("arping: pclose()");
+		goto failed;
+	}
+
+	/*
+	 * Parse out device
+	 */
+	p = strstr(buf, "interface: ");
+	if (!p) {
+		goto failed;
+	}
+
+	p+=11;
+
+	p2 = strchr(p, '\n');
 	if (!p2) {
 		goto failed;
 	}

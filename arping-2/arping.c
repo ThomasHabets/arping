@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 1972 2007-09-19 12:35:16Z marvin $
+ * $Id: arping.c 2040 2008-02-04 13:03:47Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>
@@ -151,8 +151,10 @@ static void do_libnet_init(const char *ifname)
 /*
  *
  */
-static const char *arping_lookupdev_default(u_int32_t srcip, u_int32_t dstip,
-				     char *ebuf)
+static const char *
+arping_lookupdev_default(const char *ifname,
+			 u_int32_t srcip, u_int32_t dstip,
+			 char *ebuf)
 {
 #ifdef WIN32
 	WCHAR buf[LIBNET_ERRBUF_SIZE + PCAP_ERRBUF_SIZE];
@@ -171,7 +173,9 @@ static const char *arping_lookupdev_default(u_int32_t srcip, u_int32_t dstip,
 /*
  *
  */
-static const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip,
+static const char *arping_lookupdev(const char *ifname,
+				    u_int32_t srcip,
+				    u_int32_t dstip,
 				    char *ebuf)
 {
 	FILE *f;
@@ -181,7 +185,7 @@ static const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip,
 	char *p,*p2;
 	int n;
 
-	do_libnet_init(NULL);
+	do_libnet_init(ifname);
 	libnet_addr2name4_r(dstip,0,buf2);
 	libnet_addr2name4_r(srcip,0,buf1);
 
@@ -220,12 +224,13 @@ static const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip,
 	*p2 = 0;
 	return p;
  failed:
-	return arping_lookupdev_default(srcip,dstip,ebuf);
+	return arping_lookupdev_default(ifname,srcip,dstip,ebuf);
 }
 #elif defined(FINDIF) && defined(HAVE_WEIRD_BSD)
 static
 const char *
-arping_lookupdev(u_int32_t srcip, u_int32_t dstip, char *ebuf)
+arping_lookupdev(const char *ifname,
+		 u_int32_t srcip, u_int32_t dstip, char *ebuf)
 {
 	FILE *f;
 	static char buf[10240];
@@ -233,7 +238,7 @@ arping_lookupdev(u_int32_t srcip, u_int32_t dstip, char *ebuf)
 	char *p,*p2;
 	int n;
 
-	do_libnet_init(NULL);
+	do_libnet_init(ifname);
 	libnet_addr2name4_r(dstip,0,buf1);
 	//libnet_addr2name4_r(srcip,0,buf1);
 
@@ -278,10 +283,11 @@ arping_lookupdev(u_int32_t srcip, u_int32_t dstip, char *ebuf)
 /*
  *
  */
-static const char *arping_lookupdev(u_int32_t srcip, u_int32_t dstip,
+static const char *arping_lookupdev(const char *ifname,
+				    u_int32_t srcip, u_int32_t dstip,
 				    char *ebuf)
 {
-	return arping_lookupdev_default(srcip,dstip,ebuf);
+	return arping_lookupdev_default(ifname,srcip,dstip,ebuf);
 }
 #endif
 
@@ -1042,7 +1048,7 @@ int main(int argc, char **argv)
 			break;
 		}
 		case 'S': // set source IP, may be null for don't-know
-			do_libnet_init(NULL);
+			do_libnet_init(ifname);
 			if (-1 == (srcip = libnet_name2addr4(libnet,
 							     optarg,
 							     LIBNET_RESOLVE))){
@@ -1079,7 +1085,7 @@ int main(int argc, char **argv)
 					"in MAC ping mode\n");
 				exit(1);
 			}
-			do_libnet_init(NULL);
+			do_libnet_init(ifname);
 			if (-1 == (dstip = libnet_name2addr4(libnet,
 							     optarg,
 							     LIBNET_RESOLVE))){
@@ -1114,7 +1120,7 @@ int main(int argc, char **argv)
 			mode = is_mac_addr(parm)?PINGMAC:PINGIP;
 		} else if (dstip_given) {
 			mode = PINGIP;
-			do_libnet_init(NULL);
+			do_libnet_init(ifname);
 			parm = strdup(libnet_addr2name4(dstip,0));
 			if (!parm) {
 				fprintf(stderr, "arping: out of mem\n");
@@ -1194,9 +1200,10 @@ int main(int argc, char **argv)
 	 */
 	if (!ifname) {
 		if (dont_use_arping_lookupdev) {
-			ifname = arping_lookupdev_default(srcip,dstip,ebuf);
+			ifname = arping_lookupdev_default(ifname,
+							  srcip,dstip,ebuf);
 		} else {
-			ifname = arping_lookupdev(srcip,dstip,ebuf);
+			ifname = arping_lookupdev(ifname,srcip,dstip,ebuf);
 		}
 		if (!ifname) {
 			fprintf(stderr, "arping: arping_lookupdev(): %s\n",

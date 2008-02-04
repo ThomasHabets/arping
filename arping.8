@@ -1,12 +1,13 @@
-.TH "arping" "8" "21th June, 2003" "arping" "" 
+.TH "arping" "8" "21th June, 2003" "arping" ""
+
 .PP 
-.SH "NAME" 
+.SH "NAME"
 arping \- sends arp and/or ip pings to a given host
 .PP 
-.SH "SYNOPSIS" 
+.SH "SYNOPSIS"
 \fBarping\fP [-abhpqrRd0uv] [-S \fIhost/ip\fP] [-T \fIhost/ip\fP] [-s \fIMAC\fP]    [-t \fIMAC\fP] [-c \fIcount\fP] [-i \fIinterface\fP] [ -w \fIus\fP ] <\fIhost\fP | -B>
 .PP 
-.SH "DESCRIPTION" 
+.SH "DESCRIPTION"
 The \fIarping\fP utility sends \fBARP\fP and/or \fBICMP\fP requests to the specified \fIhost\fP and displays the replies\&. The \fIhost\fP may be specified by its \fBhostname\fP, its \fBIP\fP address, or its \fBMAC\fP address\&.
 .PP 
 One request is sent each second\&.
@@ -31,81 +32,85 @@ This is not just an issue with arping, it is with normal ping also
 since arping packets (when pinging IP) doesn\&'t traverse the IP stack when
 received and are therefore replied to faster\&.
 .PP 
-.SH "OPTIONS" 
+.SH "OPTIONS"
+
 .PP 
-.IP 
-.IP "-0" 
+.IP "-0"
 Use this option to ping with source IP address 0\&.0\&.0\&.0\&. Use this
 when you haven\&'t configured your interface yet\&.
 Note that this may get the MAC-ping unanswered\&.
 This is an alias for -S 0\&.0\&.0\&.0\&.
-.IP "-a" 
+.IP "-a"
 Audible ping\&.
-.IP "-A" 
+.IP "-A"
 Only count addresses matching requested address (This *WILL*
 break most things you do\&. Only useful if you are arpinging many
 hosts at once\&. See arping-scan-net\&.sh for an example)\&.
-.IP "-b" 
+.IP "-b"
 Like -0 but source broadcast source address (255\&.255\&.255\&.255)\&.
 Note that this may get the arping unanswered since it\&'s not normal behavior
 for a host\&.
-.IP "-B" 
+.IP "-B"
 Use instead of host if you want to address 255\&.255\&.255\&.255\&.
-.IP "-c \fIcount\fP" 
+.IP "-c \fIcount\fP"
 Only send \fIcount\fP requests\&.
-.IP "-d" 
+.IP "-d"
 Find duplicate replies\&.
-.IP "-F" 
+.IP "-F"
 Don\&'t try to be smart about the interface name\&. (even if this
 switch is not given, -i overrides smartness\&.
-.IP "-h" 
+.IP "-h"
 Displays a help message and exits\&.
-.IP "-i \fIinterface\fP" 
+.IP "-i \fIinterface\fP"
 Use the specified interface\&.
-.IP "-q" 
+.IP "-q"
 Does not display messages, except error messages\&.
-.IP "-r" 
+.IP "-r"
 Raw output: only the MAC/IP address is displayed for each reply\&.
-.IP "-R" 
+.IP "-R"
 Raw output: Like -r but shows "the other one", can be combined with
 -r\&.
-.IP "-s \fIMAC\fP" 
+.IP "-s \fIMAC\fP"
 Set source MAC address\&. You may need to use -p with this\&.
-.IP "-S \fIIP\fP" 
+.IP "-S \fIIP\fP"
 Like -b and -0 but with set source address\&.
 Note that this may get the arping unanswered if the target does not have
 routing to the IP\&. If you don\&'t own the IP you are using, you may need to turn
 on promiscious mode on the interface (with -p)\&. With this switch you can find
 out what IP-address a host has without taking an IP-address yourself\&.
-.IP "-t \fIMAC\fP" 
+.IP "-t \fIMAC\fP"
 Set target MAC address to use when pinging IP address\&.
-.IP "-T \fIIP\fP" 
+.IP "-T \fIIP\fP"
 Use -T as target address when pinging MACs that won\&'t
 respond to a broadcast ping but perhaps to a directed broadcast\&.
 .IP 
 \fIExample\fP:                                                                To check the address of MAC-A, use knowledge of MAC-B and IP-B\&.
 .IP 
 $ arping -S <IP-B> -s <MAC-B> -p <MAC-A>
-.IP "-p" 
+.IP "-p"
 Turn on promiscious mode on interface, use this if you don\&'t
 "own" the MAC address you are using\&.
-.IP "-u" 
+.IP "-u"
 Show index=received/sent instead of just index=received when
 pinging MACs\&.
-.IP "-v" 
+.IP "-v"
 Verbose output\&. Use twice for more messages\&.
-.IP "-w" 
+.IP "-w"
 (arping 2\&.x only) Time to wait between pings, in microseconds\&.
+
 .PP 
-.SH "BUGS" 
+.SH "BUGS"
+
 .PP 
 You have to use -B instead of arpinging 255\&.255\&.255\&.255, and -b
 instead of -S 255\&.255\&.255\&.255\&. This is libnets fault\&.
 .PP 
-.SH "SEE ALSO" 
+.SH "SEE ALSO"
+
 .PP 
 \fBping(8)\fP, \fBarp(8)\fP, \fBrarp(8)\fP
 .PP 
-.SH "AUTHOR" 
+.SH "AUTHOR"
+
 .PP 
 Arping was written by Thomas Habets <thomas@habets\&.pp\&.se>\&.

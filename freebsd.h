@@ -1,4 +1,4 @@
-/* $Id: freebsd.h 2052 2008-06-23 07:22:30Z marvin $ */
+/* arping/freebsd.h
 /*
  *  Copyright (C) 2000-2008 Thomas Habets <thomas@habets.pp.se>
  *

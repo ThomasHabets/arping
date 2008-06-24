@@ -12,7 +12,6 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 2052 2008-06-23 07:22:30Z marvin $
  */
 /*
  *  Copyright (C) 2000-2008 Thomas Habets <thomas@habets.pp.se>

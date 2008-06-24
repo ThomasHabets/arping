@@ -1,5 +1,5 @@
-/* $Id: openbsd.h 2052 2008-06-23 07:22:30Z marvin $ */
-/*
+/* arping/openbsd.h
+ *
  *  Copyright (C) 2000-2008 Thomas Habets <thomas@habets.pp.se>
  *
  *  This library is free software; you can redistribute it and/or

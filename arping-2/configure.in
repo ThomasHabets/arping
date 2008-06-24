@@ -1,4 +1,4 @@
-dnl $Id: configure.in 737 2002-11-03 19:47:58Z marvin $
+dnl arping/configure.in
 
 AC_INIT(arping2.c)
 AC_CONFIG_HEADER(config.h)

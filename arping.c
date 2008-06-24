@@ -18,10 +18,9 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 1753 2007-01-27 14:20:42Z marvin $
  */
 /*
- *  Copyright (C) 2000-2003 Thomas Habets <thomas@habets.pp.se>
+ *  Copyright (C) 2000-2008 Thomas Habets <thomas@habets.pp.se>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -33,9 +32,9 @@
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *   GNU General Public License for more details.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program; if not, write to the Free Software
- *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *   You should have received a copy of the GNU General Public License along
+ *   with this program; if not, write to the Free Software Foundation, Inc.,
+ *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 /*
  * Note to self:

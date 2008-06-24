@@ -1,4 +1,4 @@
-# $Id: Makefile 1893 2007-07-09 22:23:28Z marvin $
+# arping/Makefile
 TARGETS=arping
 
 CD=cd

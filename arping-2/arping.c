@@ -12,7 +12,7 @@
  *
  * Also finds out IP of specified MAC
  *
- * $Id: arping.c 1969 2007-09-13 16:51:17Z marvin $
+ * $Id: arping.c 1893 2007-07-09 22:23:28Z marvin $
  */
 /*
  *  Copyright (C) 2000-2002 Thomas Habets <thomas@habets.pp.se>

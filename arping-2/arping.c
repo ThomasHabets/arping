@@ -185,8 +185,8 @@ static const char *arping_lookupdev(const char *ifname,
 	int n;
 
 	do_libnet_init(ifname);
-	libnet_addr2name4_r(dstip,0,buf2);
-	libnet_addr2name4_r(srcip,0,buf1);
+	libnet_addr2name4_r(dstip,0,buf2,1024);
+	libnet_addr2name4_r(srcip,0,buf1,1024);
 
 	/*
 	 * Construct and run command
@@ -238,7 +238,7 @@ arping_lookupdev(const char *ifname,
 	int n;
 
 	do_libnet_init(ifname);
-	libnet_addr2name4_r(dstip,0,buf1);
+	libnet_addr2name4_r(dstip,0,buf1, 1024);
 	//libnet_addr2name4_r(srcip,0,buf1);
 
 	/*
@@ -397,7 +397,7 @@ static int is_mac_addr(const char *p)
 {
 	/* cisco-style */
 	if (3*5-1 == strlen(p)) {
-		int c;
+		unsigned int c;
 		for (c = 0; c < strlen(p); c++) {
 			if ((c % 5) == 4) {
 				if ('.' != p[c]) {
@@ -413,7 +413,7 @@ static int is_mac_addr(const char *p)
 	}
 	/* windows-style */
 	if (6*3-1 == strlen(p)) {
-		int c;
+		unsigned int c;
 		for (c = 0; c < strlen(p); c++) {
 			if ((c % 3) == 2) {
 				if ('-' != p[c]) {

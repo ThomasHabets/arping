@@ -5,6 +5,7 @@ CD=cd
 CP=cp
 TAR=tar
 GPG=gpg
+GIT=git
 MAKE=make
 RM=rm
 SUDO=sudo
@@ -117,14 +118,9 @@ V=$(shell grep version arping-2/arping.c|grep const|sed 's:[a-z =]*::;s:f;::')
 DFILE=arping-$(V).tar.gz
 DDIR=arping-$(V)
 dist:
-	($(CD) ..; \
-	$(CP) -ax arping $(DDIR); \
-	$(RM) -fr $(DDIR)/{.\#*,CVS,.svn,*~} \
-		$(DDIR)/arping-2/{.\#*,CVS,.svn,*~}; \
-	$(MAKE) -C $(DDIR) doc; \
-	$(TAR) cfz $(DFILE) $(DDIR); \
-	$(GPG) -b -a $(DFILE); \
-	)
+	$(GIT) archive --format=tar --prefix=arping-$(V)/ arping-$(V) | gzip -9 > arping-$(V).tar.gz
+	$(GPG) -b -a $(DFILE)
+
 test: arping2
 	@echo Testing with destination host=$(HOST) and MAC=$(MAC)
 	@echo IF=$(IF)

@@ -276,7 +276,7 @@ arping_lookupdev(const char *ifname,
 	*p2 = 0;
 	return p;
  failed:
-	return arping_lookupdev_default(srcip,dstip,ebuf);
+	return arping_lookupdev_default(ifname,srcip,dstip,ebuf);
 }
 #else
 /*

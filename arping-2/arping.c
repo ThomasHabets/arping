@@ -93,7 +93,7 @@
 #define IP_ALEN 4
 #endif
 
-const float version = 2.07f;
+const float version = 2.08f;
 
 static libnet_t *libnet = 0;
 

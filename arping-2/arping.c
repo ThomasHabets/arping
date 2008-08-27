@@ -127,7 +127,7 @@ static void do_libnet_init(const char *ifname)
 {
 	char ebuf[LIBNET_ERRBUF_SIZE];
 	if (verbose > 1) {
-		printf("libnet_init(%s)\n", ifname);
+		printf("libnet_init(%s)\n", ifname?ifname:"<null>");
 	}
 	if (libnet) {
 		/* prolly going to switch interface from temp to real */

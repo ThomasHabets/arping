@@ -33,11 +33,11 @@
 //#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
+
 #ifndef WIN32
 #include <unistd.h>
 // NOTE: try un-commenting this
 //#include <stdint.h>
-
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -45,6 +45,10 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <libnet.h>
+#endif
+
+#if defined (__SVR4) && defined (__sun)
+#define SOLARIS 1
 #endif
 
 #ifdef WIN32
@@ -59,6 +63,12 @@
 #endif
 
 #if !defined(linux)
+/* "Weird BSD" means that select on pcap fd will return readable on select()
+ * when there is nothing to pcap_dispatch().
+ * Confirmed on Solaris and OpenBSD.
+ * Without select() the send interval will be off.
+ * It's just a macro name, don't read too much into it.
+ */
 #define HAVE_WEIRD_BSD 1
 #define FINDIF 1
 #endif
@@ -342,7 +352,7 @@ extended_usage()
 	       "           Only send count requests.\n"
 	       "    -d     Find duplicate replies.\n"
 	       "    -F     Don't try to be smart about the interface name.  (even  if  this\n"
-	       "           switch is not given, -i overrides smartness.\n"
+	       "           switch is not given, -i overrides smartness)\n"
 	       "    -h     Displays a help message and exits.\n"
 	       "    -i interface\n"
 	       "           Use the specified interface.\n"
@@ -499,12 +509,19 @@ static char *tv2str(const struct timeval *tv, const struct timeval *tv2,
 
 
 
-/*
+/** Send directed IPv4 ICMP echo request.
  *
+ * \param srcmac  Source MAC. From -s switch or autodetected
+ * \param dstmac  Destination/target MAC. Target command line.
+ * \param srcip   From -S switch or autodetected
+ * \param dstip   From -D switch, or 255.255.255.255
+ * \param id      IP id
+ * \param seq     Ping seq
  */
-static void pingmac_send(u_int8_t *srcmac, u_int8_t *dstmac,
-			 u_int32_t srcip, u_int32_t dstip,
-			 u_int16_t id, u_int16_t seq)
+static void
+pingmac_send(u_int8_t *srcmac, u_int8_t *dstmac,
+	     u_int32_t srcip, u_int32_t dstip,
+	     u_int16_t id, u_int16_t seq)
 {
 	static libnet_ptag_t icmp = 0, ipv4 = 0,eth=0;
 	int c;
@@ -553,7 +570,14 @@ static void pingmac_send(u_int8_t *srcmac, u_int8_t *dstmac,
 		sigint(0);
 	}
 	if(verbose>1) {
-		printf("arping: sending packet\n");
+		if (-1 == gettimeofday(&lastpacketsent, NULL)) {
+			fprintf(stderr, "arping: gettimeofday(): %s\n",
+				strerror(errno));
+			sigint(0);
+		}
+		printf("arping: sending packet at time %d %d\n",
+		       lastpacketsent.tv_sec,
+		       lastpacketsent.tv_usec);
 	}
 	if (-1 == (c = libnet_write(libnet))) {
 		fprintf(stderr, "arping: libnet_write(): %s\n",
@@ -568,11 +592,17 @@ static void pingmac_send(u_int8_t *srcmac, u_int8_t *dstmac,
 	numsent++;
 }
 
-/*
+/** Send ARP who-has.
+ *
+ * \param srcmac   -s or autodetected
+ * \param dstmac   -t or ff:ff:ff:ff:ff:ff
+ * \param srcip    -S or autodetected
+ * \param dstip    -T or or cmdline
  *
  */
-static void pingip_send(u_int8_t *srcmac, u_int8_t *dstmac,
-			u_int32_t srcip, u_int32_t dstip)
+static void
+pingip_send(u_int8_t *srcmac, u_int8_t *dstmac,
+	    u_int32_t srcip, u_int32_t dstip)
 {
 	static libnet_ptag_t arp=0,eth=0;
 	if (-1 == (arp = libnet_build_arp(ARPHRD_ETHER,
@@ -604,7 +634,14 @@ static void pingip_send(u_int8_t *srcmac, u_int8_t *dstmac,
 		sigint(0);
 	}
 	if(verbose>1) {
-		printf("arping: sending packet\n");
+		if (-1 == gettimeofday(&lastpacketsent, NULL)) {
+			fprintf(stderr, "arping: gettimeofday(): %s\n",
+				strerror(errno));
+			sigint(0);
+		}
+		printf("arping: sending packet at time %d %d\n",
+		       lastpacketsent.tv_sec,
+		       lastpacketsent.tv_usec);
 	}
 	if (-1 == libnet_write(libnet)) {
 		fprintf(stderr, "arping: libnet_write(): %s\n", 
@@ -619,11 +656,14 @@ static void pingip_send(u_int8_t *srcmac, u_int8_t *dstmac,
 	numsent++;
 }
 
-/*
+/** handle incoming packet when pinging an IP address.
  *
+ * \param h       packet metadata
+ * \param packet  packet data
  */
-static void pingip_recv(const char *unused, struct pcap_pkthdr *h,
-			u_int8_t *packet)
+static void
+pingip_recv(const char *unused, struct pcap_pkthdr *h,
+	    u_int8_t *packet)
 {
 	struct libnet_802_3_hdr *heth;
 	struct libnet_arp_hdr *harp;
@@ -702,11 +742,14 @@ static void pingip_recv(const char *unused, struct pcap_pkthdr *h,
 	}
 }
 
-/*
- * 
+/** handle incoming packet when pinging an MAC address.
+ *
+ * \param h       packet metadata
+ * \param packet  packet data
  */
-static void pingmac_recv(const char *unused, struct pcap_pkthdr *h,
-			u_int8_t *packet)
+static void
+pingmac_recv(const char *unused, struct pcap_pkthdr *h,
+	     u_int8_t *packet)
 {
 	struct libnet_802_3_hdr *heth;
 	struct libnet_ipv4_hdr *hip;

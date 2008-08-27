@@ -25,7 +25,7 @@ CC=gcc
 CFLAGS=-g -I/usr/local/include -L/usr/local/lib -DFINDIF=$(FINDIF) -DUSE_NETIF=$(USE_NETIF) -DOPENBSD=$(OPENBSD) -DLINUX=$(LINUX) -DSOLARIS=$(SOLARIS) -DFREEBSD=$(FREEBSD) -DMACOSX=$(MACOSX) -I/usr/include/pcap -L/opt/csw/lib -R/opt/csw/lib
 
 CFLAGS2=-g -I/usr/local/include -I/usr/local/include/libnet-1.1 -I/usr/include/pcap -I/usr/local/include/libnet11
-LDFLAGS2=-g -L/usr/local/lib -L/usr/local/lib/libnet-1.1 -L/opt/csw/lib -L/usr/local/lib/libnet11
+LDFLAGS2=-g -L/usr/local/lib -L/usr/local/lib/libnet-1.1 -L/opt/csw/lib -L/usr/local/lib/libnet11 -R/opt/csw/lib
 
 all: message arping2
 

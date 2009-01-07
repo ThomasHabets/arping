@@ -1,0 +1,35 @@
+
+
+
+creator=Thomas Habets <thomas@habets.pp.se>
+
+
+
+
+
+
+severity=minor
+
+
+
+
+
+
+status=open
+
+
+
+
+
+
+summary=Mac-ping: thinks all icmp replies are meant to self
+
+
+
+
+
+
+time=Wed, 07 Jan 2009 17:43:04 +0000
+
+
+

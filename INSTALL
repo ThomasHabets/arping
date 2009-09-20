@@ -6,6 +6,9 @@ Installing, short version
 make
 make install
 
+If your environment is not set up right, you may need to add stuff to
+the configure line, like:
+./configure LDFLAGS=-L/usr/lib
 
 Installing, longer version
 --------------------------

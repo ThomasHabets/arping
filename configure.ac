@@ -15,8 +15,12 @@ AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
 # Checks for libraries.
-# FIXME: Replace `main' with a function in `-lnet':
-AC_CHECK_LIB([net], [libnet_init])
+AC_CHECK_LIB([net], [libnet_name_resolve],
+      [AC_MSG_ERROR([libnet 1.0.x found. Arping 2.x requires libnet 1.1.x])])
+AC_CHECK_LIB([net], [libnet_init], ,[AC_MSG_ERROR([libnet 1.1.x not found])])
+
+
+
 # FIXME: Replace `main' with a function in `-lnsl':
 AC_CHECK_LIB([nsl], [main])
 # FIXME: Replace `main' with a function in `-lpcap':
@@ -49,3 +53,11 @@ AC_CHECK_FUNCS([gettimeofday memset select strchr strdup strerror strstr])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
+
+echo "
+  $PACKAGE_NAME version $PACKAGE_VERSION
+  Prefix.........: $prefix
+  Debug Build....: $debug
+  C Compiler.....: $CC $CFLAGS $CPPFLAGS
+  Linker.........: $LD $LDFLAGS $LIBS
+"

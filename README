@@ -36,6 +36,18 @@ Compiling
 ---------
 See INSTALL file.
 
+I try to test arping on these platforms before any release:
+* Latest Debian stable x86 and amd64
+* OpenBSD x86
+* FreeBSD x86
+* Solaris sparc
+
+I don't have these systems up and runnig 24/7, but I try to get them tested
+every now and then:
+* MacOS X
+* Debian alpha
+* OpenBSD sparc64
+
 Mailing list
 ------------
 Check out http://www.habets.pp.se/synscan/mailinglists.php for information
@@ -47,10 +59,17 @@ See 'Technical' at the bottom of this file.
 
 FAQ
 ---
+Q: Where is Arping 1.x? I use libnet 1.0.x so I need that!
+
+A: Arping 1 has finally been removed from the Arping 2.x tarball in 2.09.
+   Arping 1.x currently only lives in the Arping packages 2.08 and lower. If
+   features are to be added or bugs fixed it will show up again as a separate
+   package forked from Arping 2.08.
+---
 Q: It doesn't compile!
 
 A: Maybe u_int32_t and co. are not defined. Try uncommenting the line:
-   #include <stdint.h> in arping-2/arping.c. This has been an issue on
+   #include <stdint.h> in src/arping.c. This has been an issue on
    MacOS X, I think. I don't have access to such a box so it's a bit hard
    to fix.
 
@@ -59,15 +78,9 @@ A: Arping 2.x will not work with Libnet 1.0.x. This is This is due to
    real way to write code that works on both 1.0.x and 1.1.x.
 
    Since I wanted to do some other things a bit differently, I wrote
-   arping 2.x. It isn't as widely tested as arping 1.x, but it seems
-   to work fine.
+   arping 2.x. I recommend that you install Libnet 1.1.x so that you can
+   run arping 2.x.
 
-   Arping 2.x is now the default target, but arping 1.x is still here.
-   Arping 1.x is included in this release and can be created
-   with "make arping1" and follow instructions.
-
-A: On BSD, you'll prolly need to type something like:
-   gmake MAKE=gmake openbsd
 ---
 Q: Where's the Windows version? A compiled .exe would be nice.
 
@@ -75,7 +88,7 @@ A: I don't have a windows box, so the .exe I'm providing was NOT compiled
    by me. If something is strange about it tell me, but there won't be much
    I can do about it.
    That being said:
-   ftp://ftp.habets.pp.se/pub/synscan/arping-for-windows-not-compiled-by-me.exe
+   http://www.habets.pp.se/synscan/files/arping-for-windows-not-compiled-by-me.exe
 ---
 Q: On sparc64, the IP shown in the output is 0.0.0.0.
 
@@ -122,7 +135,7 @@ A: -T <IP/host> allows you to restrict the arping to a limited subnet, which
 ---
 Q: It doesn't compile, I get some error message about libnet and/or libpcap
 
-A: Arping depends on libnet and libpcap, get libnet at:
+A: Arping depends on libnet 1.1.x and libpcap, get libnet at:
    http://www.packetfactory.net/libnet and libpcap from your distribution.
    (alt. you can search for libpcap on http://freshmeat.net)
 ---
@@ -205,41 +218,10 @@ A: Normally arping packets are sent out to some kind of broadcast (MAC or IPv4
    If you don't understand, don't worry. You won't need it. But for an
    example use, see the arping-scan-net.sh script.
 ---
-Q: Arping used to work (0.97 and down) for pinging MACs, but not with 0.98 and
-   up. What did you screw up?
-
-A: Ah, I see. A broadcast was changed to unicast, I don't know why I set it to
-   be broadcast in the first place, and even wrote a comment justifying it.
-   It still worked for me when I tested it now (with unicast) but if it
-   doesn't for you, search the source for KEYWORD and you'll find
-   instructions on how to change it back.
-   ... Or you can run arping -s ff:ff:ff:ff:ff:ff <host>.
-   If this fixes it please LET ME KNOW.
----
-Q: 1.08 and up is broken, 1.07 and down worked. What's up with that?
-
-A: If there are any problems, it should be with the interface-finding code.
-   Try compiling with 'make linux-nofindif'.
-   Also, try with the -F switch, and mail me if that worked (or didn't work).
----
-
-Misc
-----
-There, I added the stupid roundtrip time feature. Now I dare you to think of
-any other applicable features. (IPv4 only, for now and probably forever)
-
-Ok, two more were thought of. Both of which are non-trivially-portable.
-1) Automatically select interface depending on IP address pinged for more than
-   Linux.
-2) Don't use SIGARLM. Non-trivial because you can't (AFAIK) select() on a pcap-
-   opened device.
-
-Arping 2.x solves the second one, and the first one has a beta solution in
-Linux.
 
 License
 -------
-It's GPL, see the LICENSE file.
+It's GPLv2, see the LICENSE file.
 
 Technical
 ---------

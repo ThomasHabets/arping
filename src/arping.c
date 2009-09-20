@@ -415,6 +415,9 @@ extended_usage()
 	       "           pinging MACs.\n"
 	       "    -v     Verbose output. Use twice for more messages.\n"
 	       "    -w     Time to wait between pings, in microseconds.\n");
+        printf("Report bugs to: thomas@habets.pp.se\n"
+               "Arping home page: <http://www.habets.pp.se/synscan/>\n"
+               "Development repo: http://github.com/ThomasHabets/arping\n");
 }
 
 /*

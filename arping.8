@@ -5,7 +5,7 @@
 arping \- sends arp and/or ip pings to a given host
 .PP 
 .SH "SYNOPSIS"
-\fBarping\fP [-abhpqrRd0uv] [-S \fIhost/ip\fP] [-T \fIhost/ip\fP] [-s \fIMAC\fP]    [-t \fIMAC\fP] [-c \fIcount\fP] [-i \fIinterface\fP] [ -w \fIus\fP ] <\fIhost\fP | -B>
+\fBarping\fP [-abdDFhpqrRd0uv] [-S \fIhost/ip\fP] [-T \fIhost/ip\fP] [-s \fIMAC\fP]    [-t \fIMAC\fP] [-c \fIcount\fP] [-i \fIinterface\fP] [ -w \fIus\fP ] <\fIhost\fP | -B>
 .PP 
 .SH "DESCRIPTION"
 The \fIarping\fP utility sends \fBARP\fP and/or \fBICMP\fP requests to the specified \fIhost\fP and displays the replies\&. The \fIhost\fP may be specified by its \fBhostname\fP, its \fBIP\fP address, or its \fBMAC\fP address\&.
@@ -56,6 +56,8 @@ Use instead of host if you want to address 255\&.255\&.255\&.255\&.
 Only send \fIcount\fP requests\&.
 .IP "-d"
 Find duplicate replies\&.
+.IP "-D"
+Display answers as dots and missing packets as exclamation points\&.
 .IP "-F"
 Don\&'t try to be smart about the interface name\&. (even if this
 switch is not given, -i overrides smartness\&.

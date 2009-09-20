@@ -15,17 +15,12 @@ AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
 # Checks for libraries.
+AC_CHECK_LIB([socket], [socket])
+AC_CHECK_LIB([nsl], [gethostbyname])
 AC_CHECK_LIB([net], [libnet_name_resolve],
       [AC_MSG_ERROR([libnet 1.0.x found. Arping 2.x requires libnet 1.1.x])])
 AC_CHECK_LIB([net], [libnet_init], ,[AC_MSG_ERROR([libnet 1.1.x not found])])
-
 AC_CHECK_LIB([pcap], [pcap_open_live], ,[AC_MSG_ERROR([libpcap not found])])
-
-# What's this for?
-#AC_CHECK_LIB([nsl], [main])
-
-# Not needed, right?
-#AC_CHECK_LIB([socket], [socket])
 
 # Checks for header files.
 AC_HEADER_STDC

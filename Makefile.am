@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-bin_PROGRAMS = arping
+sbin_PROGRAMS = arping
 man_MANS = arping.8
 arping_SOURCES = src/arping.c
 

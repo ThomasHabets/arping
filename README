@@ -136,8 +136,13 @@ A: -T <IP/host> allows you to restrict the arping to a limited subnet, which
 Q: It doesn't compile, I get some error message about libnet and/or libpcap
 
 A: Arping depends on libnet 1.1.x and libpcap, get libnet at:
-   http://www.packetfactory.net/libnet and libpcap from your distribution.
-   (alt. you can search for libpcap on http://freshmeat.net)
+   http://www.packetfactory.net/libnet and libpcap from http://www.tcpdump.org.
+
+   Lately www.packetfactory.net seems to be down, so you can get the original
+   tarball from the Debian archives:
+   http://ftp.debian.org/debian/pool/main/libn/libnet/libnet_1.1.2.1.orig.tar.gz
+   If that exact file doesn't exist there probably is one with a higher
+   version number.
 ---
 Q: I get this when I compile: "/bin/sh: libnet-config: command not found"
 

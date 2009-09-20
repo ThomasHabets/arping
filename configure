@@ -578,7 +578,7 @@ PACKAGE_VERSION='2.08'
 PACKAGE_STRING='arping 2.08'
 PACKAGE_BUGREPORT='thomas@habets.pp.se'
 
-ac_unique_file="arping.c"
+ac_unique_file="src/arping.c"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
@@ -4368,12 +4368,12 @@ done
 
 
 
-for ac_header in
-arpa/inet.h
-netinet/in.h
-stdlib.h
-sys/socket.h
-sys/time.h
+for ac_header in \
+arpa/inet.h \
+netinet/in.h \
+stdlib.h \
+sys/socket.h \
+sys/time.h \
 unistd.h
 do
 as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`

@@ -118,9 +118,10 @@ static int alsototal = 0;
 static int finddup = 0;
 static unsigned int numsent = 0;
 static unsigned int numrecvd = 0;
+static unsigned int numdots = 0;
 static int addr_must_be_same = 0;
 // RAWRAW is RAW|RRAW
-static enum { NORMAL,QUIET,RAW,RRAW,RAWRAW } display = NORMAL;
+static enum { NORMAL,QUIET,RAW,RRAW,RAWRAW,DOT } display = NORMAL;
 static char *target = "huh? bug in arping?";
 static u_int8_t ethnull[ETH_ALEN];
 static u_int8_t ethxmas[ETH_ALEN];
@@ -129,6 +130,17 @@ static char dstmac[ETH_ALEN];
 
 volatile int time_to_die = 0;
 
+/**
+ *
+ */
+static void
+count_missing_dots()
+{
+        while (numsent > numdots) {
+                putchar('!');
+                numdots++;
+        }
+}
 
 /*
  *
@@ -351,6 +363,7 @@ extended_usage()
 	       "    -c count\n"
 	       "           Only send count requests.\n"
 	       "    -d     Find duplicate replies.\n"
+	       "    -D     Display answers as dots and missing packets as exclamation points.\n"
 	       "    -F     Don't try to be smart about the interface name.  (even  if  this\n"
 	       "           switch is not given, -i overrides smartness)\n"
 	       "    -h     Displays a help message and exits.\n"
@@ -388,7 +401,7 @@ static void usage(int ret)
 {
 	printf("ARPing %1.2f, by Thomas Habets <thomas@habets.pp.se>\n",
 	       version);
-	printf("usage: arping [ -0aAbdFpqrRuv ] [ -w <us> ] [ -S <host/ip> ] "
+	printf("usage: arping [ -0aAbdDFpqrRuv ] [ -w <us> ] [ -S <host/ip> ] "
 	       "[ -T <host/ip ]\n"
 	       "              [ -s <MAC> ] [ -t <MAC> ] [ -c <count> ] "
 	       "[ -i <interface> ]\n"
@@ -695,6 +708,11 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h,
 		}
 		if (dstip == ip) {
 			switch(display) {
+			case DOT:
+				numdots++;
+				count_missing_dots();
+				putchar('.');
+				break;
 			case NORMAL: {
 				char buf[128];
 				printf("%d bytes from ", h->len);
@@ -734,9 +752,18 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h,
 			default:
 				fprintf(stderr, "arping: can't happen!\n");
 			}
-			if (display != QUIET) {
-				printf(beep?"\a\n":"\n");
-			}
+
+                        switch (display) {
+                        case QUIET:
+                        case DOT:
+                                break;
+                        default:
+                                if (beep) {
+                                        printf("\a");
+                                }
+                                printf("\n");
+                        }
+
 			numrecvd++;
 		}
 	}
@@ -1018,7 +1045,7 @@ int main(int argc, char **argv)
 	memset(dstmac, 0xff, ETH_ALEN);
 	memset(ethxmas, 0xff, ETH_ALEN);
 
-	while (EOF!=(c=getopt(argc, argv, "0aAbBc:dFhi:I:pqrRs:S:t:T:uvw:"))) {
+	while (EOF!=(c=getopt(argc, argv, "0aAbBc:dDFhi:I:pqrRs:S:t:T:uvw:"))) {
 		switch(c) {
 		case '0':
 			srcip = 0;
@@ -1043,6 +1070,9 @@ int main(int argc, char **argv)
 			break;
 		case 'd':
 			finddup = 1;
+			break;
+		case 'D':
+			display = DOT;
 			break;
 		case 'F':
 			dont_use_arping_lookupdev=1;
@@ -1150,6 +1180,11 @@ int main(int argc, char **argv)
 		default:
 			usage(1);
 		}
+	}
+
+	if( display == DOT ){
+		// set stdout unbuffered
+		setvbuf( stdout, NULL, _IONBF, 0 );
 	}
 
 	parm = (optind < argc) ? argv[optind] : NULL;
@@ -1362,6 +1397,11 @@ int main(int argc, char **argv)
 			ping_recv(pcap,packetwait,
 				  (pcap_handler)pingmac_recv);
 		}
+	}
+	if (display == DOT){
+		count_missing_dots();
+		printf("\t%3.0f%% packet loss\n",
+                       100.0 - 100.0 * (float)(numrecvd)/(float)numsent);
 	}
 	if (display == NORMAL) {
 		printf("\n--- %s statistics ---\n"

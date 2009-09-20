@@ -3,7 +3,7 @@ manpage(arping)(8)(21th June, 2003)(arping)()
 manpagename(arping)(sends arp and/or ip pings to a given host)
 
 manpagesynopsis()
-    bf(arping) [-abhpqrRd0uv] [-S em(host/ip)] [-T em(host/ip)] [-s em(MAC)]    \
+    bf(arping) [-abdDFhpqrRd0uv] [-S em(host/ip)] [-T em(host/ip)] [-s em(MAC)]    \
 [-t em(MAC)] [-c em(count)] [-i em(interface)] [ -w em(us) ] <em(host) | -B>
 
 manpagedescription()
@@ -49,6 +49,7 @@ for a host.
     dit(-B) Use instead of host if you want to address 255.255.255.255.
     dit(-c em(count)) Only send em(count) requests.
     dit(-d) Find duplicate replies.
+    dit(-D) Display answers as dots and missing packets as exclamation points.
     dit(-F) Don't try to be smart about the interface name. (even if this
 switch is not given, -i overrides smartness.
     dit(-h) Displays a help message and exits.

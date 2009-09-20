@@ -34,11 +34,7 @@ oops).
 
 Compiling
 ---------
-Type 'make to compile. You'll get a message saying that you are compiling
-arping 2.x, and how to compile arping 1.x if you want that.
-
-'make install' will copy arping to /usr/local/bin, and put the manpage where
-it belongs.
+See INSTALL file.
 
 Mailing list
 ------------

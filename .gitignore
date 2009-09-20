@@ -1,3 +1,9 @@
 *~
 arping
 autom4te.cache
+.deps
+config.h
+config.log
+config.status
+Makefile
+stamp-h1

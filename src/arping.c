@@ -14,7 +14,7 @@
  *
  */
 /*
- *  Copyright (C) 2000-2008 Thomas Habets <thomas@habets.pp.se>
+ *  Copyright (C) 2000-2009 Thomas Habets <thomas@habets.pp.se>
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public
@@ -30,7 +30,7 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-//#include "config.h"
+#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 

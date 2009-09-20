@@ -1,14 +1,26 @@
 arping/INSTALL
 
+Dependencies
+------------
+libnet 1.1.x
+  www.packetfactory.net/libnet
+    or
+  http://ftp.debian.org/debian/pool/main/libn/libnet/libnet_1.1.2.1.orig.tar.gz
+libpcap:
+  www.tcpdump.org
+
+For debian, just: apt-get install libpcap-dev libnet1-dev
+
 Installing, short version
 -------------------------
 ./configure
 make
 make install
 
-If your environment is not set up right, you may need to add stuff to
-the configure line, like:
-./configure LDFLAGS=-L/usr/lib
+If your environment is not set up right (hello Solaris), you may need
+to add stuff to the configure line, like:
+
+  ./configure LDFLAGS="-L/usr/lib -L/opt/csw/lib -R/opt/csw/lib"
 
 Installing, longer version
 --------------------------

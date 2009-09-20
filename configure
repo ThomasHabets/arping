@@ -4445,12 +4445,22 @@ done
 
 
 
+
+
+
+
+
 for ac_header in \
 arpa/inet.h \
 netinet/in.h \
 stdlib.h \
 sys/socket.h \
 sys/time.h \
+sys/types.h \
+stdint.h \
+libnet.h \
+win32/libnet.h \
+net/bpf.h \
 unistd.h
 do
 as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`

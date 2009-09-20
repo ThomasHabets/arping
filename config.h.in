@@ -12,6 +12,9 @@
 /* Define to 1 if you have the `net' library (-lnet). */
 #undef HAVE_LIBNET
 
+/* Define to 1 if you have the <libnet.h> header file. */
+#undef HAVE_LIBNET_H
+
 /* Define to 1 if you have the `nsl' library (-lnsl). */
 #undef HAVE_LIBNSL
 
@@ -29,6 +32,9 @@
 
 /* Define to 1 if you have the <netinet/in.h> header file. */
 #undef HAVE_NETINET_IN_H
+
+/* Define to 1 if you have the <net/bpf.h> header file. */
+#undef HAVE_NET_BPF_H
 
 /* Define to 1 if you have the `select' function. */
 #undef HAVE_SELECT
@@ -74,6 +80,9 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Define to 1 if you have the <win32/libnet.h> header file. */
+#undef HAVE_WIN32_LIBNET_H
 
 /* Name of package */
 #undef PACKAGE

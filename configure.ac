@@ -30,6 +30,11 @@ netinet/in.h \
 stdlib.h \
 sys/socket.h \
 sys/time.h \
+sys/types.h \
+stdint.h \
+libnet.h \
+win32/libnet.h \
+net/bpf.h \
 unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.

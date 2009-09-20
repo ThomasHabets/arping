@@ -30,33 +30,52 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#if HAVE_CONFIG_H
 #include "config.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifndef WIN32
+#if HAVE_UNISTD_H
 #include <unistd.h>
-// NOTE: try un-commenting this
-//#include <stdint.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/socket.h>
+#endif
 
+#if HAVE_STDINT_H
+#include <stdint.h>
+#endif
+
+#if HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
+#if HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+
+#if HAVE_ARPA_INET_H
 #include <arpa/inet.h>
+#endif
+
+#if HAVE_LIBNET_H
 #include <libnet.h>
 #endif
 
-#if defined (__SVR4) && defined (__sun)
-#define SOLARIS 1
-#endif
-
-#ifdef WIN32
+#if HAVE_WIN32_LIBNET_H
 #include <win32/libnet.h>
 #endif
 #include <pcap.h>
 
-#if defined(WIN32)
+#if WIN32
+/* FIXME: move to configure script */
 #define HAVE_ESIZE_TYPES 1
 #include "win32.h"
 #include "win32/getopt.h"
@@ -78,7 +97,7 @@
 #define FINDIF 1
 #endif
 
-#ifdef HAVE_NET_BPF_H
+#if HAVE_NET_BPF_H
 #include <net/bpf.h>
 #endif
 
@@ -103,7 +122,11 @@
 #define IP_ALEN 4
 #endif
 
-const float version = 2.08f;
+#ifndef WIN32
+#define WIN32 0
+#endif
+
+const const char *version = VERSION; /* from autoconf */
 
 static libnet_t *libnet = 0;
 
@@ -177,7 +200,7 @@ arping_lookupdev_default(const char *ifname,
 			 u_int32_t srcip, u_int32_t dstip,
 			 char *ebuf)
 {
-#ifdef WIN32
+#if WIN32
 	WCHAR buf[LIBNET_ERRBUF_SIZE + PCAP_ERRBUF_SIZE];
 	WCHAR* ret = (WCHAR*)pcap_lookupdev((char*)buf);
 	if (ret != NULL) {
@@ -313,7 +336,7 @@ static const char *arping_lookupdev(const char *ifname,
 #endif
 
 
-#ifdef WIN32
+#if WIN32
 static BOOL WINAPI arping_console_ctrl_handler(DWORD dwCtrlType)
 {
 	if(verbose) {
@@ -391,24 +414,37 @@ extended_usage()
 	       "    -u     Show index=received/sent instead  of  just  index=received  when\n"
 	       "           pinging MACs.\n"
 	       "    -v     Verbose output. Use twice for more messages.\n"
-	       "    -w     (arping 2.x only) Time to wait between pings, in microseconds.\n");
+	       "    -w     Time to wait between pings, in microseconds.\n");
 }
 
 /*
  *
  */
-static void usage(int ret)
+static void
+standard_usage()
 {
-	printf("ARPing %1.2f, by Thomas Habets <thomas@habets.pp.se>\n",
+	printf("ARPing %s, by Thomas Habets <thomas@habets.pp.se>\n",
 	       version);
 	printf("usage: arping [ -0aAbdDFpqrRuv ] [ -w <us> ] [ -S <host/ip> ] "
 	       "[ -T <host/ip ]\n"
 	       "              [ -s <MAC> ] [ -t <MAC> ] [ -c <count> ] "
 	       "[ -i <interface> ]\n"
 	       "              <host/ip/MAC | -B>\n");
-#ifdef WIN32
-	extended_usage();
-#endif
+}
+
+/*
+ *
+ */
+static void
+usage(int ret)
+{
+        standard_usage();
+        if (WIN32) {
+                extended_usage();
+        } else {
+                printf("For complete usage info, use --help"
+                       " or check the manpage.\n");
+        }
 	exit(ret);
 }
 
@@ -855,7 +891,7 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 }
 
 
-#ifdef WIN32
+#if WIN32
 static void
 ping_recv_win32(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
 {
@@ -1009,7 +1045,7 @@ ping_recv(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
                printf("arping: receiving packets...\n");
        }
 
-#ifdef WIN32
+#if WIN32
        ping_recv_win32(pcap,packetwait,func);
 #else
        ping_recv_unix(pcap,packetwait,func);
@@ -1038,6 +1074,14 @@ int main(int argc, char **argv)
 	static enum { NONE, PINGMAC, PINGIP } mode = NONE;
 	unsigned int packetwait = 1000000;
 
+        for (c = 1; c < argc; c++) {
+                if (!strcmp(argv[c], "--help")) {
+                        standard_usage();
+                        extended_usage();
+                        exit(0);
+                }
+        }
+
 	memset(ethnull, 0, ETH_ALEN);
 
 	srcip = 0;
@@ -1045,7 +1089,7 @@ int main(int argc, char **argv)
 	memset(dstmac, 0xff, ETH_ALEN);
 	memset(ethxmas, 0xff, ETH_ALEN);
 
-	while (EOF!=(c=getopt(argc, argv, "0aAbBc:dDFhi:I:pqrRs:S:t:T:uvw:"))) {
+	while (EOF!=(c=getopt(argc,argv,"0aAbBc:dDFhi:I:pqrRs:S:t:T:uvw:"))) {
 		switch(c) {
 		case '0':
 			srcip = 0;
@@ -1310,7 +1354,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "arping: pcap_open_live(): %s\n",ebuf);
 		exit(1);
 	}
-#ifdef HAVE_NET_BPF_H
+#if HAVE_NET_BPF_H
 	{
 		u_int32_t on = 1;
 		if (0 < (ioctl(pcap_fileno(pcap), BIOCIMMEDIATE,
@@ -1358,7 +1402,7 @@ int main(int argc, char **argv)
 			exit(1);
 		}
 	}
-#ifdef WIN32
+#if WIN32
 	//SetConsoleCtrlHandler(NULL, TRUE);
 	SetConsoleCtrlHandler(arping_console_ctrl_handler, TRUE);
 #else

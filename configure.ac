@@ -4,7 +4,10 @@
 AC_PREREQ(2.61)
 AC_INIT(arping, 2.08, thomas@habets.pp.se)
 AC_CONFIG_SRCDIR([arping.c])
+AM_INIT_AUTOMAKE
+AM_MAINTAINER_MODE
 AC_CONFIG_HEADER(config.h)
+
 
 # Checks for programs.
 AC_PROG_CC

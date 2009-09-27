@@ -1,0 +1,36 @@
+arping/INSTALL
+
+Dependencies
+------------
+libnet 1.1.x
+  www.packetfactory.net/libnet
+    or
+  http://ftp.debian.org/debian/pool/main/libn/libnet/libnet_1.1.2.1.orig.tar.gz
+libpcap:
+  www.tcpdump.org
+
+For debian, just: apt-get install libpcap-dev libnet1-dev
+
+Installing, short version
+-------------------------
+./configure
+make
+make install
+
+If your environment is not set up right (hello Solaris), you may need
+to add stuff to the configure line, like:
+
+  ./configure LDFLAGS="-L/usr/lib -L/opt/csw/lib -R/opt/csw/lib"
+
+Installing, longer version
+--------------------------
+Note that arping 2.x requires libnet 1.1.x to work. It will NOT work with
+libnet 1.0.x. Arping 1.x works with libnet 1.0.x, but it's not included in the
+same package anymore.
+
+Standard autotools:   ./configure && make && make install
+
+The autotools build system is new with arping 2.09. If you have problems with
+it I want to hear about it. Email me at thomas@habets.pp.se and attach
+the config.log file. If it failed during 'make', give me all the output from
+that.

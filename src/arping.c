@@ -126,7 +126,7 @@
 #define WIN32 0
 #endif
 
-const const char *version = VERSION; /* from autoconf */
+const char *version = VERSION; /* from autoconf */
 
 static libnet_t *libnet = 0;
 

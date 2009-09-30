@@ -59,7 +59,7 @@ case "$target_os" in
      *linux*)
           AC_LIBOBJ([findif_linux])
           ;;
-     *)
+     *bsd*)
           AC_LIBOBJ([findif_other])
           ;;
 esac

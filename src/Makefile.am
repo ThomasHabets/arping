@@ -6,4 +6,3 @@ sbin_PROGRAMS = arping
 arping_SOURCES = arping.c
 
 arping_LDADD = $(LIBOBJS)
-

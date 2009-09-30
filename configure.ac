@@ -49,7 +49,6 @@ AC_TYPE_UINT64_T
 
 # Checks for library functions.
 AC_PROG_GCC_TRADITIONAL
-AC_FUNC_MEMCMP
 AC_FUNC_SELECT_ARGTYPES
 AC_FUNC_SETVBUF_REVERSED
 AC_TYPE_SIGNAL
@@ -59,7 +58,10 @@ case "$target_os" in
      *linux*)
           AC_LIBOBJ([findif_linux])
           ;;
-     *bsd*)
+     *freebsd*|*openbsd*)
+          AC_LIBOBJ([findif_bsd])
+          ;;
+     *)
           AC_LIBOBJ([findif_other])
           ;;
 esac

@@ -106,13 +106,19 @@
 #define WIN32 0
 #endif
 
+const char *
+arping_lookupdev(const char *ifname,
+                 uint32_t srcip,
+                 uint32_t dstip,
+                 char *ebuf);
+
 static const char *version = VERSION; /* from autoconf */
 
 static libnet_t *libnet = 0;
 
 static struct timeval lastpacketsent;
 
-static uint32_t srcip,dstip;
+uint32_t srcip,dstip;
 
 static int beep = 0;
 static int verbose = 0;
@@ -148,7 +154,8 @@ count_missing_dots()
 /*
  *
  */	
-static void do_libnet_init(const char *ifname)
+void
+do_libnet_init(const char *ifname)
 {
 	char ebuf[LIBNET_ERRBUF_SIZE];
 	if (verbose > 1) {
@@ -175,7 +182,7 @@ static void do_libnet_init(const char *ifname)
 /*
  *
  */
-static const char *
+const char *
 arping_lookupdev_default(const char *ifname,
 			 uint32_t srcip, uint32_t dstip,
 			 char *ebuf)
@@ -192,129 +199,6 @@ arping_lookupdev_default(const char *ifname,
 	return pcap_lookupdev(ebuf);
 #endif
 }
-
-#if defined(FINDIF) && defined(linux)
-/**
- *
- */
-static const char *arping_lookupdev(const char *ifname,
-				    uint32_t srcip,
-				    uint32_t dstip,
-				    char *ebuf)
-{
-	FILE *f;
-	static char buf[1024];
-	char buf1[1024];
-	char buf2[1024];
-	char *p,*p2;
-	int n;
-
-	do_libnet_init(ifname);
-	libnet_addr2name4_r(dstip,0,buf2,1024);
-	libnet_addr2name4_r(srcip,0,buf1,1024);
-
-	/*
-	 * Construct and run command
-	 */
-	snprintf(buf, 1023, "/sbin/ip route get %s from %s 2>&1",
-		 buf2,buf1);
-	if (!(f = popen(buf, "r"))) {
-		goto failed;
-	}
-	if (0>(n = fread(buf, 1, sizeof(buf)-1, f))) {
-		pclose(f);
-		goto failed;
-	}
-	buf[n] = 0;
-	if (-1 == pclose(f)) {
-		perror("arping: pclose()");
-		goto failed;
-	}
-
-	/*
-	 * Parse out device
-	 */
-	p = strstr(buf, "dev ");
-	if (!p) {
-		goto failed;
-	}
-
-	p+=4;
-
-	p2 = strchr(p, ' ');
-	if (!p2) {
-		goto failed;
-	}
-	*p2 = 0;
-	return p;
- failed:
-	return arping_lookupdev_default(ifname,srcip,dstip,ebuf);
-}
-#elif defined(FINDIF) && defined(HAVE_WEIRD_BSD)
-static
-const char *
-arping_lookupdev(const char *ifname,
-		 uint32_t srcip, uint32_t dstip, char *ebuf)
-{
-	FILE *f;
-	static char buf[10240];
-	char buf1[1024];
-	char *p,*p2;
-	int n;
-
-	do_libnet_init(ifname);
-	libnet_addr2name4_r(dstip,0,buf1, 1024);
-	//libnet_addr2name4_r(srcip,0,buf1);
-
-	/*
-	 * Construct and run command
-	 */
-	snprintf(buf, 1023, "/sbin/route -n get %s 2>&1",
-		 buf1);
-	if (!(f = popen(buf, "r"))) {
-		goto failed;
-	}
-	if (0 > (n = fread(buf, 1, sizeof(buf)-1, f))) {
-		pclose(f);
-		goto failed;
-	}
-	buf[n] = 0;
-	if (-1 == pclose(f)) {
-		perror("arping: pclose()");
-		goto failed;
-	}
-
-	/*
-	 * Parse out device
-	 */
-	p = strstr(buf, "interface: ");
-	if (!p) {
-		goto failed;
-	}
-
-	p+=11;
-
-	p2 = strchr(p, '\n');
-	if (!p2) {
-		goto failed;
-	}
-	*p2 = 0;
-	return p;
- failed:
-	return arping_lookupdev_default(ifname,srcip,dstip,ebuf);
-}
-#else
-/*
- *
- */
-static const char *arping_lookupdev(const char *ifname,
-				    uint32_t srcip, uint32_t dstip,
-				    char *ebuf)
-{
-	return arping_lookupdev_default(ifname,srcip,dstip,ebuf);
-}
-#endif
-
 
 #if WIN32
 static BOOL WINAPI arping_console_ctrl_handler(DWORD dwCtrlType)

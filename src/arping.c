@@ -74,44 +74,24 @@
 #endif
 #include <pcap.h>
 
-#if WIN32
-/* FIXME: move to configure script */
-#define HAVE_ESIZE_TYPES 1
-#include "win32.h"
-#include "win32/getopt.h"
-#endif
-
 #if !defined(linux)
 /* "Weird BSD" means that select on pcap fd will return readable on select()
  * when there is nothing to pcap_dispatch().
  * Confirmed on Solaris and OpenBSD.
  * Without select() the send interval will be off.
  * It's just a macro name, don't read too much into it.
+ * FIXME: put it autotools somehow
  */
 #define HAVE_WEIRD_BSD 1
 #define FINDIF 1
 #endif
  
 #if defined(linux)
-#define HAVE_ESIZE_TYPES 1
 #define FINDIF 1
 #endif
 
 #if HAVE_NET_BPF_H
 #include <net/bpf.h>
-#endif
-
-#ifndef HAVE_ESIZE_TYPES
-/*
- * let's hope we at least have these
- * FIXME: bleh, this is not auto-detected, so fix it with os-dependent stuff
- * like we have above for linux
- * But this broken thing compiled on my solaris, openbsd and linux-boxes so
- * it kinda works.
- */
-#define u_int8_t uint8_t
-#define u_int16_t uint16_t
-#define u_int32_t uint32_t
 #endif
 
 #ifndef ETH_ALEN
@@ -126,13 +106,13 @@
 #define WIN32 0
 #endif
 
-const char *version = VERSION; /* from autoconf */
+static const char *version = VERSION; /* from autoconf */
 
 static libnet_t *libnet = 0;
 
 static struct timeval lastpacketsent;
 
-static u_int32_t srcip,dstip;
+static uint32_t srcip,dstip;
 
 static int beep = 0;
 static int verbose = 0;
@@ -146,8 +126,8 @@ static int addr_must_be_same = 0;
 // RAWRAW is RAW|RRAW
 static enum { NORMAL,QUIET,RAW,RRAW,RAWRAW,DOT } display = NORMAL;
 static char *target = "huh? bug in arping?";
-static u_int8_t ethnull[ETH_ALEN];
-static u_int8_t ethxmas[ETH_ALEN];
+static uint8_t ethnull[ETH_ALEN];
+static uint8_t ethxmas[ETH_ALEN];
 static char srcmac[ETH_ALEN];
 static char dstmac[ETH_ALEN];
 
@@ -197,7 +177,7 @@ static void do_libnet_init(const char *ifname)
  */
 static const char *
 arping_lookupdev_default(const char *ifname,
-			 u_int32_t srcip, u_int32_t dstip,
+			 uint32_t srcip, uint32_t dstip,
 			 char *ebuf)
 {
 #if WIN32
@@ -214,12 +194,12 @@ arping_lookupdev_default(const char *ifname,
 }
 
 #if defined(FINDIF) && defined(linux)
-/*
+/**
  *
  */
 static const char *arping_lookupdev(const char *ifname,
-				    u_int32_t srcip,
-				    u_int32_t dstip,
+				    uint32_t srcip,
+				    uint32_t dstip,
 				    char *ebuf)
 {
 	FILE *f;
@@ -274,7 +254,7 @@ static const char *arping_lookupdev(const char *ifname,
 static
 const char *
 arping_lookupdev(const char *ifname,
-		 u_int32_t srcip, u_int32_t dstip, char *ebuf)
+		 uint32_t srcip, uint32_t dstip, char *ebuf)
 {
 	FILE *f;
 	static char buf[10240];
@@ -328,7 +308,7 @@ arping_lookupdev(const char *ifname,
  *
  */
 static const char *arping_lookupdev(const char *ifname,
-				    u_int32_t srcip, u_int32_t dstip,
+				    uint32_t srcip, uint32_t dstip,
 				    char *ebuf)
 {
 	return arping_lookupdev_default(ifname,srcip,dstip,ebuf);
@@ -571,9 +551,9 @@ static char *tv2str(const struct timeval *tv, const struct timeval *tv2,
  * \param seq     Ping seq
  */
 static void
-pingmac_send(u_int8_t *srcmac, u_int8_t *dstmac,
-	     u_int32_t srcip, u_int32_t dstip,
-	     u_int16_t id, u_int16_t seq)
+pingmac_send(uint8_t *srcmac, uint8_t *dstmac,
+	     uint32_t srcip, uint32_t dstip,
+	     uint16_t id, uint16_t seq)
 {
 	static libnet_ptag_t icmp = 0, ipv4 = 0,eth=0;
 	int c;
@@ -653,8 +633,8 @@ pingmac_send(u_int8_t *srcmac, u_int8_t *dstmac,
  *
  */
 static void
-pingip_send(u_int8_t *srcmac, u_int8_t *dstmac,
-	    u_int32_t srcip, u_int32_t dstip)
+pingip_send(uint8_t *srcmac, uint8_t *dstmac,
+	    uint32_t srcip, uint32_t dstip)
 {
 	static libnet_ptag_t arp=0,eth=0;
 	if (-1 == (arp = libnet_build_arp(ARPHRD_ETHER,
@@ -663,9 +643,9 @@ pingip_send(u_int8_t *srcmac, u_int8_t *dstmac,
 					  IP_ALEN,
 					  ARPOP_REQUEST,
 					  srcmac,
-					  (u_int8_t*)&srcip,
+					  (uint8_t*)&srcip,
 					  ethnull,
-					  (u_int8_t*)&dstip,
+					  (uint8_t*)&dstip,
 					  NULL,
 					  0,
 					  libnet,
@@ -715,7 +695,7 @@ pingip_send(u_int8_t *srcmac, u_int8_t *dstmac,
  */
 static void
 pingip_recv(const char *unused, struct pcap_pkthdr *h,
-	    u_int8_t *packet)
+	    uint8_t *packet)
 {
 	struct libnet_802_3_hdr *heth;
 	struct libnet_arp_hdr *harp;
@@ -737,7 +717,7 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h,
 	if ((htons(harp->ar_op) == ARPOP_REPLY)
 	    && (htons(harp->ar_pro) == ETHERTYPE_IP)
 	    && (htons(harp->ar_hrd) == ARPHRD_ETHER)) {
-		u_int32_t ip;
+		uint32_t ip;
 		memcpy(&ip, (char*)harp + harp->ar_hln
 		       + LIBNET_ARP_H,4);
 		if (addr_must_be_same
@@ -815,7 +795,7 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h,
  */
 static void
 pingmac_recv(const char *unused, struct pcap_pkthdr *h,
-	     u_int8_t *packet)
+	     uint8_t *packet)
 {
 	struct libnet_802_3_hdr *heth;
 	struct libnet_ipv4_hdr *hip;
@@ -841,9 +821,9 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 	    && ((!memcmp(heth->_802_3_shost, dstmac,ETH_ALEN)
 		 || !memcmp(dstmac, ethxmas, ETH_ALEN)))
 	    && !memcmp(heth->_802_3_dhost, srcmac, ETH_ALEN)) {
-/*		u_int8_t *cp = heth->_802_3_shost; */
+/*		uint8_t *cp = heth->_802_3_shost; */
 		if (addr_must_be_same) {
-			u_int32_t tmp;
+			uint32_t tmp;
 			memcpy(&tmp, &hip->ip_src, 4);
 			if (dstip != tmp) {
 				return;
@@ -896,7 +876,7 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 
 #if WIN32
 static void
-ping_recv_win32(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
+ping_recv_win32(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
 {
        struct timeval tv,tv2;
        char done = 0;
@@ -963,7 +943,7 @@ gettv(struct timeval *tv)
  * 
  */
 static void
-ping_recv_unix(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
+ping_recv_unix(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
 {
        struct timeval tv;
        struct timeval endtime;
@@ -1042,7 +1022,7 @@ ping_recv_unix(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
  * 
  */
 static void
-ping_recv(pcap_t *pcap,u_int32_t packetwait, pcap_handler func)
+ping_recv(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
 {
        if(verbose>3) {
                printf("arping: receiving packets...\n");
@@ -1359,7 +1339,7 @@ int main(int argc, char **argv)
 	}
 #if HAVE_NET_BPF_H
 	{
-		u_int32_t on = 1;
+		uint32_t on = 1;
 		if (0 < (ioctl(pcap_fileno(pcap), BIOCIMMEDIATE,
 			       &on))) {
 			fprintf(stderr, "arping: ioctl(fd,BIOCIMMEDIATE, 1) "
@@ -1417,9 +1397,9 @@ int main(int argc, char **argv)
 		       ifname, libnet_addr2name4(libnet_get_ipaddr4(libnet),
 						 0));
 		for (c = 0; c < ETH_ALEN - 1; c++) {
-			printf("%.2x:", (u_int8_t)srcmac[c]);
+			printf("%.2x:", (uint8_t)srcmac[c]);
 		}
-		printf("%.2x\n", (u_int8_t)srcmac[ETH_ALEN - 1]);
+		printf("%.2x\n", (uint8_t)srcmac[ETH_ALEN - 1]);
 	}
 
 

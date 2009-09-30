@@ -58,7 +58,7 @@ case "$target_os" in
      *linux*)
           AC_LIBOBJ([findif_linux])
           ;;
-     *freebsd*|*openbsd*)
+     *freebsd*|*openbsd*|*solaris*)
           AC_LIBOBJ([findif_bsd])
           ;;
      *)

@@ -5917,7 +5917,7 @@ case "$target_os" in
 esac
 
           ;;
-     *freebsd*|*openbsd*)
+     *freebsd*|*openbsd*|*solaris*)
           case " $LIBOBJS " in
   *" findif_bsd.$ac_objext "* ) ;;
   *) LIBOBJS="$LIBOBJS findif_bsd.$ac_objext"

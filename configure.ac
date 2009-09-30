@@ -3,6 +3,7 @@
 
 AC_PREREQ(2.61)
 AC_INIT(arping, 2.08, thomas@habets.pp.se)
+AC_CANONICAL_SYSTEM
 AC_CONFIG_SRCDIR([src/arping.c])
 AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE
@@ -54,7 +55,18 @@ AC_FUNC_SETVBUF_REVERSED
 AC_TYPE_SIGNAL
 AC_CHECK_FUNCS([gettimeofday memset select strchr strdup strerror strstr])
 
+echo $target_os
+case "$target_os" in
+     *linux*)
+          AC_LIBOBJ([findif_linux])
+          ;;
+     *)
+          AC_LIBOBJ([findif_other])
+          ;;
+esac
 AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([src/Makefile])
+AC_CONFIG_FILES([doc/Makefile])
 AC_OUTPUT
 
 echo "

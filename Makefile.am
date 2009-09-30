@@ -1,6 +1,7 @@
 # arping/Makefile.am
 #
-AUTOMAKE_OPTIONS = foreign
+include $(top_srcdir)/Makefile.am.common
+
 SUBDIRS=src doc
 
 mrproper: maintainer-clean

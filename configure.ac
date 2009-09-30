@@ -55,7 +55,6 @@ AC_FUNC_SETVBUF_REVERSED
 AC_TYPE_SIGNAL
 AC_CHECK_FUNCS([gettimeofday memset select strchr strdup strerror strstr])
 
-echo $target_os
 case "$target_os" in
      *linux*)
           AC_LIBOBJ([findif_linux])

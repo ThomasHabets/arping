@@ -5998,7 +5998,6 @@ fi
 done
 
 
-echo $target_os
 case "$target_os" in
      *linux*)
           case " $LIBOBJS " in

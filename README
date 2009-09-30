@@ -34,15 +34,15 @@ to know which ones are taken, or people will get mad (a friend of mine got a
 call on his cellphone about 15 seconds after he accidentally 'stole' an IP,
 oops).
 
-Compiling
----------
+Compiling / installing
+----------------------
 See INSTALL file.
 
 I try to test arping on these platforms before any release:
 * Latest Debian stable x86 and amd64
-* OpenBSD x86
+* Latest OpenBSD x86 or amd64
 * FreeBSD x86
-* Solaris sparc
+* Solaris 10 sparc
 
 I don't have these systems up and runnig 24/7, but I try to get them tested
 every now and then:
@@ -68,22 +68,6 @@ A: Arping 1 has finally been removed from the Arping 2.x tarball in 2.09.
    Arping 1.x currently only lives in the Arping packages 2.08 and lower. If
    features are to be added or bugs fixed it will show up again as a separate
    package forked from Arping 2.08.
----
-Q: It doesn't compile!
-
-A: Maybe u_int32_t and co. are not defined. Try uncommenting the line:
-   #include <stdint.h> in src/arping.c. This has been an issue on
-   MacOS X, I think. I don't have access to such a box so it's a bit hard
-   to fix.
-
-A: Arping 2.x will not work with Libnet 1.0.x. This is This is due to
-   libnet 1.1.x being completely different from 1.0.x. There is no
-   real way to write code that works on both 1.0.x and 1.1.x.
-
-   Since I wanted to do some other things a bit differently, I wrote
-   arping 2.x. I recommend that you install Libnet 1.1.x so that you can
-   run arping 2.x.
-
 ---
 Q: Where's the Windows version? A compiled .exe would be nice.
 
@@ -136,22 +120,18 @@ A: -T <IP/host> allows you to restrict the arping to a limited subnet, which
    192.168.0.0/24 then the broadcast probably is 192.168.0.255, so try:
    # arping -T 192.168.0.255 00:01:02:03:04:05
 ---
-Q: It doesn't compile, I get some error message about libnet and/or libpcap
+Q: ./configure says I need libnet and/or libpcap
 
 A: Arping depends on libnet 1.1.x and libpcap, get libnet at:
    http://www.packetfactory.net/libnet and libpcap from http://www.tcpdump.org.
 
    Lately www.packetfactory.net seems to be down, so you can get the original
    tarball from the Debian archives:
-   http://ftp.debian.org/debian/pool/main/libn/libnet/libnet_1.1.2.1.orig.tar.gz
+   http://ftp.debian.org/debian/pool/main/libn/libnet/libnet_1.1.4.orig.tar.gz
    If that exact file doesn't exist there probably is one with a higher
    version number.
 ---
-Q: I get this when I compile: "/bin/sh: libnet-config: command not found"
-
-A: You didn't really read the last question, did you? Go back up 6 lines.
----
-Q: I get bus error on my bigendian box
+Q: I get bus error on my non-x86 box
 
 A: Damn, I thought I fixed those. Tell me how you got it and I'll try to fix
    it.

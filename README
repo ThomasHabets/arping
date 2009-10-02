@@ -77,10 +77,6 @@ A: I don't have a windows box, so the .exe I'm providing was NOT compiled
    That being said:
    http://www.habets.pp.se/synscan/files/arping-for-windows-not-compiled-by-me.exe
 ---
-Q: On sparc64, the IP shown in the output is 0.0.0.0.
-
-A: Libnets fault, should be fixed there.
----
 Q: After compiling arping without any problem, i test it first with
    localhost... but it doesn't respond. Isn't that strange?
 

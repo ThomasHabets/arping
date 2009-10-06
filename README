@@ -5,7 +5,8 @@ arping/README
     By Thomas Habets <thomas@habets.pp.se>
 
  http://www.habets.pp.se/synscan/
- git clone http://github.com/ThomasHabets/arping.git
+ http://github.com/ThomasHabets/arping
+ git clone git://github.com/ThomasHabets/arping.git
 
 Introduction
 ------------
@@ -17,7 +18,7 @@ the host blocks ping (all ICMP even)? Then you're screwed. Or you use arping.
 
 Why it's not stupid
 -------------------
-Say you have a block of N real ARIN-assigned IP-addresses. You want to debug
+Say you have a block of N real IANA-assigned IP-addresses. You want to debug
 the net and you don't know which IP addresses are taken. You can't ping anyone
 before you take the IP, and you can't pick an IP before you know which are
 already taken. Catch 22. But with arping you can 'ping' the IP and if you get
@@ -48,7 +49,7 @@ I don't have these systems up and runnig 24/7, but I try to get them tested
 every now and then:
 * MacOS X
 * Debian alpha
-* OpenBSD sparc64
+* OpenBSD sparc64 (last test: 2009-10-02)
 * IRIX 6.5 mips (last test 2009-09-27)
 
 Mailing list
@@ -68,6 +69,8 @@ A: Arping 1 has finally been removed from the Arping 2.x tarball in 2.09.
    Arping 1.x currently only lives in the Arping packages 2.08 and lower. If
    features are to be added or bugs fixed it will show up again as a separate
    package forked from Arping 2.08.
+
+   For now just get arping-2.08.tar.gz and use that.
 ---
 Q: Where's the Windows version? A compiled .exe would be nice.
 
@@ -75,7 +78,7 @@ A: I don't have a windows box, so the .exe I'm providing was NOT compiled
    by me. If something is strange about it tell me, but there won't be much
    I can do about it.
    That being said:
-   http://www.habets.pp.se/synscan/files/arping-for-windows-not-compiled-by-me.exe
+http://www.habets.pp.se/synscan/files/arping-for-windows-not-compiled-by-me.exe
 ---
 Q: After compiling arping without any problem, i test it first with
    localhost... but it doesn't respond. Isn't that strange?
@@ -126,11 +129,14 @@ A: Arping depends on libnet 1.1.x and libpcap, get libnet at:
    http://ftp.debian.org/debian/pool/main/libn/libnet/libnet_1.1.4.orig.tar.gz
    If that exact file doesn't exist there probably is one with a higher
    version number.
+
+   Or github.com:
+   http://github.com/sam-github/libnet
 ---
 Q: I get bus error on my non-x86 box
 
 A: Damn, I thought I fixed those. Tell me how you got it and I'll try to fix
-   it.
+   it. Attaching config.log always helps.
 ---
 Q: I get "libnet_get_ipaddr(): no error" when I run arping with IP (src or dst)
    255.255.255.255.

@@ -44,7 +44,7 @@ Linux, OpenBSD, FreeBSD:
 
 Solaris
   ./configure LDFLAGS="-R/usr/local/lib -L/opt/csw/lib -R/opt/csw/lib" \
-              CFLAGS="-I/usr/local/include"
+              CPPFLAGS="-I/usr/local/include"
 
-IRIX (double-check this):
+IRIX (FIXME: double-check this):
   ./configure  LDFLAGS="-L/usr/local/lib -R/usr/local/lib"

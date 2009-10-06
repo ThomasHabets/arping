@@ -1,4 +1,5 @@
-/*
+/** arping/src/arping.c
+ *
  * arping
  *
  * By Thomas Habets <thomas@habets.pp.se>
@@ -83,13 +84,8 @@
  * FIXME: put it autotools somehow
  */
 #define HAVE_WEIRD_BSD 1
-#define FINDIF 1
 #endif
  
-#if defined(linux)
-#define FINDIF 1
-#endif
-
 #if HAVE_NET_BPF_H
 #include <net/bpf.h>
 #endif
@@ -106,6 +102,9 @@
 #define WIN32 0
 #endif
 
+/**
+ * OS-specific interface finding using routing table. See findif_*.c
+ */
 const char *
 arping_lookupdev(const char *ifname,
                  uint32_t srcip,
@@ -151,7 +150,7 @@ count_missing_dots()
         }
 }
 
-/*
+/**
  *
  */	
 void
@@ -179,7 +178,7 @@ do_libnet_init(const char *ifname)
 	}
 }
 
-/*
+/**
  *
  */
 const char *
@@ -215,14 +214,14 @@ static BOOL WINAPI arping_console_ctrl_handler(DWORD dwCtrlType)
 		       "%d packets transmitted, %d packets received, %3.0f%% "
 		       "unanswered\n",target,numsent,numrecvd,
 		       100.0 - 100.0 * (float)(numrecvd)/(float)numsent);
-		       }
+        }
 #endif
 	return TRUE;
 }
 #endif
 
 
-/*
+/**
  *
  */
 static void sigint(int i)
@@ -230,6 +229,9 @@ static void sigint(int i)
 	time_to_die = 1;
 }
 
+/**
+ *
+ */
 static void
 extended_usage()
 {
@@ -284,7 +286,7 @@ extended_usage()
                "Development repo: http://github.com/ThomasHabets/arping\n");
 }
 
-/*
+/**
  *
  */
 static void
@@ -299,7 +301,7 @@ standard_usage()
 	       "              <host/ip/MAC | -B>\n");
 }
 
-/*
+/**
  *
  */
 static void
@@ -315,7 +317,7 @@ usage(int ret)
 	exit(ret);
 }
 
-/*
+/**
  * It was unclear from msdn.microsoft.com if their scanf() supported
  * [0-9a-fA-F], so I'll stay away from it.
  */
@@ -359,7 +361,7 @@ static int is_mac_addr(const char *p)
 	return strchr(p, ':') ? 1 : 0;
 }
 
-/*
+/**
  * lots of parms since C arrays suck
  */
 static int get_mac_addr(const char *in,
@@ -380,7 +382,7 @@ static int get_mac_addr(const char *in,
 	return 0;
 }
 
-/*
+/**
  * as always, the answer is 42
  *
  * in this case the question is how many bytes buf needs to be.
@@ -705,7 +707,6 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 	    && ((!memcmp(heth->_802_3_shost, dstmac,ETH_ALEN)
 		 || !memcmp(dstmac, ethxmas, ETH_ALEN)))
 	    && !memcmp(heth->_802_3_dhost, srcmac, ETH_ALEN)) {
-/*		uint8_t *cp = heth->_802_3_shost; */
 		if (addr_must_be_same) {
 			uint32_t tmp;
 			memcpy(&tmp, &hip->ip_src, 4);
@@ -759,6 +760,9 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 
 
 #if WIN32
+/**
+ * untested for a long time. Maybe sence arping 2.05 or so.
+ */
 static void
 ping_recv_win32(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
 {
@@ -801,6 +805,10 @@ ping_recv_win32(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
 }
 #endif
 
+/**
+ * while negative microseconds, take from whole seconds.
+ * help function for measuring deltas.
+ */
 static void
 fixup_timeval(struct timeval *tv)
 {
@@ -810,7 +818,9 @@ fixup_timeval(struct timeval *tv)
 	}
 }
 
-
+/**
+ * idiot-proof gettimeofday() wrapper
+ */
 static void
 gettv(struct timeval *tv)
 {
@@ -823,7 +833,7 @@ gettv(struct timeval *tv)
 }
 
 
-/*
+/**
  * 
  */
 static void
@@ -902,7 +912,7 @@ ping_recv_unix(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
        }
 }
 
-/*
+/**
  * 
  */
 static void
@@ -919,14 +929,13 @@ ping_recv(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
 #endif
 }
 
-/*
+/**
  *
  */
 int main(int argc, char **argv)
 {
 	char ebuf[LIBNET_ERRBUF_SIZE + PCAP_ERRBUF_SIZE];
 	char *cp;
-/*	int nullip = 0;*/
 	int promisc = 0;
 	int srcip_given = 0;
 	int srcmac_given = 0;
@@ -1093,10 +1102,9 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if( display == DOT ){
-		// set stdout unbuffered
-		setvbuf( stdout, NULL, _IONBF, 0 );
-	}
+        if (display == DOT) {
+                setvbuf(stdout, NULL, _IONBF, 0);
+        }
 
 	parm = (optind < argc) ? argv[optind] : NULL;
 
@@ -1309,18 +1317,16 @@ int main(int argc, char **argv)
 				  (pcap_handler)pingmac_recv);
 		}
 	}
-	if (display == DOT){
-		count_missing_dots();
-		printf("\t%3.0f%% packet loss\n",
+        if (display == DOT) {
+                count_missing_dots();
+                printf("\t%3.0f%% packet loss\n",
                        100.0 - 100.0 * (float)(numrecvd)/(float)numsent);
-	}
-	if (display == NORMAL) {
+        } else if (display == NORMAL) {
 		printf("\n--- %s statistics ---\n"
 		       "%d packets transmitted, %d packets received, %3.0f%% "
 		       "unanswered\n",target,numsent,numrecvd,
 		       100.0 - 100.0 * (float)(numrecvd)/(float)numsent); 
 	}
-	exit(!numrecvd);
 
-	return 0;
+        return !numrecvd;
 }

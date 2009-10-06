@@ -14,6 +14,8 @@
 
 @SET_MAKE@
 
+# arping/src/Makefile.am
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
@@ -160,6 +162,8 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+
+# arping/Makefile.am.common
 AUTOMAKE_OPTIONS = foreign
 DISTCLEANFILES = *~
 arping_SOURCES = arping.c

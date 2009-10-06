@@ -23,14 +23,14 @@
 #include <stdio.h>
 #include <string.h>
 
-
 #include "arping.h"
+
 /**
  *
  */
 const char *
 arping_lookupdev(const char *ifname,
-		 uint32_t srcip,
+                 uint32_t srcip,
                  uint32_t dstip,
                  char *ebuf)
 {
@@ -42,7 +42,6 @@ arping_lookupdev(const char *ifname,
 
 	do_libnet_init(ifname);
 	libnet_addr2name4_r(dstip,0,buf1, 1024);
-	//libnet_addr2name4_r(srcip,0,buf1);
 
 	/*
 	 * Construct and run command
@@ -63,7 +62,7 @@ arping_lookupdev(const char *ifname,
 	}
 
 	/*
-	 * Parse out device
+	 * Parse interface name
 	 */
 	p = strstr(buf, "interface: ");
 	if (!p) {

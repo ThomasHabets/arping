@@ -26,7 +26,7 @@
 #include "arping.h"
 
 /**
- *
+ * WARNING: non-reentrant
  */
 const char *
 arping_lookupdev(const char *ifname,
@@ -49,7 +49,7 @@ arping_lookupdev(const char *ifname,
 	 * Construct and run command
 	 */
 	snprintf(buf, 1023, "/sbin/ip route get %s from %s 2>&1",
-		 buf2,buf1);
+		 buf2, buf1);
 	if (!(f = popen(buf, "r"))) {
 		goto failed;
 	}
@@ -64,7 +64,7 @@ arping_lookupdev(const char *ifname,
 	}
 
 	/*
-	 * Parse out device
+	 * Parse interface name
 	 */
 	p = strstr(buf, "dev ");
 	if (!p) {

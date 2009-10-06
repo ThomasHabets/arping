@@ -1,5 +1,7 @@
 arping/INSTALL
 
+This is the short version. For more info see the README.
+
 Dependencies
 ------------
 libnet 1.1.x
@@ -34,3 +36,15 @@ The autotools build system is new with arping 2.09. If you have problems with
 it I want to hear about it. Email me at thomas@habets.pp.se and attach
 the config.log file. If it failed during 'make', give me all the output from
 that.
+
+Examples that I use on some systems:
+
+Linux, OpenBSD, FreeBSD:
+  ./configure
+
+Solaris
+  ./configure LDFLAGS="-R/usr/local/lib -L/opt/csw/lib -R/opt/csw/lib" \
+              CFLAGS="-I/usr/local/include"
+
+IRIX (double-check this):
+  ./configure  LDFLAGS="-L/usr/local/lib -R/usr/local/lib"

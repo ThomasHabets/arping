@@ -38,6 +38,11 @@ win32/libnet.h \
 net/bpf.h \
 unistd.h])
 
+# Libnet include file is not optional
+if test ! x$ac_cv_header_libnet_h = xyes; then
+  AC_MSG_ERROR([Can't find libnet.h. See INSTALL file for where to get Libnet])
+fi
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_HEADER_TIME

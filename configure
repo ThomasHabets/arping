@@ -4749,6 +4749,13 @@ fi
 done
 
 
+# Libnet include file is not optional
+if test ! x$ac_cv_header_libnet_h = xyes; then
+  { { echo "$as_me:$LINENO: error: Can't find libnet.h. See INSTALL file for where to get Libnet" >&5
+echo "$as_me: error: Can't find libnet.h. See INSTALL file for where to get Libnet" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
 # Checks for typedefs, structures, and compiler characteristics.
 { echo "$as_me:$LINENO: checking for an ANSI C-conforming const" >&5
 echo $ECHO_N "checking for an ANSI C-conforming const... $ECHO_C" >&6; }

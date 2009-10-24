@@ -41,6 +41,7 @@ See INSTALL file.
 
 I try to test arping on these platforms before any release:
 * Latest Debian stable x86 and amd64
+* Linux (Debian or Ubuntu) on arm
 * Latest OpenBSD x86 or amd64
 * FreeBSD x86
 * Solaris 10 sparc

@@ -128,7 +128,7 @@ static unsigned int numsent = 0;
 static unsigned int numrecvd = 0;
 static unsigned int numdots = 0;
 static int addr_must_be_same = 0;
-// RAWRAW is RAW|RRAW
+/* RAWRAW is RAW|RRAW */
 static enum { NORMAL,QUIET,RAW,RRAW,RAWRAW,DOT } display = NORMAL;
 static char *target = "huh? bug in arping?";
 static uint8_t ethnull[ETH_ALEN];
@@ -419,7 +419,7 @@ static char *tv2str(const struct timeval *tv, const struct timeval *tv2,
 		sprintf(buf, "%.3f sec", f*1000);
 		break;
         default:
-		// huh, uh, huhuh
+		/* huh, uh, huhuh */
 		sprintf(buf, "%.3fe%d sec", f, exp-6);
 	}
 	return buf;
@@ -444,13 +444,13 @@ pingmac_send(uint8_t *srcmac, uint8_t *dstmac,
 	static libnet_ptag_t icmp = 0, ipv4 = 0,eth=0;
 	int c;
 
-	if (-1 == (icmp = libnet_build_icmpv4_echo(ICMP_ECHO, // type
-						   0, // code
-						   0, // checksum
-						   id, // id
-						   seq, // seq
-						   NULL, // payload
-						   0, // payload len
+	if (-1 == (icmp = libnet_build_icmpv4_echo(ICMP_ECHO, /* type */
+						   0, /* code */
+						   0, /* checksum */
+						   id, /* id */
+						   seq, /* seq */
+						   NULL, /* payload */
+						   0, /* payload len */
 						   libnet,
 						   icmp))) {
 		fprintf(stderr, "libnet_build_icmpv4_echo(): %s\n",
@@ -460,15 +460,15 @@ pingmac_send(uint8_t *srcmac, uint8_t *dstmac,
 
 	if (-1==(ipv4 = libnet_build_ipv4(LIBNET_IPV4_H
 					  + LIBNET_ICMPV4_ECHO_H + 0,
-					  0, // ToS
-					  id, // id
-					  0, // frag
-					  64, // ttl
+					  0, /* ToS */
+					  id, /* id */
+					  0, /* frag */
+					  64, /* ttl */
 					  IPPROTO_ICMP,
-					  0, // checksum
+					  0, /* checksum */
 					  srcip,
 					  dstip,
-					  NULL, // payload
+					  NULL, /* payload */
 					  0,
 					  libnet,
 					  ipv4))) {
@@ -892,11 +892,11 @@ ping_recv_unix(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
 		       if (1 != (ret = pcap_dispatch(pcap, 1,
 						     func,
 						     NULL))) {
-			       // rest, so we don't take 100% CPU... mostly
-			       // hmm... does usleep() exist everywhere?
+			       /* rest, so we don't take 100% CPU... mostly
+                                  hmm... does usleep() exist everywhere? */
 			       usleep(10);
 #ifndef HAVE_WEIRD_BSD
-			       // weird is normal on bsd :)
+			       /* weird is normal on bsd :) */
 			       if (verbose) {
 				       fprintf(stderr, "arping: select=%d "
 					       "pcap_dispatch=%d!\n",
@@ -1024,7 +1024,7 @@ int main(int argc, char **argv)
 		case 'R':
 			display = (display==RAW)?RAWRAW:RRAW;
 			break;
-		case 's': {// spoof source MAC
+		case 's': { /* spoof source MAC */
 			unsigned int n[6];
 			if (!get_mac_addr(optarg,
 					  &n[0],&n[1],&n[2],
@@ -1039,7 +1039,7 @@ int main(int argc, char **argv)
 			srcmac_given = 1;
 			break;
 		}
-		case 'S': // set source IP, may be null for don't-know
+		case 'S': /* set source IP, may be null for don't-know */
 			do_libnet_init(ifname);
 			if (-1 == (srcip = libnet_name2addr4(libnet,
 							     optarg,
@@ -1051,7 +1051,7 @@ int main(int argc, char **argv)
 			}
 			srcip_given = 1;
 			break;
-		case 't': { // set taget mac
+		case 't': { /* set taget mac */
 			unsigned int n[6];
 			if (mode == PINGMAC) {
 				fprintf(stderr, "arping: -t can only be used "
@@ -1071,7 +1071,7 @@ int main(int argc, char **argv)
 			mode = PINGIP;
 			break;
 		}
-		case 'T': // set destination IP
+		case 'T': /* set destination IP */
 			if (mode == PINGIP) {
 				fprintf(stderr, "arping: -T can only be used "
 					"in MAC ping mode\n");
@@ -1206,7 +1206,7 @@ int main(int argc, char **argv)
 				ebuf);
 			exit(1);
 		}
-		// FIXME: check for other probably-not interfaces
+		/* FIXME: check for other probably-not interfaces */
 		if (!strcmp(ifname, "ipsec")
 		    || !strcmp(ifname,"lo")) {
 			fprintf(stderr, "arping: Um.. %s looks like the wrong "
@@ -1242,13 +1242,13 @@ int main(int argc, char **argv)
 #endif
 
 	if (mode == PINGIP) {
-		// FIXME: better filter with addresses?
+		/* FIXME: better filter with addresses? */
 		if (-1 == pcap_compile(pcap, &bp, "arp", 0,-1)) {
 			fprintf(stderr, "arping: pcap_compile(): error\n");
 			exit(1);
 		}
-	} else { // ping mac
-		// FIXME: better filter with addresses?
+	} else { /* ping mac */
+		/* FIXME: better filter with addresses? */
 		if (-1 == pcap_compile(pcap, &bp, "icmp", 0,-1)) {
 			fprintf(stderr, "arping: pcap_compile(): error\n");
 			exit(1);
@@ -1278,7 +1278,7 @@ int main(int argc, char **argv)
 		}
 	}
 #if WIN32
-	//SetConsoleCtrlHandler(NULL, TRUE);
+	/* SetConsoleCtrlHandler(NULL, TRUE); */
 	SetConsoleCtrlHandler(arping_console_ctrl_handler, TRUE);
 #else
 	signal(SIGINT, sigint);
@@ -1309,7 +1309,7 @@ int main(int argc, char **argv)
 			ping_recv(pcap,packetwait,
 				  (pcap_handler)pingip_recv);
 		}
-	} else { // PINGMAC
+	} else { /* PINGMAC */
 		unsigned int c;
 		for (c = 0; c < maxcount && !time_to_die; c++) {
 			pingmac_send(srcmac, dstmac, srcip, dstip, rand(), c);

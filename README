@@ -133,6 +133,7 @@ A: Arping depends on libnet 1.1.x and libpcap, get libnet at:
 
    Or github.com:
    http://github.com/sam-github/libnet
+   http://github.com/ThomasHabets/libnet
 ---
 Q: I get bus error on my non-x86 box
 

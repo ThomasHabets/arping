@@ -761,7 +761,7 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 
 #if WIN32
 /**
- * untested for a long time. Maybe sence arping 2.05 or so.
+ * untested for a long time. Maybe since arping 2.05 or so.
  */
 static void
 ping_recv_win32(pcap_t *pcap,uint32_t packetwait, pcap_handler func)

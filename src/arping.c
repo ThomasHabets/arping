@@ -145,7 +145,7 @@ static void
 count_missing_dots()
 {
         while (numsent > numdots) {
-                putchar('!');
+                putchar('.');
                 numdots++;
         }
 }
@@ -616,7 +616,7 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h,
 			case DOT:
 				numdots++;
 				count_missing_dots();
-				putchar('.');
+				putchar('!');
 				break;
 			case NORMAL: {
 				char buf[128];

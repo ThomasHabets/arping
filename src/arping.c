@@ -1336,10 +1336,16 @@ int main(int argc, char **argv)
                 printf("\t%3.0f%% packet loss\n",
                        100.0 - 100.0 * (float)(numrecvd)/(float)numsent);
         } else if (display == NORMAL) {
-		printf("\n--- %s statistics ---\n"
-		       "%d packets transmitted, %d packets received, %3.0f%% "
-		       "unanswered\n",target,numsent,numrecvd,
-		       100.0 - 100.0 * (float)(numrecvd)/(float)numsent); 
+                float succ;
+                succ = 100.0 - 100.0 * (float)(numrecvd)/(float)numsent;
+                printf("\n--- %s statistics ---\n"
+                       "%d packets transmitted, "
+                       "%d packets received, "
+                       "%3.0f%% "
+                       "unanswered (%d extra)\n",
+                       target,numsent,numrecvd,
+                       (succ < 0.0) ? 0.0 : succ,
+                       (succ < 0.0) ? (numrecvd - numsent): 0); 
 	}
 
         if (finddup) {

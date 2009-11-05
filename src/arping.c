@@ -124,6 +124,7 @@ static int verbose = 0;
 static int alsototal = 0;
 /*static int pingmac = 0; */
 static int finddup = 0;
+static int dupfound = 0;
 static unsigned int numsent = 0;
 static unsigned int numrecvd = 0;
 static unsigned int numdots = 0;
@@ -135,6 +136,7 @@ static uint8_t ethnull[ETH_ALEN];
 static uint8_t ethxmas[ETH_ALEN];
 static char srcmac[ETH_ALEN];
 static char dstmac[ETH_ALEN];
+static char lastreplymac[ETH_ALEN];
 
 volatile int time_to_die = 0;
 
@@ -668,6 +670,13 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h,
                                 }
                                 printf("\n");
                         }
+                        if (numrecvd) {
+                                if (memcmp(lastreplymac,
+                                           heth->_802_3_shost, ETH_ALEN)) {
+                                        dupfound = 1;
+                                }
+                        }
+                        memcpy(lastreplymac, heth->_802_3_shost, ETH_ALEN);
 
 			numrecvd++;
 		}
@@ -990,6 +999,7 @@ int main(int argc, char **argv)
 			break;
 		case 'd':
 			finddup = 1;
+                        display = QUIET;
 			break;
 		case 'D':
 			display = DOT;
@@ -1104,6 +1114,10 @@ int main(int argc, char **argv)
 
         if (display == DOT) {
                 setvbuf(stdout, NULL, _IONBF, 0);
+        }
+
+        if (finddup && maxcount == -1) {
+                maxcount = 3;
         }
 
 	parm = (optind < argc) ? argv[optind] : NULL;
@@ -1328,5 +1342,9 @@ int main(int argc, char **argv)
 		       100.0 - 100.0 * (float)(numrecvd)/(float)numsent); 
 	}
 
-        return !numrecvd;
+        if (finddup) {
+                return dupfound;
+        } else {
+                return !numrecvd;
+        }
 }

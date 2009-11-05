@@ -1,35 +1,14 @@
+creator: Thomas Habets <thomas@habets.pp.se>
 
 
-
-creator=Thomas Habets <thomas@habets.pp.se>
-
+severity: minor
 
 
+status: closed
 
 
-
-severity=minor
-
+summary: Handle receiving too many replies
 
 
-
-
-
-status=open
-
-
-
-
-
-
-summary=Handle receiving too many replies
-
-
-
-
-
-
-time=Wed, 07 Jan 2009 17:42:38 +0000
-
-
+time: Wed, 07 Jan 2009 17:42:38 +0000
 

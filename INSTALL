@@ -16,7 +16,7 @@ For debian, just: apt-get install libpcap-dev libnet1-dev
 Installing, short version
 -------------------------
 ./configure
-make
+make              # the binary will be created as src/arping
 make install
 
 If your environment is not set up right (hello Solaris), you may need

@@ -1,0 +1,17 @@
+creator: Thomas Habets <thomas@habets.pp.se>
+
+
+reporter: Thomas Habets <thomas@habets.pp.se>
+
+
+severity: minor
+
+
+status: open
+
+
+summary: Add -W, just like -w but specify in seconds
+
+
+time: Fri, 06 Nov 2009 19:28:00 +0000
+

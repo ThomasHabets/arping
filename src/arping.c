@@ -1121,6 +1121,17 @@ int main(int argc, char **argv)
 
 	parm = (optind < argc) ? argv[optind] : NULL;
 
+        /* default to own IP address when doing -d */
+        if (finddup && !parm) {
+                dstip_given = 1;
+                do_libnet_init(ifname);
+                dstip = libnet_get_ipaddr4(libnet);
+                if (verbose) {
+                        printf("defaulting to checking dup for %s\n",
+                               libnet_addr2name4(dstip, 0));
+                }
+        }
+
 	/*
 	 * Handle dstip_given instead of ip address after parms (-B really)
 	 */

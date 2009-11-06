@@ -3,7 +3,7 @@ manpage(arping)(8)(21th June, 2003)(arping)()
 manpagename(arping)(sends arp and/or ip pings to a given host)
 
 manpagesynopsis()
-    bf(arping) [-abdDFhpqrRd0uv] [-S em(host/ip)] [-T em(host/ip)] [-s em(MAC)]    \
+    bf(arping) [-abdDeFhpqrRd0uv] [-S em(host/ip)] [-T em(host/ip)] [-s em(MAC)]    \
 [-t em(MAC)] [-c em(count)] [-i em(interface)] [ -w em(us) ] <em(host) | -B>
 
     bf(arping) --help
@@ -55,6 +55,7 @@ for a host.
         two different MAC addresses.
     dit(-D) Display answers as dots and missing packets as exclamation points.
         Like flood ping on a Cisco.
+    dit(-e) Like -a but beep when there is no reply.
     dit(-F) Don't try to be smart about the interface name. Even if this
 switch is not given, -i disables this smartness.
     dit(-h) Displays a help message and exits.

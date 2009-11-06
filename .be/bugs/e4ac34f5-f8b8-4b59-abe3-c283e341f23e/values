@@ -1,35 +1,14 @@
+creator: Thomas Habets <thomas@habets.pp.se>
 
 
-
-creator=Thomas Habets <thomas@habets.pp.se>
-
+severity: minor
 
 
+status: closed
 
 
-
-severity=minor
-
+summary: Add -A, beep when there is *no* reply
 
 
-
-
-
-status=open
-
-
-
-
-
-
-summary=Add -A, beep when there is *no* reply
-
-
-
-
-
-
-time=Wed, 07 Jan 2009 17:42:49 +0000
-
-
+time: Wed, 07 Jan 2009 17:42:49 +0000
 

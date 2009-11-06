@@ -120,6 +120,7 @@ static struct timeval lastpacketsent;
 uint32_t srcip,dstip;
 
 static int beep = 0;
+static int reverse_beep = 0;
 static int verbose = 0;
 static int alsototal = 0;
 /*static int pingmac = 0; */
@@ -257,6 +258,7 @@ extended_usage()
                "answers from\n"
                "           two different MAC addresses.\n"
 	       "    -D     Display answers as dots and missing packets as exclamation points.\n"
+               "    -e     Like -a but beep when there is no reply.\n"
 	       "    -F     Don't try to be smart about the interface name.  (even  if  this\n"
 	       "           switch is not given, -i overrides smartness)\n"
 	       "    -h     Displays a help message and exits.\n"
@@ -298,11 +300,14 @@ standard_usage()
 {
 	printf("ARPing %s, by Thomas Habets <thomas@habets.pp.se>\n",
 	       version);
-	printf("usage: arping [ -0aAbdDFpqrRuv ] [ -w <us> ] [ -S <host/ip> ] "
-	       "[ -T <host/ip ]\n"
-	       "              [ -s <MAC> ] [ -t <MAC> ] [ -c <count> ] "
-	       "[ -i <interface> ]\n"
-	       "              <host/ip/MAC | -B>\n");
+        printf("usage: arping [ -0aAbdDeFpqrRuv ] [ -w <us> ] "
+               "[ -S <host/ip> ]\n"
+               "              "
+               "[ -T <host/ip ] "
+               "[ -s <MAC> ] [ -t <MAC> ] [ -c <count> ]\n"
+               "              "
+               "[ -i <interface> ] "
+               "<host/ip/MAC | -B>\n");
 }
 
 /**
@@ -976,7 +981,7 @@ int main(int argc, char **argv)
 	memset(dstmac, 0xff, ETH_ALEN);
 	memset(ethxmas, 0xff, ETH_ALEN);
 
-	while (EOF!=(c=getopt(argc,argv,"0aAbBc:dDFhi:I:pqrRs:S:t:T:uvw:"))) {
+	while (EOF!=(c=getopt(argc,argv,"0aAbBc:dDeFhi:I:pqrRs:S:t:T:uvw:"))) {
 		switch(c) {
 		case '0':
 			srcip = 0;
@@ -1005,6 +1010,9 @@ int main(int argc, char **argv)
 		case 'D':
 			display = DOT;
 			break;
+                case 'e':
+                        reverse_beep = 1;
+                        break;
 		case 'F':
 			dont_use_arping_lookupdev=1;
 			break;
@@ -1330,17 +1338,29 @@ int main(int argc, char **argv)
 	 */
 	if (mode == PINGIP) {
 		unsigned int c;
+                unsigned int r;
 		for (c = 0; c < maxcount && !time_to_die; c++) {
 			pingip_send(srcmac, dstmac, srcip, dstip);
+                        r = numrecvd;
 			ping_recv(pcap,packetwait,
 				  (pcap_handler)pingip_recv);
+                        if (reverse_beep && !time_to_die && (r == numrecvd)) {
+                                printf("\a");
+                                fflush(stdout);
+                        }
 		}
 	} else { /* PINGMAC */
 		unsigned int c;
+                unsigned int r;
 		for (c = 0; c < maxcount && !time_to_die; c++) {
 			pingmac_send(srcmac, dstmac, srcip, dstip, rand(), c);
+                        r = numrecvd;
 			ping_recv(pcap,packetwait,
 				  (pcap_handler)pingmac_recv);
+                        if (reverse_beep && !time_to_die && (r == numrecvd)) {
+                                printf("\a");
+                                fflush(stdout);
+                        }
 		}
 	}
         if (display == DOT) {

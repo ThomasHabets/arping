@@ -5,7 +5,7 @@
 arping \- sends arp and/or ip pings to a given host
 .PP 
 .SH "SYNOPSIS"
-\fBarping\fP [-abdDFhpqrRd0uv] [-S \fIhost/ip\fP] [-T \fIhost/ip\fP] [-s \fIMAC\fP]    [-t \fIMAC\fP] [-c \fIcount\fP] [-i \fIinterface\fP] [ -w \fIus\fP ] <\fIhost\fP | -B>
+\fBarping\fP [-abdDeFhpqrRd0uv] [-S \fIhost/ip\fP] [-T \fIhost/ip\fP] [-s \fIMAC\fP]    [-t \fIMAC\fP] [-c \fIcount\fP] [-i \fIinterface\fP] [ -w \fIus\fP ] <\fIhost\fP | -B>
 .PP 
 \fBarping\fP --help
 .PP 
@@ -65,6 +65,8 @@ two different MAC addresses\&.
 .IP "-D"
 Display answers as dots and missing packets as exclamation points\&.
 Like flood ping on a Cisco\&.
+.IP "-e"
+Like -a but beep when there is no reply\&.
 .IP "-F"
 Don\&'t try to be smart about the interface name\&. Even if this
 switch is not given, -i disables this smartness\&.

@@ -999,7 +999,6 @@ int main(int argc, char **argv)
 			break;
 		case 'd':
 			finddup = 1;
-                        display = QUIET;
 			break;
 		case 'D':
 			display = DOT;

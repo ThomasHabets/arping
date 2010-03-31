@@ -1,12 +1,17 @@
 arping/README
 
- ARP Ping
+ ARP Ping 1.x
 
     By Thomas Habets <thomas@habets.pp.se>
 
 
 Introduction
 ------------
+First of all, this is a legacy package for people that can't run
+libnet 1.1.x. Arping 1.x only works with libnet 1.0.x.
+
+Installing libnet 1.1.x and Arping 2.x is recommended.
+
 Arping is a util to find out it a specific IP address on the LAN is 'taken'
 and what MAC address owns it. Sure, you *could* just use 'ping' to find out if
 it's taken and even if the computer blocks ping (and everything else) you still
@@ -34,8 +39,11 @@ oops).
 
 Compiling
 ---------
-Type 'make to compile. You'll get a message saying that you are compiling
-arping 2.x, and how to compile arping 1.x if you want that.
+You will need libpcap and libnet 1.0.x. Not libnet 1.1.x. If you have
+libnet 1.1.x then you must use arping 2.x. This is recommended anyway.
+
+Run "make osname", where osname is one of linux, freebsd, openbsd,
+netbsd, solaris or macosx.
 
 'make install' will copy arping to /usr/local/bin, and put the manpage where
 it belongs.
@@ -58,7 +66,7 @@ A: Maybe u_int32_t and co. are not defined. Try uncommenting the line:
    MacOS X, I think. I don't have access to such a box so it's a bit hard
    to fix.
 
-A: Arping 2.x will not work with Libnet 1.0.x. This is This is due to
+A: Arping 1.x will not work with Libnet 1.1.x. This is This is due to
    libnet 1.1.x being completely different from 1.0.x. There is no
    real way to write code that works on both 1.0.x and 1.1.x.
 
@@ -66,11 +74,9 @@ A: Arping 2.x will not work with Libnet 1.0.x. This is This is due to
    arping 2.x. It isn't as widely tested as arping 1.x, but it seems
    to work fine.
 
-   Arping 2.x is now the default target, but arping 1.x is still here.
-   Arping 1.x is included in this release and can be created
-   with "make arping1" and follow instructions.
+   Arping 1.x and 2.x are no longer in the same tarball.
 
-A: On BSD, you'll prolly need to type something like:
+A: On BSD, you'll probably need to type something like:
    gmake MAKE=gmake openbsd
 ---
 Q: Where's the Windows version? A compiled .exe would be nice.
@@ -79,7 +85,7 @@ A: I don't have a windows box, so the .exe I'm providing was NOT compiled
    by me. If something is strange about it tell me, but there won't be much
    I can do about it.
    That being said:
-   ftp://ftp.habets.pp.se/pub/synscan/arping-for-windows-not-compiled-by-me.exe
+   http://www.habets.pp.se/synscan/files/arping-for-windows-not-compiled-by-me.exe
 ---
 Q: On sparc64, the IP shown in the output is 0.0.0.0.
 
@@ -239,7 +245,7 @@ Ok, two more were thought of. Both of which are non-trivially-portable.
    opened device.
 
 Arping 2.x solves the second one, and the first one has a beta solution in
-Linux.
+Linux and BSD.
 
 License
 -------

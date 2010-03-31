@@ -27,23 +27,7 @@ CFLAGS=-g -I/usr/local/include -L/usr/local/lib -DFINDIF=$(FINDIF) -DUSE_NETIF=$
 CFLAGS2=-g -I/usr/local/include -I/usr/local/include/libnet-1.1 -I/usr/include/pcap -I/usr/local/include/libnet11
 LDFLAGS2=-g -L/usr/local/lib -L/usr/local/lib/libnet-1.1 -L/opt/csw/lib -L/usr/local/lib/libnet11
 
-all: message arping2
-
-message:
-	@echo ""
-	@echo "Will now try to compile arping 2.x. If you have Libnet 1.0.x"
-	@echo "(as opposed to 1.1.x) then this will fail and you should try"
-	@echo "compiling arping 1.x."
-	@echo ""
-	@echo "Note that arping 1.x has been tested *A LOT* more than "
-	@echo "arping 2.x, so if you have problems (especially compilation"
-	@echo "problems), then try arping 1.x with libnet 1.0.x. Also, mail"
-	@echo "me about it. thomas@habets.pp.se"
-	@echo ""
-	@echo "For information on how to compile arping 1.x, type "
-	@echo "'make arping1'"
-	@echo ""
-	sleep 3
+all: arping1
 
 arping1:
 	@echo

@@ -1,9 +1,6 @@
 /*
- * NOTE: This is arping 1.x, arping 2.x is in arping-2/
+ * NOTE: This is arping 1.x
  */
-
-
-
 /*
  * arping
  *

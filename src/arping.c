@@ -85,7 +85,7 @@
  */
 #define HAVE_WEIRD_BSD 1
 #endif
- 
+
 #if HAVE_NET_BPF_H
 #include <net/bpf.h>
 #endif
@@ -117,7 +117,7 @@ static libnet_t *libnet = 0;
 
 static struct timeval lastpacketsent;
 
-uint32_t srcip,dstip;
+uint32_t srcip, dstip;
 
 static int beep = 0;
 static int reverse_beep = 0;
@@ -131,7 +131,7 @@ static unsigned int numrecvd = 0;
 static unsigned int numdots = 0;
 static int addr_must_be_same = 0;
 /* RAWRAW is RAW|RRAW */
-static enum { NORMAL,QUIET,RAW,RRAW,RAWRAW,DOT } display = NORMAL;
+static enum { NORMAL, QUIET, RAW, RRAW, RAWRAW, DOT } display = NORMAL;
 static char *target = "huh? bug in arping?";
 static uint8_t ethnull[ETH_ALEN];
 static uint8_t ethxmas[ETH_ALEN];
@@ -139,6 +139,7 @@ static char srcmac[ETH_ALEN];
 static char dstmac[ETH_ALEN];
 static char lastreplymac[ETH_ALEN];
 
+/* doesn't need to be volatile */
 volatile int time_to_die = 0;
 
 /**

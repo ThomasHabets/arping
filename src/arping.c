@@ -75,17 +75,6 @@
 #endif
 #include <pcap.h>
 
-#if !defined(linux)
-/* "Weird BSD" means that select on pcap fd will return readable on select()
- * when there is nothing to pcap_dispatch().
- * Confirmed on Solaris and OpenBSD.
- * Without select() the send interval will be off.
- * It's just a macro name, don't read too much into it.
- * FIXME: put it autotools somehow
- */
-#define HAVE_WEIRD_BSD 1
-#endif
- 
 #if HAVE_NET_BPF_H
 #include <net/bpf.h>
 #endif
@@ -858,17 +847,18 @@ ping_recv_unix(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
        struct timeval tv;
        struct timeval endtime;
        char done = 0;
-       fd_set fds;
 
        gettv(&tv);
        endtime.tv_sec = tv.tv_sec + (packetwait / 1000000);
        endtime.tv_usec = tv.tv_usec + (packetwait % 1000000);
        fixup_timeval(&endtime);
 
+       int fd;
+
+       fd = pcap_get_selectable_fd(pcap);
+
        for (;!done;) {
-	       int sr;
-	       FD_ZERO(&fds);
-	       FD_SET(pcap_fileno(pcap), &fds);
+	       int trydispatch = 0;
 
 	       gettv(&tv);
 	       tv.tv_sec = endtime.tv_sec - tv.tv_sec;
@@ -882,47 +872,50 @@ ping_recv_unix(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
 	       if (time_to_die) {
 		       return;
 	       }
-#ifndef HAVE_WEIRD_BSD
-	       switch((sr = select(pcap_fileno(pcap)+1,
-				   &fds,
-				   NULL,NULL,&tv))) {
-	       case -1:
-		       if (errno == EINTR) {
-			       return;
+
+	       /* try to wait for data */
+	       {
+		       struct pollfd p;
+		       int r;
+		       p.fd = fd;
+		       p.events = POLLIN | POLLPRI;
+
+		       r = poll(&p, 1, tv.tv_sec * 1000 + tv.tv_usec / 1000);
+		       switch (r) {
+		       case 0: /* timeout */
+			       done = 1;
+			       break;
+		       case -1: /* error */
+			       if (errno != EINTR) {
+				       done = 1;
+				       sigint(0);
+				       fprintf(stderr,
+					       "arping: poll() failed: %s\n",
+					       strerror(errno));
+			       }
+			       break;
+		       default: /* data returned */
+			       trydispatch = 1;
+			       break;
 		       }
-		       fprintf(stderr, "arping: select(%lu.%lu): "
-			       "%s\n",
-			       tv.tv_sec,
-			       tv.tv_usec,
-			       strerror(errno));
-		       sigint(0);
-	       case 0:
-		       done = 1;
-		       break;
-	       default: {
-#else
-	       usleep(10);
-	       {{
-#endif
+	       }
+
+	       if (trydispatch) {
 		       int ret;
 		       if (1 != (ret = pcap_dispatch(pcap, 1,
 						     func,
 						     NULL))) {
 			       /* rest, so we don't take 100% CPU... mostly
                                   hmm... does usleep() exist everywhere? */
-			       usleep(10);
-#ifndef HAVE_WEIRD_BSD
+			       usleep(1);
+
 			       /* weird is normal on bsd :) */
-			       if (verbose) {
-				       fprintf(stderr, "arping: select=%d "
+			       if (verbose > 3) {
+				       fprintf(stderr,
+					       "arping: poll says ok, "
 					       "pcap_dispatch=%d!\n",
-					       sr, ret);
+					       ret);
 			       }
-		       }
-		       break;
-#else
-	               }
-#endif
 		       }
 	       }
        }
@@ -1263,6 +1256,15 @@ int main(int argc, char **argv)
 		fprintf(stderr, "arping: pcap_open_live(): %s\n",ebuf);
 		exit(1);
 	}
+	if (pcap_setnonblock(pcap, 1, ebuf)) {
+		fprintf(stderr, "arping: pcap_set_nonblock(): %s\n", ebuf);
+		exit(1);
+	}
+	if (verbose) {
+		printf("pcap_get_selectable(): %d\n",
+		       pcap_get_selectable_fd(pcap));
+	}
+
 #if HAVE_NET_BPF_H
 	{
 		uint32_t on = 1;

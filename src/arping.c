@@ -47,6 +47,10 @@
 #include <stdint.h>
 #endif
 
+#if HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
+
 #if HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif

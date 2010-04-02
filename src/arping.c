@@ -97,6 +97,10 @@
 #define WIN32 0
 #endif
 
+#ifndef CLOCK_MONOTONIC
+#define CLOCK_MONOTONIC CLOCK_REALTIME
+#endif
+
 /**
  * OS-specific interface finding using routing table. See findif_*.c
  */
@@ -892,7 +896,7 @@ ping_recv_unix(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 			       /* weird is normal on bsd :) */
 			       if (verbose > 3) {
 				       fprintf(stderr,
-					       "arping: poll says ok, "
+					       "arping: poll says ok, but "
 					       "pcap_dispatch=%d!\n",
 					       ret);
 			       }

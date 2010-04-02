@@ -110,7 +110,7 @@ static const char *version = VERSION; /* from autoconf */
 
 static libnet_t *libnet = 0;
 
-static struct timeval lastpacketsent;
+static struct timespec lastpacketsent;
 
 uint32_t srcip, dstip;
 
@@ -227,6 +227,21 @@ static void sigint(int i)
 {
 	time_to_die = 1;
 }
+
+/**
+ * idiot-proof clock_gettime() wrapper
+ */
+static void
+getclock(struct timespec *ts)
+{
+        if (-1 == clock_gettime(CLOCK_MONOTONIC, ts)) {
+                fprintf(stderr,
+                        "arping: clock_gettime(): %s\n",
+                        strerror(errno));
+                sigint(0);
+        }
+}
+
 
 /**
  *
@@ -388,44 +403,44 @@ static int get_mac_addr(const char *in,
 }
 
 /**
- * as always, the answer is 42
- *
- * in this case the question is how many bytes buf needs to be.
- * Assuming a 33 byte max %d
+ * max size of buffer is intsize + 1 + intsize + 4 = 70 bytes or so
  *
  * Still, I'm using at least 128bytes below
  *
  * (because snprintf() sadly isn't as portable, that's why)
  */
-static char *tv2str(const struct timeval *tv, const struct timeval *tv2,
+static char *ts2str(const struct timespec *tv, const struct timespec *tv2,
 		    char *buf)
 {
 	double f,f2;
 	int exp = 0;
 
-	f = tv->tv_sec + (double)tv->tv_usec / 1000000;
-	f2 = tv2->tv_sec + (double)tv2->tv_usec / 1000000;
-	f = (f2 - f) * 1000000;
+	f = tv->tv_sec + (double)tv->tv_nsec / 1000000000;
+	f2 = tv2->tv_sec + (double)tv2->tv_nsec / 1000000000;
+	f = (f2 - f) * 1000000000;
 	while (f > 1000) {
-		exp+= 3;
+		exp += 3;
 		f /= 1000;
 	}
 	switch (exp) {
 	case 0:
-		sprintf(buf, "%.3f usec", f);
+		sprintf(buf, "%.3f nsec", f);
 		break;
 	case 3:
-		sprintf(buf, "%.3f msec", f);
+		sprintf(buf, "%.3f usec", f);
 		break;
 	case 6:
-		sprintf(buf, "%.3f sec", f);
+		sprintf(buf, "%.3f msec", f);
 		break;
 	case 9:
+		sprintf(buf, "%.3f sec", f);
+		break;
+	case 12:
 		sprintf(buf, "%.3f sec", f*1000);
 		break;
         default:
 		/* huh, uh, huhuh */
-		sprintf(buf, "%.3fe%d sec", f, exp-6);
+		sprintf(buf, "%.3fe%d sec", f, exp-9);
 	}
 	return buf;
 }
@@ -493,25 +508,17 @@ pingmac_send(uint8_t *srcmac, uint8_t *dstmac,
 		sigint(0);
 	}
 	if(verbose>1) {
-		if (-1 == gettimeofday(&lastpacketsent, NULL)) {
-			fprintf(stderr, "arping: gettimeofday(): %s\n",
-				strerror(errno));
-			sigint(0);
-		}
-		printf("arping: sending packet at time %d %d\n",
-		       lastpacketsent.tv_sec,
-		       lastpacketsent.tv_usec);
+                getclock(&lastpacketsent);
+                printf("arping: sending packet at time %d.%09d\n",
+                       lastpacketsent.tv_sec,
+                       lastpacketsent.tv_nsec);
 	}
 	if (-1 == (c = libnet_write(libnet))) {
 		fprintf(stderr, "arping: libnet_write(): %s\n",
 			libnet_geterror(libnet));
 		sigint(0);
 	}
-	if (-1 == gettimeofday(&lastpacketsent, NULL)) {
-		fprintf(stderr, "arping: gettimeofday(): %s\n",
-			strerror(errno));
-		sigint(0);
-	}
+        getclock(&lastpacketsent);
 	numsent++;
 }
 
@@ -557,25 +564,17 @@ pingip_send(uint8_t *srcmac, uint8_t *dstmac,
 		sigint(0);
 	}
 	if(verbose>1) {
-		if (-1 == gettimeofday(&lastpacketsent, NULL)) {
-			fprintf(stderr, "arping: gettimeofday(): %s\n",
-				strerror(errno));
-			sigint(0);
-		}
-		printf("arping: sending packet at time %d %d\n",
-		       lastpacketsent.tv_sec,
-		       lastpacketsent.tv_usec);
+                getclock(&lastpacketsent);
+                printf("arping: sending packet at time %d.%09d\n",
+                       lastpacketsent.tv_sec,
+                       lastpacketsent.tv_nsec);
 	}
 	if (-1 == libnet_write(libnet)) {
 		fprintf(stderr, "arping: libnet_write(): %s\n", 
 			libnet_geterror(libnet));
 		sigint(0);
 	}
-	if (-1 == gettimeofday(&lastpacketsent, NULL)) {
-		fprintf(stderr, "arping: gettimeofday(): %s\n",
-			strerror(errno));
-		sigint(0);
-	}
+        getclock(&lastpacketsent);
 	numsent++;
 }
 
@@ -590,18 +589,15 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h,
 {
 	struct libnet_802_3_hdr *heth;
 	struct libnet_arp_hdr *harp;
-	struct timeval arrival;
+        struct timespec arrival;
 	int c;
 
 	if(verbose>2) {
 		printf("arping: received response for ip ping\n");
 	}
 
-	if (-1 == gettimeofday(&arrival, NULL)) {
-		fprintf(stderr, "arping: gettimeofday(): %s\n",
-			strerror(errno));
-		sigint(0);
-	}
+        getclock(&arrival);
+
 	heth = (void*)packet;
 	harp = (void*)((char*)heth + LIBNET_ETH_H);
 
@@ -638,8 +634,8 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h,
 					printf("/%u", numsent-1);
 				}
 				printf(" time=%s",
-				       tv2str(&lastpacketsent,
-					      &arrival,buf));
+                                       ts2str(&lastpacketsent,
+                                              &arrival,buf));
 				break; }
 			case QUIET:
 				break;
@@ -698,18 +694,14 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 	struct libnet_802_3_hdr *heth;
 	struct libnet_ipv4_hdr *hip;
 	struct libnet_icmpv4_hdr *hicmp;
-	struct timeval arrival;
+        struct timespec arrival;
 	int c;
 
 	if(verbose>2) {
 		printf("arping: received response for mac ping\n");
 	}
 
-	if (-1 == gettimeofday(&arrival, NULL)) {
-		fprintf(stderr, "arping: gettimeofday(): %s\n",
-			strerror(errno));
-		sigint(0);
-	}
+        getclock(&arrival);
 
 	heth = (void*)packet;
 	hip = (void*)((char*)heth + LIBNET_ETH_H);
@@ -738,8 +730,8 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 				       (c<5)?':':')');
 			}
 			printf(": icmp_seq=%d time=%s",
-			       htons(hicmp->icmp_seq),tv2str(&lastpacketsent,
-						      &arrival,buf));
+                               htons(hicmp->icmp_seq),ts2str(&lastpacketsent,
+                                                             &arrival,buf));
 			break; }
 		case RAW:
 			printf("%s",
@@ -778,37 +770,28 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 static void
 ping_recv_win32(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
 {
-       struct timeval tv,tv2;
+        struct timespec tv,tv2;
        char done = 0;
        /* windows won't let us do select() */
-       if (-1 == gettimeofday(&tv2,NULL)) {
-	       fprintf(stderr, "arping: gettimeofday(): %s\n",
-		       strerror(errno));
-               sigint(0);
-       }
+       getclock(&tv2);
+
        while (!done && !time_to_die) {
 	       struct pcap_pkthdr *pkt_header;
 	       u_char *pkt_data;
 	       if (pcap_next_ex(pcap, &pkt_header, &pkt_data) == 1) {
 		       func(pcap, pkt_header, pkt_data);
 	       }
-	       if (-1 == gettimeofday(&tv,NULL)) {
-		       fprintf(stderr, "arping: "
-			       "gettimeofday(): %s\n",
-			       strerror(errno));
-		       sigint(0);
-	       }
+               getclock(&tv);
+
                /*
-                * setup next timeval, not very exact
+                * setup next timespec, not very exact
                 */
                tv.tv_sec  = (packetwait / 1000000)
 		       - (tv.tv_sec - tv2.tv_sec);
-	       tv.tv_usec = (packetwait % 1000000)
-		       - (tv.tv_usec - tv2.tv_usec);
-	       while (tv.tv_usec < 0) {
-		       tv.tv_sec--;
-		       tv.tv_usec += 1000000;
-	       }
+	       tv.tv_nsec = (packetwait % 1000000)
+                       - (tv.tv_nsec - tv2.tv_nsec);
+               fixup_timespec(&tv);
+
 	       usleep(10);
 	       if (tv.tv_sec < 0) {
 		       done=1;
@@ -818,20 +801,7 @@ ping_recv_win32(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
 #endif
 
 /**
- * while negative microseconds, take from whole seconds.
- * help function for measuring deltas.
- */
-static void
-fixup_timeval(struct timeval *tv)
-{
-	while (tv->tv_usec < 0) {
-		tv->tv_sec--;
-		tv->tv_usec += 1000000;
-	}
-}
-
-/**
- * while negative microseconds, take from whole seconds.
+ * while negative nanoseconds, take from whole seconds.
  * help function for measuring deltas.
  */
 static void
@@ -842,35 +812,6 @@ fixup_timespec(struct timespec *tv)
 		tv->tv_nsec += 1000000000;
 	}
 }
-
-/**
- * idiot-proof gettimeofday() wrapper
- */
-static void
-gettv(struct timeval *tv)
-{
-	if (-1 == gettimeofday(tv,NULL)) {
-		fprintf(stderr, "arping: "
-			"gettimeofday(): %s\n",
-			strerror(errno));
-		sigint(0);
-	}
-}
-
-/**
- * idiot-proof clock_gettime() wrapper
- */
-static void
-getclock(struct timespec *tv)
-{
-	if (-1 == clock_gettime(CLOCK_MONOTONIC, tv)) {
-		fprintf(stderr, "arping: "
-			"clock_gettime(): %s\n",
-			strerror(errno));
-		sigint(0);
-	}
-}
-
 
 /**
  * try to receive a packet for 'packetwait' microseconds
@@ -898,7 +839,8 @@ ping_recv_unix(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 	       tv.tv_nsec = endtime.tv_nsec - tv.tv_nsec;
 	       fixup_timespec(&tv);
                if (verbose) {
-                       printf("waid for %d.%09d sec\n", tv.tv_sec, tv.tv_nsec);
+                       printf("listen for replies for %d.%09d sec\n",
+                              tv.tv_sec, tv.tv_nsec);
                }
 	       if (tv.tv_sec < 0) {
 		       tv.tv_sec = 0;

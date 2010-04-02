@@ -18,6 +18,7 @@ AC_PROG_MAKE_SET
 # Checks for libraries.
 AC_CHECK_LIB([socket], [socket])
 AC_CHECK_LIB([nsl], [gethostbyname])
+AC_CHECK_LIB([rt], [clock_gettime])
 AC_CHECK_LIB([net], [libnet_name_resolve],
       [AC_MSG_ERROR([libnet 1.0.x found. Arping 2.x requires libnet 1.1.x])])
 AC_CHECK_LIB([net], [libnet_init], ,[AC_MSG_ERROR([libnet 1.1.x not found])])

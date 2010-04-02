@@ -38,6 +38,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <poll.h>
+#include <time.h>
 
 #if HAVE_UNISTD_H
 #include <unistd.h>
@@ -830,6 +831,19 @@ fixup_timeval(struct timeval *tv)
 }
 
 /**
+ * while negative microseconds, take from whole seconds.
+ * help function for measuring deltas.
+ */
+static void
+fixup_timespec(struct timespec *tv)
+{
+	while (tv->tv_nsec < 0) {
+		tv->tv_sec--;
+		tv->tv_nsec += 1000000000;
+	}
+}
+
+/**
  * idiot-proof gettimeofday() wrapper
  */
 static void
@@ -843,36 +857,52 @@ gettv(struct timeval *tv)
 	}
 }
 
-
 /**
- * 
+ * idiot-proof clock_gettime() wrapper
  */
 static void
-ping_recv_unix(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
+getclock(struct timespec *tv)
 {
-       struct timeval tv;
-       struct timeval endtime;
+	if (-1 == clock_gettime(CLOCK_MONOTONIC, tv)) {
+		fprintf(stderr, "arping: "
+			"clock_gettime(): %s\n",
+			strerror(errno));
+		sigint(0);
+	}
+}
+
+
+/**
+ * try to receive a packet for 'packetwait' microseconds
+ */
+static void
+ping_recv_unix(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
+{
+       struct timespec tv;
+       struct timespec endtime;
        char done = 0;
-
-       gettv(&tv);
-       endtime.tv_sec = tv.tv_sec + (packetwait / 1000000);
-       endtime.tv_usec = tv.tv_usec + (packetwait % 1000000);
-       fixup_timeval(&endtime);
-
        int fd;
+
+       getclock(&tv);
+       endtime.tv_sec = tv.tv_sec + (packetwait / 1000000);
+       endtime.tv_nsec = tv.tv_nsec + 1000 * (packetwait % 1000000);
+       fixup_timespec(&endtime);
 
        fd = pcap_get_selectable_fd(pcap);
 
        for (;!done;) {
 	       int trydispatch = 0;
 
-	       gettv(&tv);
+	       getclock(&tv);
 	       tv.tv_sec = endtime.tv_sec - tv.tv_sec;
-	       tv.tv_usec = endtime.tv_usec - tv.tv_usec;
-	       fixup_timeval(&tv);
+	       tv.tv_nsec = endtime.tv_nsec - tv.tv_nsec;
+	       fixup_timespec(&tv);
+               if (verbose) {
+                       printf("waid for %d.%09d sec\n", tv.tv_sec, tv.tv_nsec);
+               }
 	       if (tv.tv_sec < 0) {
 		       tv.tv_sec = 0;
-		       tv.tv_usec = 1;
+		       tv.tv_nsec = 1;
 		       done = 1;
 	       }
 	       if (time_to_die) {
@@ -886,7 +916,9 @@ ping_recv_unix(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
 		       p.fd = fd;
 		       p.events = POLLIN | POLLPRI;
 
-		       r = poll(&p, 1, tv.tv_sec * 1000 + tv.tv_usec / 1000);
+                       /* poll has ms resolution, but has less false
+                          positives than select() */
+		       r = poll(&p, 1,tv.tv_sec * 1000 + tv.tv_nsec / 1000000);
 		       switch (r) {
 		       case 0: /* timeout */
 			       done = 1;
@@ -1119,6 +1151,12 @@ int main(int argc, char **argv)
 			usage(1);
 		}
 	}
+
+        if (verbose) {
+                struct timespec ts;
+                clock_getres(CLOCK_MONOTONIC, &ts);
+                printf("clock_getres() = %d %d\n", ts.tv_sec, ts.tv_nsec);
+        }
 
         if (display == DOT) {
                 setvbuf(stdout, NULL, _IONBF, 0);

@@ -842,7 +842,7 @@ ping_recv_unix(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 	       tv.tv_sec = endtime.tv_sec - tv.tv_sec;
 	       tv.tv_nsec = endtime.tv_nsec - tv.tv_nsec;
 	       fixup_timespec(&tv);
-               if (verbose) {
+               if (verbose > 2) {
                        printf("listen for replies for %d.%09d sec\n",
                               tv.tv_sec, tv.tv_nsec);
                }

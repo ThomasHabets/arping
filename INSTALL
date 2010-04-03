@@ -42,9 +42,9 @@ Examples that I use on some systems:
 Linux, OpenBSD, FreeBSD:
   ./configure
 
-Solaris
+Solaris:
   ./configure LDFLAGS="-R/usr/local/lib -L/opt/csw/lib -R/opt/csw/lib" \
               CPPFLAGS="-I/usr/local/include"
 
-IRIX (FIXME: double-check this):
-  ./configure  LDFLAGS="-L/usr/local/lib -R/usr/local/lib"
+IRIX:
+  ./configure  LDFLAGS="-L/usr/local/lib -Wl,-rpath -Wl,/usr/local/lib"

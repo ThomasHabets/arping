@@ -39,8 +39,12 @@ that.
 
 Examples that I use on some systems:
 
-Linux, OpenBSD, FreeBSD:
+Linux:
   ./configure
+
+OpenBSD:
+  ./configure LDFLAGS=-L/usr/local/lib CPPFLAGS=-I/usr/local/include/libnet-1.1
+
 
 Solaris:
   ./configure LDFLAGS="-R/usr/local/lib -L/opt/csw/lib -R/opt/csw/lib" \

@@ -115,6 +115,7 @@ static const char *version = VERSION; /* from autoconf */
 static libnet_t *libnet = 0;
 
 static struct timespec lastpacketsent;
+static struct timeval lastpacketsent_tv;
 
 uint32_t srcip, dstip;
 
@@ -140,6 +141,38 @@ static char lastreplymac[ETH_ALEN];
 
 /* doesn't need to be volatile */
 volatile int time_to_die = 0;
+
+/**
+ * while negative nanoseconds, take from whole seconds.
+ * help function for measuring deltas.
+ */
+static void
+fixup_timespec(struct timespec *tv)
+{
+	while (tv->tv_nsec < 0) {
+		tv->tv_sec--;
+		tv->tv_nsec += 1000000000;
+	}
+        while (tv->tv_nsec >= 1000000000) {
+                tv->tv_sec++;
+                tv->tv_nsec -= 1000000000;
+        }
+
+}
+
+static void
+fixup_timeval(struct timeval *ts)
+{
+        while (ts->tv_usec < 0) {
+                ts->tv_sec--;
+                ts->tv_usec += 1000000;
+        }
+        while (ts->tv_usec >= 1000000) {
+                ts->tv_sec++;
+                ts->tv_usec -= 1000000;
+        }
+
+}
 
 /**
  *
@@ -246,6 +279,29 @@ getclock(struct timespec *ts)
         }
 }
 
+/**
+ * idiot-proof clock_gettime() wrapper
+ */
+static void
+gettv(struct timeval *tv)
+{
+        if (-1 == gettimeofday(tv, NULL)) {
+                fprintf(stderr,
+                        "arping: gettimeofday(): %s\n",
+                        strerror(errno));
+                sigint(0);
+        }
+}
+
+/**
+ *
+ */
+static void
+set_lastpacketsent()
+{
+        getclock(&lastpacketsent);
+        gettv(&lastpacketsent_tv);
+}
 
 /**
  *
@@ -512,7 +568,7 @@ pingmac_send(uint8_t *srcmac, uint8_t *dstmac,
 		sigint(0);
 	}
 	if(verbose>1) {
-                getclock(&lastpacketsent);
+                set_lastpacketsent();
                 printf("arping: sending packet at time %d.%09d\n",
                        lastpacketsent.tv_sec,
                        lastpacketsent.tv_nsec);
@@ -522,7 +578,7 @@ pingmac_send(uint8_t *srcmac, uint8_t *dstmac,
 			libnet_geterror(libnet));
 		sigint(0);
 	}
-        getclock(&lastpacketsent);
+        set_lastpacketsent();
 	numsent++;
 }
 
@@ -568,7 +624,7 @@ pingip_send(uint8_t *srcmac, uint8_t *dstmac,
 		sigint(0);
 	}
 	if(verbose>1) {
-                getclock(&lastpacketsent);
+                set_lastpacketsent();
                 printf("arping: sending packet at time %d.%09d\n",
                        lastpacketsent.tv_sec,
                        lastpacketsent.tv_nsec);
@@ -578,8 +634,118 @@ pingip_send(uint8_t *srcmac, uint8_t *dstmac,
 			libnet_geterror(libnet));
 		sigint(0);
 	}
-        getclock(&lastpacketsent);
+        set_lastpacketsent();
 	numsent++;
+}
+
+
+static double
+timespec_to_double(const struct timespec *ts)
+{
+        return ts->tv_sec + (double)ts->tv_nsec / 1000000000;
+}
+
+static double
+timeval_to_double(const struct timeval *tv)
+{
+        return tv->tv_sec + (double)tv->tv_usec / 1000000;
+}
+
+static struct timespec *
+timespec_sub(const struct timespec *ts,
+             const struct timespec *ts2,
+             struct timespec *ret)
+{
+        ret->tv_sec = ts->tv_sec - ts2->tv_sec;
+        ret->tv_nsec = ts->tv_nsec - ts2->tv_nsec;
+        fixup_timespec(ret);
+        return ret;
+}
+
+static struct timeval *
+timeval_sub(const struct timeval *ts,
+            const struct timeval *ts2,
+            struct timeval *ret)
+{
+        ret->tv_sec = ts->tv_sec - ts2->tv_sec;
+        ret->tv_usec = ts->tv_usec - ts2->tv_usec;
+        fixup_timeval(ret);
+        return ret;
+}
+
+/** backdate a packet arrival a bit.
+ *
+ * strict order:
+ *      Descr                Clock            Time
+ * T0   last packet sent     lastpacketsent   lastpacketsent_tv
+ * T1   packet arrives                        tv
+ * T2   callback called      arrival
+ * T3   function is called   now_ts           now_tv
+ *
+ * clock time of T1 = T0 + (T1 - T0), Must still be between T0 and T2.
+ * also check that T3-T0 is approx the same for clock & time.
+ *
+ *
+ */
+static void
+fixup_packet_age(struct timespec *arrival,
+                 const struct timeval *tv)
+{
+        struct timeval age;
+
+        double d_clock;
+        double d_time;
+
+        struct timeval now_tv;
+        struct timeval tmp_tv;
+        struct timespec now_ts;
+        struct timespec tmp_ts;
+        
+        getclock(&now_ts);
+        gettv(&now_tv);
+
+        
+        d_time = timeval_to_double(timeval_sub(&now_tv,
+                                               &lastpacketsent_tv,
+                                               &tmp_tv));
+        d_clock = timespec_to_double(timespec_sub(&now_ts,
+                                                  &lastpacketsent,
+                                                  &tmp_ts));
+
+        printf("before: %f\n", timespec_to_double(timespec_sub(arrival,
+                                                               &lastpacketsent,
+                                                               &tmp_ts)));
+        /* if time went backwards, don't backdate */
+        if (d_time < 0) {
+                printf("time went backwards %f, not backdating\n",
+                       d_time);
+                return;
+        }
+        /* if more than 1ms difference, don't backdate */
+        if (fabs(d_time - d_clock) > 0.001) {
+                printf("time probably set (%f, %f), not backdating\n",
+                       d_time, d_clock);
+                return;
+        }
+        printf("Diff: %f %f %f\n", d_time, d_clock, fabs(d_time - d_clock));
+
+        /* get how old the packet is at this time */
+        timeval_sub(tv, &lastpacketsent_tv, &age);
+
+        //        if (verbose > 2) {
+        printf("age of packet: %f\n", timeval_to_double(&age));
+               //        }
+        if (age.tv_sec < 0) {
+                printf("packet arrived before we sent it?\n");
+                return;
+        }
+
+        arrival->tv_sec = lastpacketsent.tv_sec + age.tv_sec;
+        arrival->tv_nsec = lastpacketsent.tv_nsec + age.tv_usec * 1000;
+        fixup_timespec(arrival);
+        printf("after: %f\n", timespec_to_double(timespec_sub(arrival,
+                                                              &lastpacketsent,
+                                                              &tmp_ts)));
 }
 
 /** handle incoming packet when pinging an IP address.
@@ -595,12 +761,15 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h,
 	struct libnet_arp_hdr *harp;
         struct timespec arrival;
 	int c;
+        struct timeval tv;
 
-	if(verbose>2) {
+	if (verbose > 2) {
 		printf("arping: received response for ip ping\n");
 	}
 
         getclock(&arrival);
+        tv.tv_sec = h->ts.tv_sec;
+        tv.tv_usec = h->ts.tv_usec;
 
 	heth = (void*)packet;
 	harp = (void*)((char*)heth + LIBNET_ETH_H);
@@ -616,7 +785,11 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h,
 			       dstmac, ETH_ALEN))) {
 			return;
 		}
+
 		if (dstip == ip) {
+                        /* yes, it's for us */
+                        fixup_packet_age(&arrival, &tv);
+
 			switch(display) {
 			case DOT:
 				numdots++;
@@ -699,6 +872,7 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 	struct libnet_ipv4_hdr *hip;
 	struct libnet_icmpv4_hdr *hicmp;
         struct timespec arrival;
+        struct timeval tv;
 	int c;
 
 	if(verbose>2) {
@@ -706,6 +880,8 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 	}
 
         getclock(&arrival);
+        tv.tv_sec = h->ts.tv_sec;
+        tv.tv_usec = h->ts.tv_usec;
 
 	heth = (void*)packet;
 	hip = (void*)((char*)heth + LIBNET_ETH_H);
@@ -722,6 +898,9 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h,
 				return;
 			}
 		}
+                /* yes, it's for us */
+                fixup_packet_age(&arrival, &tv);
+
 		switch(display) {
 		case QUIET:
 			break;
@@ -803,19 +982,6 @@ ping_recv_win32(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
        }
 }
 #endif
-
-/**
- * while negative nanoseconds, take from whole seconds.
- * help function for measuring deltas.
- */
-static void
-fixup_timespec(struct timespec *tv)
-{
-	while (tv->tv_nsec < 0) {
-		tv->tv_sec--;
-		tv->tv_nsec += 1000000000;
-	}
-}
 
 /**
  * try to receive a packet for 'packetwait' microseconds
@@ -1378,3 +1544,10 @@ int main(int argc, char **argv)
                 return !numrecvd;
         }
 }
+
+/* ---- Emacs Variables ----
+ * Local Variables:
+ * c-basic-offset: 8
+ * indent-tabs-mode: nil
+ * End:
+ */

@@ -149,11 +149,11 @@ volatile int time_to_die = 0;
 static void
 fixup_timespec(struct timespec *tv)
 {
-	while (tv->tv_nsec < 0) {
+	while (tv->tv_nsec <  -1000000000) {
 		tv->tv_sec--;
 		tv->tv_nsec += 1000000000;
 	}
-        while (tv->tv_nsec >= 1000000000) {
+        while (tv->tv_nsec >=  1000000000) {
                 tv->tv_sec++;
                 tv->tv_nsec -= 1000000000;
         }
@@ -163,11 +163,11 @@ fixup_timespec(struct timespec *tv)
 static void
 fixup_timeval(struct timeval *ts)
 {
-        while (ts->tv_usec < 0) {
+        while (ts->tv_usec <  -1000000) {
                 ts->tv_sec--;
                 ts->tv_usec += 1000000;
         }
-        while (ts->tv_usec >= 1000000) {
+        while (ts->tv_usec >=  1000000) {
                 ts->tv_sec++;
                 ts->tv_usec -= 1000000;
         }
@@ -682,7 +682,8 @@ timeval_sub(const struct timeval *ts,
  * T2   callback called      arrival
  * T3   function is called   now_ts           now_tv
  *
- * clock time of T1 = T0 + (T1 - T0), Must still be between T0 and T2.
+ * clock time of T1_ts = T0_ts + (T1_tv - T0_tv),
+ * Must still be between T0 and T2.
  * also check that T3-T0 is approx the same for clock & time.
  *
  *
@@ -692,49 +693,54 @@ fixup_packet_age(struct timespec *arrival,
                  const struct timeval *tv)
 {
         struct timeval age;
-
-        double d_clock;
-        double d_time;
-
         struct timeval now_tv;
         struct timeval tmp_tv;
         struct timespec now_ts;
         struct timespec tmp_ts;
         
+
+        /* get T3_* */
         getclock(&now_ts);
         gettv(&now_tv);
 
+        /* check T3-T0 are approx the same for tv and ts */
+        timeval_sub(&now_tv,
+                    &lastpacketsent_tv,
+                    &tmp_tv);
+        timespec_sub(&now_ts,
+                     &lastpacketsent,
+                     &tmp_ts);
+        if (verbose > 2) {
+                printf("FYI: %d.%.9d %d.%.6d\n",
+                       tmp_ts.tv_sec, tmp_ts.tv_nsec,
+                       tmp_tv.tv_sec, tmp_tv.tv_usec);
+        }
         
-        d_time = timeval_to_double(timeval_sub(&now_tv,
-                                               &lastpacketsent_tv,
-                                               &tmp_tv));
-        d_clock = timespec_to_double(timespec_sub(&now_ts,
-                                                  &lastpacketsent,
-                                                  &tmp_ts));
-
-        printf("before: %f\n", timespec_to_double(timespec_sub(arrival,
-                                                               &lastpacketsent,
-                                                               &tmp_ts)));
-        /* if time went backwards, don't backdate */
-        if (d_time < 0) {
-                printf("time went backwards %f, not backdating\n",
-                       d_time);
+        if (tmp_ts.tv_sec < 0) {
+                printf("gettimeofday() went backwards: %d.%.9d\n",
+                       tmp_ts.tv_sec, tmp_ts.tv_nsec);
                 return;
         }
-        /* if more than 1ms difference, don't backdate */
-        if (fabs(d_time - d_clock) > 0.001) {
-                printf("time probably set (%f, %f), not backdating\n",
-                       d_time, d_clock);
+        tmp_ts.tv_sec -= tmp_tv.tv_sec;
+        tmp_ts.tv_nsec -= tmp_tv.tv_usec * 1000;
+        fixup_timespec(&tmp_ts);
+
+        if (tmp_ts.tv_sec != 0 || (abs(tmp_ts.tv_nsec) > 10000000)) {
+                printf("too much diff between gettimeofday() and "
+                       "clock_gettime(): %d.%.9d\n",
+                       tmp_ts.tv_sec, tmp_ts.tv_nsec);
                 return;
         }
-        printf("Diff: %f %f %f\n", d_time, d_clock, fabs(d_time - d_clock));
 
-        /* get how old the packet is at this time */
+        /*  */
         timeval_sub(tv, &lastpacketsent_tv, &age);
 
-        //        if (verbose > 2) {
-        printf("age of packet: %f\n", timeval_to_double(&age));
-               //        }
+        if (verbose > 2) {
+                printf("took time from gettimeofday(): %f\n",
+                       timeval_to_double(&age));
+        }
+
+        /* assert T1 > T0 */
         if (age.tv_sec < 0) {
                 printf("packet arrived before we sent it?\n");
                 return;
@@ -743,9 +749,6 @@ fixup_packet_age(struct timespec *arrival,
         arrival->tv_sec = lastpacketsent.tv_sec + age.tv_sec;
         arrival->tv_nsec = lastpacketsent.tv_nsec + age.tv_usec * 1000;
         fixup_timespec(arrival);
-        printf("after: %f\n", timespec_to_double(timespec_sub(arrival,
-                                                              &lastpacketsent,
-                                                              &tmp_ts)));
 }
 
 /** handle incoming packet when pinging an IP address.

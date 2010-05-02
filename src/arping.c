@@ -78,11 +78,11 @@
 #if HAVE_WIN32_LIBNET_H
 #include <win32/libnet.h>
 #endif
-#include <pcap.h>
 
 #if HAVE_NET_BPF_H
 #include <net/bpf.h>
 #endif
+#include <pcap.h>
 
 #ifndef ETH_ALEN
 #define ETH_ALEN 6

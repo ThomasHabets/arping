@@ -191,13 +191,18 @@ A: Be my guest, but if care about security *at all* you will have to restrict
    a network debugging tool, which generates low-level network packets that
    ordinary users have absolutely no business generating.
 
-   For example, I don't protect against an ALRM signal flood, which will result
-   in a packet flood. (arping 2.x doesn't have this issue)
-
    If you are honestly debugging the network then I don't see why you aren't
    root already.
 
-   If you think I'm wrong, tell me why.
+   That being said, on Linux you can add the CAP_NET_RAW capability to arping
+   limiting the damage if arping were to be compromised:
+     sudo setcap cap_net_raw+ep  /usr/local/sbin/arping
+   This requires a libnet which does not explicitly check for uid 0. The
+   current version of libnet does check this, so unless you patch it it will
+   not help.
+
+   Patch:
+     http://github.com/ThomasHabets/libnet/commit/aaa383b5c816107082508b7646929a9479b81645
 ---
 Q: What's this -A switch all about, I don't understand it.
 

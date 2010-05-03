@@ -163,15 +163,17 @@ do_libnet_init(const char *ifname)
 		libnet_destroy(libnet);
 		libnet = 0;
 	}
-	if (getuid() && geteuid()) {
-		fprintf(stderr, "arping: must run as root\n");
-		exit(1);
-	}
 
+        /* try libnet_init() even though we aren't root. We may have
+         * a capability or something */
 	if (!(libnet = libnet_init(LIBNET_LINK,
 				   (char*)ifname,
 				   ebuf))) {
-		fprintf(stderr, "arping: libnet_init(): %s\n", ebuf);
+		fprintf(stderr, "arping: %s\n", ebuf);
+                if (getuid() && geteuid()) {
+                        fprintf(stderr,
+                                "arping: you may need to run as root\n");
+                }
 		exit(1);
 	}
 }

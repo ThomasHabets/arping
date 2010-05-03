@@ -500,8 +500,8 @@ pingmac_send(uint8_t *srcmac, uint8_t *dstmac,
 			sigint(0);
 		}
 		printf("arping: sending packet at time %d %d\n",
-		       lastpacketsent.tv_sec,
-		       lastpacketsent.tv_usec);
+		       (int)lastpacketsent.tv_sec,
+		       (int)lastpacketsent.tv_usec);
 	}
 	if (-1 == (c = libnet_write(libnet))) {
 		fprintf(stderr, "arping: libnet_write(): %s\n",
@@ -564,8 +564,8 @@ pingip_send(uint8_t *srcmac, uint8_t *dstmac,
 			sigint(0);
 		}
 		printf("arping: sending packet at time %d %d\n",
-		       lastpacketsent.tv_sec,
-		       lastpacketsent.tv_usec);
+		       (int)lastpacketsent.tv_sec,
+		       (int)lastpacketsent.tv_usec);
 	}
 	if (-1 == libnet_write(libnet)) {
 		fprintf(stderr, "arping: libnet_write(): %s\n", 

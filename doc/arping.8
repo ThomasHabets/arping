@@ -5,9 +5,9 @@
 arping \- sends arp and/or ip pings to a given host
 .PP 
 .SH "SYNOPSIS"
-\fBarping\fP [-abdDeFhpqrRd0uv] [-S \fIhost/ip\fP] [-T \fIhost/ip\fP] [-s \fIMAC\fP]    [-t \fIMAC\fP] [-c \fIcount\fP] [-i \fIinterface\fP] [ -w \fIus\fP ] <\fIhost\fP | -B>
+\fBarping\fP [\-abdDeFhpqrRd0uv] [\-S \fIhost/ip\fP] [\-T \fIhost/ip\fP] [\-s \fIMAC\fP]    [\-t \fIMAC\fP] [\-c \fIcount\fP] [\-i \fIinterface\fP] [ \-w \fIus\fP ] <\fIhost\fP | \-B>
 .PP 
-\fBarping\fP --help
+\fBarping\fP \-\-help
 .PP 
 .SH "DESCRIPTION"
 The \fIarping\fP utility sends \fBARP\fP and/or \fBICMP\fP requests to the specified \fIhost\fP and displays the replies\&. The \fIhost\fP may be specified by its \fBhostname\fP, its \fBIP\fP address, or its \fBMAC\fP address\&.
@@ -25,9 +25,9 @@ scheduler can\&'t keep up to get exact enough timing\&.
 On an idle system the roundtrip times will be pretty much accurate, but
 with more load the timing gets less exact\&.
 .PP 
-To get more exact timing on a non-idle system, re-nice arping to -15 or so\&.
+To get more exact timing on a non-idle system, re-nice arping to \-15 or so\&.
 .PP 
-# nice -n -15 arping foobar
+# nice \-n \-15 arping foobar
 .PP 
 This is not just an issue with arping, it is with normal ping also
 (at least it is on my system)\&. But it doesn\&'t show up as much with ping
@@ -37,65 +37,65 @@ received and are therefore replied to faster\&.
 .SH "OPTIONS"
 
 .PP 
-.IP "--help"
+.IP "\-\-help"
 Show extended help\&. Not quite as extensive as this manpage,
-but more than -h\&.
-.IP "-0"
+but more than \-h\&.
+.IP "\-0"
 Use this option to ping with source IP address 0\&.0\&.0\&.0\&. Use this
 when you haven\&'t configured your interface yet\&.
 Note that this may get the MAC-ping unanswered\&.
-This is an alias for -S 0\&.0\&.0\&.0\&.
-.IP "-a"
+This is an alias for \-S 0\&.0\&.0\&.0\&.
+.IP "\-a"
 Audible ping\&.
-.IP "-A"
+.IP "\-A"
 Only count addresses matching requested address (This *WILL*
 break most things you do\&. Only useful if you are arpinging many
 hosts at once\&. See arping-scan-net\&.sh for an example)\&.
-.IP "-b"
-Like -0 but source broadcast source address (255\&.255\&.255\&.255)\&.
+.IP "\-b"
+Like \-0 but source broadcast source address (255\&.255\&.255\&.255)\&.
 Note that this may get the arping unanswered since it\&'s not normal behavior
 for a host\&.
-.IP "-B"
+.IP "\-B"
 Use instead of host if you want to address 255\&.255\&.255\&.255\&.
-.IP "-c \fIcount\fP"
+.IP "\-c \fIcount\fP"
 Only send \fIcount\fP requests\&.
-.IP "-d"
+.IP "\-d"
 Find duplicate replies\&. Exit with 1 if there are answers from
 two different MAC addresses\&.
-.IP "-D"
+.IP "\-D"
 Display answers as dots and missing packets as exclamation points\&.
 Like flood ping on a Cisco\&.
-.IP "-e"
-Like -a but beep when there is no reply\&.
-.IP "-F"
+.IP "\-e"
+Like \-a but beep when there is no reply\&.
+.IP "\-F"
 Don\&'t try to be smart about the interface name\&. Even if this
-switch is not given, -i disables this smartness\&.
-.IP "-h"
+switch is not given, \-i disables this smartness\&.
+.IP "\-h"
 Displays a help message and exits\&.
-.IP "-i \fIinterface\fP"
+.IP "\-i \fIinterface\fP"
 Don\&'t guess, use the specified interface\&.
-.IP "-p"
+.IP "\-p"
 Turn on promiscious mode on interface, use this if you don\&'t
 "own" the MAC address you are using\&.
-.IP "-q"
+.IP "\-q"
 Does not display messages, except error messages\&.
-.IP "-r"
+.IP "\-r"
 Raw output: only the MAC/IP address is displayed for each reply\&.
-.IP "-R"
-Raw output: Like -r but shows "the other one", can be combined with
--r\&.
-.IP "-s \fIMAC\fP"
-Set source MAC address\&. You may need to use -p with this\&.
-.IP "-S \fIIP\fP"
-Like -b and -0 but with set source address\&.
+.IP "\-R"
+Raw output: Like \-r but shows "the other one", can be combined with
+\-r\&.
+.IP "\-s \fIMAC\fP"
+Set source MAC address\&. You may need to use \-p with this\&.
+.IP "\-S \fIIP\fP"
+Like \-b and \-0 but with set source address\&.
 Note that this may get the arping unanswered if the target does not have
 routing to the IP\&. If you don\&'t own the IP you are using, you may need to turn
-on promiscious mode on the interface (with -p)\&. With this switch you can find
+on promiscious mode on the interface (with \-p)\&. With this switch you can find
 out what IP-address a host has without taking an IP-address yourself\&.
-.IP "-t \fIMAC\fP"
+.IP "\-t \fIMAC\fP"
 Set target MAC address to use when pinging IP address\&.
-.IP "-T \fIIP\fP"
-Use -T as target address when pinging MACs that won\&'t
+.IP "\-T \fIIP\fP"
+Use \-T as target address when pinging MACs that won\&'t
 respond to a broadcast ping but perhaps to a directed broadcast\&.
 .IP 
 \fIExample\fP:
@@ -103,35 +103,35 @@ respond to a broadcast ping but perhaps to a directed broadcast\&.
 .sp
 To check the address of MAC-A, use knowledge of MAC-B and IP-B\&.
 .IP 
-$ arping -S <IP-B> -s <MAC-B> -p <MAC-A>
-.IP "-u"
+$ arping \-S <IP-B> \-s <MAC-B> \-p <MAC-A>
+.IP "\-u"
 Show index=received/sent instead of just index=received when
 pinging MACs\&.
-.IP "-v"
+.IP "\-v"
 Verbose output\&. Use twice for more messages\&.
-.IP "-w"
+.IP "\-w"
 Time to wait between pings, in microseconds\&.
 
 .PP 
 .SH "EXAMPLES"
 .nf
 .sp
-# \fBarping -c 3 88\&.1\&.180\&.225\fP
+# \fBarping \-c 3 88\&.1\&.180\&.225\fP
 ARPING 88\&.1\&.180\&.225
 60 bytes from 00:11:85:4c:01:01 (88\&.1\&.180\&.225): index=0 time=13\&.910 msec
 60 bytes from 00:11:85:4c:01:01 (88\&.1\&.180\&.225): index=1 time=13\&.935 msec
 60 bytes from 00:11:85:4c:01:01 (88\&.1\&.180\&.225): index=2 time=13\&.944 msec
 .PP 
---- 88\&.1\&.180\&.225 statistics ---
+\-\-\- 88\&.1\&.180\&.225 statistics \-\-\-
 3 packets transmitted, 3 packets received,   0% unanswered
 .PP 
-# \fBarping -c 3 00:11:85:4c:01:01\fP
+# \fBarping \-c 3 00:11:85:4c:01:01\fP
 ARPING 00:11:85:4c:01:01
 60 bytes from 88\&.1\&.180\&.225 (00:11:85:4c:01:01): icmp_seq=0 time=13\&.367 msec
 60 bytes from 88\&.1\&.180\&.225 (00:11:85:4c:01:01): icmp_seq=1 time=13\&.929 msec
 60 bytes from 88\&.1\&.180\&.225 (00:11:85:4c:01:01): icmp_seq=2 time=13\&.929 msec
 .PP 
---- 00:11:85:4c:01:01 statistics ---
+\-\-\- 00:11:85:4c:01:01 statistics \-\-\-
 3 packets transmitted, 3 packets received,   0% unanswered
 .PP 
 .fi
@@ -140,8 +140,8 @@ ARPING 00:11:85:4c:01:01
 .SH "BUGS"
 
 .PP 
-You have to use -B instead of arpinging 255\&.255\&.255\&.255, and -b
-instead of -S 255\&.255\&.255\&.255\&. This is libnets fault\&.
+You have to use \-B instead of arpinging 255\&.255\&.255\&.255, and \-b
+instead of \-S 255\&.255\&.255\&.255\&. This is libnets fault\&.
 .PP 
 .SH "SEE ALSO"
 

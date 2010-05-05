@@ -92,20 +92,20 @@ enddit()
 manpagesection(EXAMPLES)
 mancommand(.nf)
 mancommand(.sp)
-  # bf(arping -c 3 88.123.180.225)
-  ARPING 88.123.180.225
-  60 bytes from 00:11:85:4c:01:01 (88.123.180.225): index=0 time=13.910 msec
-  60 bytes from 00:11:85:4c:01:01 (88.123.180.225): index=1 time=13.935 msec
-  60 bytes from 00:11:85:4c:01:01 (88.123.180.225): index=2 time=13.944 msec
+  # bf(arping -c 3 88.1.180.225)
+  ARPING 88.1.180.225
+  60 bytes from 00:11:85:4c:01:01 (88.1.180.225): index=0 time=13.910 msec
+  60 bytes from 00:11:85:4c:01:01 (88.1.180.225): index=1 time=13.935 msec
+  60 bytes from 00:11:85:4c:01:01 (88.1.180.225): index=2 time=13.944 msec
 
-  --- 88.123.180.225 statistics ---
+  --- 88.1.180.225 statistics ---
   3 packets transmitted, 3 packets received,   0% unanswered
 
   # bf(arping -c 3 00:11:85:4c:01:01)
   ARPING 00:11:85:4c:01:01
-  60 bytes from 88.123.180.225 (00:11:85:4c:01:01): icmp_seq=0 time=13.367 msec
-  60 bytes from 88.123.180.225 (00:11:85:4c:01:01): icmp_seq=1 time=13.929 msec
-  60 bytes from 88.123.180.225 (00:11:85:4c:01:01): icmp_seq=2 time=13.929 msec
+  60 bytes from 88.1.180.225 (00:11:85:4c:01:01): icmp_seq=0 time=13.367 msec
+  60 bytes from 88.1.180.225 (00:11:85:4c:01:01): icmp_seq=1 time=13.929 msec
+  60 bytes from 88.1.180.225 (00:11:85:4c:01:01): icmp_seq=2 time=13.929 msec
 
   --- 00:11:85:4c:01:01 statistics ---
   3 packets transmitted, 3 packets received,   0% unanswered

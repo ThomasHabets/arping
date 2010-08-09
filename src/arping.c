@@ -134,7 +134,7 @@ static char dstmac[ETH_ALEN];
 static char lastreplymac[ETH_ALEN];
 
 /* doesn't need to be volatile */
-volatile int time_to_die = 0;
+volatile sig_atomic_t time_to_die = 0;
 
 /**
  *

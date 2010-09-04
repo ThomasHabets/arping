@@ -51,6 +51,10 @@
 #include <inttypes.h>
 #endif
 
+#if HAVE_TIME_H
+#include <time.h>
+#endif
+
 #if HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -493,13 +497,13 @@ pingmac_send(uint8_t *srcmac, uint8_t *dstmac,
 			libnet_geterror(libnet));
 		sigint(0);
 	}
-	if(verbose>1) {
+	if (verbose > 1) {
 		if (-1 == gettimeofday(&lastpacketsent, NULL)) {
 			fprintf(stderr, "arping: gettimeofday(): %s\n",
 				strerror(errno));
 			sigint(0);
 		}
-		printf("arping: sending packet at time %d %d\n",
+		printf("arping: sending packet at time %d.%.6d\n",
 		       (int)lastpacketsent.tv_sec,
 		       (int)lastpacketsent.tv_usec);
 	}
@@ -845,6 +849,22 @@ gettv(struct timeval *tv)
 	}
 }
 
+/**
+ * get monotonic clock if available, gettimeofday() if not
+ */
+void
+getclock(struct timeval *tv)
+{
+#if HAVE_CLOCK_MONOTONIC
+        struct timespec ts;
+        if (!clock_gettime(CLOCK_MONOTONIC, &ts)) {
+                tv->tv_sec = ts.tv_sec;
+                tv->tv_usec = ts.tv_nsec / 1000;
+                return;
+        }
+#endif
+        gettv(tv);
+}
 
 /**
  * 
@@ -855,28 +875,46 @@ ping_recv_unix(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
        struct timeval tv;
        struct timeval endtime;
        char done = 0;
+       int fd;
 
-       gettv(&tv);
+       getclock(&tv);
        endtime.tv_sec = tv.tv_sec + (packetwait / 1000000);
        endtime.tv_usec = tv.tv_usec + (packetwait % 1000000);
        fixup_timeval(&endtime);
-
-       int fd;
 
        fd = pcap_get_selectable_fd(pcap);
 
        for (;!done;) {
 	       int trydispatch = 0;
 
-	       gettv(&tv);
+               getclock(&tv);
 	       tv.tv_sec = endtime.tv_sec - tv.tv_sec;
 	       tv.tv_usec = endtime.tv_usec - tv.tv_usec;
 	       fixup_timeval(&tv);
+
+               /* if time has passed, do one last check and then we're done.
+                * this also triggers if not using monotonic clock and time
+                * is set forwards */
 	       if (tv.tv_sec < 0) {
 		       tv.tv_sec = 0;
 		       tv.tv_usec = 1;
 		       done = 1;
 	       }
+
+               /* if wait-for-packet time is longer than full period,
+                * we're obviously not using a monotonic clock and the system
+                * time has been changed.
+                * we don't know how far we're into the waiting, so just end
+                * it here */
+               if ((tv.tv_sec > packetwait / 1000000)
+                   || ((tv.tv_sec == packetwait / 1000000)
+                       && (tv.tv_usec > packetwait % 1000000))) {
+		       tv.tv_sec = 0;
+		       tv.tv_usec = 1;
+                       done = 1;
+               }
+
+               /* check for sigint */
 	       if (time_to_die) {
 		       return;
 	       }
@@ -1396,3 +1434,9 @@ int main(int argc, char **argv)
                 return !numrecvd;
         }
 }
+/* ---- Emacs Variables ----
+ * Local Variables:
+ * c-basic-offset: 8
+ * indent-tabs-mode: nil
+ * End:
+ */

@@ -921,12 +921,13 @@ ping_recv_unix(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
 
 	       /* try to wait for data */
 	       {
-		       struct pollfd p;
+                       fd_set fds;
 		       int r;
-		       p.fd = fd;
-		       p.events = POLLIN | POLLPRI;
 
-		       r = poll(&p, 1, tv.tv_sec * 1000 + tv.tv_usec / 1000);
+                       FD_ZERO(&fds);
+                       FD_SET(fd, &fds);
+
+                       r = select(fd + 1, &fds, NULL, NULL, &tv);
 		       switch (r) {
 		       case 0: /* timeout */
 			       done = 1;

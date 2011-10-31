@@ -23,6 +23,7 @@ AC_CHECK_LIB([net], [libnet_name_resolve],
       [AC_MSG_ERROR([libnet 1.0.x found. Arping 2.x requires libnet 1.1.x])])
 AC_CHECK_LIB([net], [libnet_init], ,[AC_MSG_ERROR([libnet 1.1.x not found])])
 AC_CHECK_LIB([pcap], [pcap_open_live], ,[AC_MSG_ERROR([libpcap not found])])
+AC_SEARCH_LIBS([clock_gettime], [rt])
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -31,6 +32,7 @@ arpa/inet.h \
 netinet/in.h \
 stdlib.h \
 sys/socket.h \
+time.h \
 sys/time.h \
 sys/types.h \
 stdint.h \
@@ -64,13 +66,36 @@ case "$target_os" in
      *linux*)
           AC_LIBOBJ([findif_linux])
           ;;
-     *freebsd*|*openbsd*|*solaris*)
+     *freebsd*|*openbsd*|*solaris*|*darwin*)
           AC_LIBOBJ([findif_bsd])
           ;;
      *)
           AC_LIBOBJ([findif_other])
           ;;
 esac
+
+
+
+# check for CLOCK_MONOTONIC
+AC_CACHE_CHECK([for CLOCK_MONOTONIC],
+                                  ac_cv_have_clock_monotonic, [
+                                  AC_TRY_RUN(
+                                        [
+#include <time.h>
+int main() {
+struct timespec ts;
+exit(!!clock_gettime(CLOCK_MONOTONIC, &ts));
+}
+                ],
+                        [ ac_cv_have_clock_monotonic="yes" ],
+                        [ ac_cv_have_clock_monotonic="no" ]
+                          )
+])
+AM_CONDITIONAL(HAVE_CLOCK_MONOTONIC, test x$ac_cv_have_clock_monotonic = xyes)
+if test x$ac_cv_have_clock_monotonic = xyes; then
+   AC_DEFINE([HAVE_CLOCK_MONOTONIC], [1], [Monotonic clock])
+fi
+
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([doc/Makefile])

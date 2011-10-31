@@ -52,6 +52,10 @@
 #include <inttypes.h>
 #endif
 
+#if HAVE_TIME_H
+#include <time.h>
+#endif
+
 #if HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -79,11 +83,11 @@
 #if HAVE_WIN32_LIBNET_H
 #include <win32/libnet.h>
 #endif
-#include <pcap.h>
 
 #if HAVE_NET_BPF_H
 #include <net/bpf.h>
 #endif
+#include <pcap.h>
 
 #ifndef ETH_ALEN
 #define ETH_ALEN 6
@@ -139,7 +143,7 @@ static char dstmac[ETH_ALEN];
 static char lastreplymac[ETH_ALEN];
 
 /* doesn't need to be volatile */
-volatile int time_to_die = 0;
+volatile sig_atomic_t time_to_die = 0;
 
 /**
  *
@@ -168,15 +172,17 @@ do_libnet_init(const char *ifname)
 		libnet_destroy(libnet);
 		libnet = 0;
 	}
-	if (getuid() && geteuid()) {
-		fprintf(stderr, "arping: must run as root\n");
-		exit(1);
-	}
 
+        /* try libnet_init() even though we aren't root. We may have
+         * a capability or something */
 	if (!(libnet = libnet_init(LIBNET_LINK,
 				   (char*)ifname,
 				   ebuf))) {
-		fprintf(stderr, "arping: libnet_init(): %s\n", ebuf);
+		fprintf(stderr, "arping: %s\n", ebuf);
+                if (getuid() && geteuid()) {
+                        fprintf(stderr,
+                                "arping: you may need to run as root\n");
+                }
 		exit(1);
 	}
 }
@@ -233,19 +239,39 @@ static void sigint(int i)
 }
 
 /**
+ * idiot-proof gettimeofday() wrapper.
+ */
+static void
+gettv(struct timespec *ts)
+{
+        struct timeval tv;
+        if (-1 == gettimeofday(&tv, NULL)) {
+                fprintf(stderr, "arping: "
+                        "gettimeofday(): %s\n",
+                        strerror(errno));
+                sigint(0);
+        }
+        ts->tv_sec = tv.tv_sec;
+        ts->tv_nsec = tv.tv_usec * 1000;
+}
+
+/**
  * idiot-proof clock_gettime() wrapper
  */
 static void
 getclock(struct timespec *ts)
 {
+#if HAVE_CLOCK_MONOTONIC
         if (-1 == clock_gettime(CLOCK_MONOTONIC, ts)) {
                 fprintf(stderr,
                         "arping: clock_gettime(): %s\n",
                         strerror(errno));
                 sigint(0);
         }
+#else
+        gettv(ts);
+#endif
 }
-
 
 /**
  *
@@ -511,7 +537,7 @@ pingmac_send(uint8_t *srcmac, uint8_t *dstmac,
 			libnet_geterror(libnet));
 		sigint(0);
 	}
-	if(verbose>1) {
+	if (verbose > 1) {
                 getclock(&lastpacketsent);
                 printf("arping: sending packet at time %d.%09d\n",
                        lastpacketsent.tv_sec,
@@ -567,7 +593,7 @@ pingip_send(uint8_t *srcmac, uint8_t *dstmac,
 			libnet_geterror(libnet));
 		sigint(0);
 	}
-	if(verbose>1) {
+	if (verbose > 1) {
                 getclock(&lastpacketsent);
                 printf("arping: sending packet at time %d.%09d\n",
                        lastpacketsent.tv_sec,
@@ -823,14 +849,14 @@ fixup_timespec(struct timespec *tv)
 static void
 ping_recv_unix(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 {
-       struct timespec tv;
+       struct timespec ts;
        struct timespec endtime;
        char done = 0;
        int fd;
 
-       getclock(&tv);
-       endtime.tv_sec = tv.tv_sec + (packetwait / 1000000);
-       endtime.tv_nsec = tv.tv_nsec + 1000 * (packetwait % 1000000);
+       getclock(&ts);
+       endtime.tv_sec = ts.tv_sec + (packetwait / 1000000);
+       endtime.tv_nsec = ts.tv_nsec + 1000 * (packetwait % 1000000);
        fixup_timespec(&endtime);
 
        fd = pcap_get_selectable_fd(pcap);
@@ -838,33 +864,54 @@ ping_recv_unix(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
        for (;!done;) {
 	       int trydispatch = 0;
 
-	       getclock(&tv);
-	       tv.tv_sec = endtime.tv_sec - tv.tv_sec;
-	       tv.tv_nsec = endtime.tv_nsec - tv.tv_nsec;
-	       fixup_timespec(&tv);
+	       getclock(&ts);
+	       ts.tv_sec = endtime.tv_sec - ts.tv_sec;
+	       ts.tv_nsec = endtime.tv_nsec - ts.tv_nsec;
+	       fixup_timespec(&ts);
                if (verbose > 2) {
                        printf("listen for replies for %d.%09d sec\n",
-                              tv.tv_sec, tv.tv_nsec);
+                              ts.tv_sec, ts.tv_nsec);
                }
-	       if (tv.tv_sec < 0) {
-		       tv.tv_sec = 0;
-		       tv.tv_nsec = 1;
+
+               /* if time has passed, do one last check and then we're done.
+                * this also triggers if not using monotonic clock and time
+                * is set forwards */
+	       if (ts.tv_sec < 0) {
+		       ts.tv_sec = 0;
+		       ts.tv_nsec = 1;
 		       done = 1;
 	       }
+
+               /* if wait-for-packet time is longer than full period,
+                * we're obviously not using a monotonic clock and the system
+                * time has been changed.
+                * we don't know how far we're into the waiting, so just end
+                * it here */
+               if ((ts.tv_sec > packetwait / 1000000)
+                   || ((ts.tv_sec == packetwait / 1000000)
+                       && (ts.tv_nsec > packetwait % 1000000))) {
+		       ts.tv_sec = 0;
+		       ts.tv_nsec = 1;
+                       done = 1;
+               }
+
+               /* check for sigint */
 	       if (time_to_die) {
 		       return;
 	       }
 
 	       /* try to wait for data */
 	       {
-		       struct pollfd p;
+                       fd_set fds;
 		       int r;
-		       p.fd = fd;
-		       p.events = POLLIN | POLLPRI;
+                       struct timeval tv;
+                       tv.tv_sec = ts.tv_sec;
+                       tv.tv_usec = ts.tv_nsec / 1000;
 
-                       /* poll has ms resolution, but has less false
-                          positives than select() */
-		       r = poll(&p, 1,tv.tv_sec * 1000 + tv.tv_nsec / 1000000);
+                       FD_ZERO(&fds);
+                       FD_SET(fd, &fds);
+
+                       r = select(fd + 1, &fds, NULL, NULL, &tv);
 		       switch (r) {
 		       case 0: /* timeout */
 			       done = 1;
@@ -1378,3 +1425,9 @@ int main(int argc, char **argv)
                 return !numrecvd;
         }
 }
+/* ---- Emacs Variables ----
+ * Local Variables:
+ * c-basic-offset: 8
+ * indent-tabs-mode: nil
+ * End:
+ */

@@ -153,6 +153,9 @@ DISTCLEANFILES = *~
 
 # arping/doc/Makefile.am
 #
+
+# Manpage is only run by maintainer, not by end user. That's why there
+# is no dependency on arping.yodl.
 man_MANS = arping.8
 all: all-am
 
@@ -366,7 +369,9 @@ uninstall-man: uninstall-man8
 	uninstall-am uninstall-man uninstall-man8
 
 arping.8:
-	yodl2man -o arping.8 arping.yodl
+	yodl2man -o arping.8.tmp arping.yodl
+	perl -ne 's/(^|(?<=[^\\\w]))-/\\-/g;print' < arping.8.tmp > arping.8
+	rm -f arping.8.tmp
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

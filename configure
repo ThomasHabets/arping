@@ -5979,7 +5979,9 @@ _ACEOF
 
 
 
-for ac_func in gettimeofday memset select strchr strdup strerror strstr
+
+for ac_func in gettimeofday memset select strchr strdup strerror strstr \
+getifaddrs
 do
 as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
 { echo "$as_me:$LINENO: checking for $ac_func" >&5
@@ -6073,32 +6075,49 @@ fi
 done
 
 
-case "$target_os" in
-     *linux*)
-          case " $LIBOBJS " in
+if test x$ac_cv_func_getifaddrs = xyes; then
+    case " $LIBOBJS " in
+  *" findif_getifaddrs.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS findif_getifaddrs.$ac_objext"
+ ;;
+esac
+
+else
+    case "$target_os" in
+        *linux*)
+            case " $LIBOBJS " in
   *" findif_linux.$ac_objext "* ) ;;
   *) LIBOBJS="$LIBOBJS findif_linux.$ac_objext"
  ;;
 esac
 
-          ;;
-     *freebsd*|*openbsd*|*solaris*|*darwin*)
-          case " $LIBOBJS " in
-  *" findif_bsd.$ac_objext "* ) ;;
-  *) LIBOBJS="$LIBOBJS findif_bsd.$ac_objext"
+            ;;
+        *freebsd*|*openbsd*|*darwin*)
+            case " $LIBOBJS " in
+  *" findif_sysctl.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS findif_sysctl.$ac_objext"
  ;;
 esac
 
-          ;;
-     *)
-          case " $LIBOBJS " in
+            ;;
+        *solaris*)
+            case " $LIBOBJS " in
+  *" findif_bsdroute.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS findif_bsdroute.$ac_objext"
+ ;;
+esac
+
+            ;;
+        *)
+            case " $LIBOBJS " in
   *" findif_other.$ac_objext "* ) ;;
   *) LIBOBJS="$LIBOBJS findif_other.$ac_objext"
  ;;
 esac
 
-          ;;
-esac
+            ;;
+    esac
+fi
 
 
 
@@ -6124,6 +6143,7 @@ cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 
 #include <time.h>
+#include <sys/time.h>
 int main() {
 struct timespec ts;
 exit(!!clock_gettime(CLOCK_MONOTONIC, &ts));

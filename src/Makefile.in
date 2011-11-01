@@ -36,8 +36,9 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(top_srcdir)/Makefile.am.common findif_bsd.c findif_linux.c \
-	findif_other.c
+	$(top_srcdir)/Makefile.am.common findif_bsdroute.c \
+	findif_getifaddrs.c findif_linux.c findif_other.c \
+	findif_sysctl.c
 sbin_PROGRAMS = arping$(EXEEXT)
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -234,9 +235,11 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/findif_bsd.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/findif_bsdroute.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/findif_getifaddrs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/findif_linux.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/findif_other.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/findif_sysctl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/arping.Po@am__quote@
 
 .c.o:

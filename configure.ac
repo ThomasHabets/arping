@@ -60,19 +60,27 @@ AC_PROG_GCC_TRADITIONAL
 AC_FUNC_SELECT_ARGTYPES
 AC_FUNC_SETVBUF_REVERSED
 AC_TYPE_SIGNAL
-AC_CHECK_FUNCS([gettimeofday memset select strchr strdup strerror strstr])
+AC_CHECK_FUNCS([gettimeofday memset select strchr strdup strerror strstr \
+getifaddrs])
 
-case "$target_os" in
-     *linux*)
-          AC_LIBOBJ([findif_linux])
-          ;;
-     *freebsd*|*openbsd*|*solaris*|*darwin*)
-          AC_LIBOBJ([findif_bsd])
-          ;;
-     *)
-          AC_LIBOBJ([findif_other])
-          ;;
-esac
+if test x$ac_cv_func_getifaddrs = xyes; then
+    AC_LIBOBJ([findif_getifaddrs])
+else
+    case "$target_os" in
+        *linux*)
+            AC_LIBOBJ([findif_linux])
+            ;;
+        *freebsd*|*openbsd*|*darwin*)
+            AC_LIBOBJ([findif_sysctl])
+            ;;
+        *solaris*)
+            AC_LIBOBJ([findif_bsdroute])
+            ;;
+        *)
+            AC_LIBOBJ([findif_other])
+            ;;
+    esac
+fi
 
 
 

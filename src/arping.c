@@ -124,7 +124,6 @@ uint32_t srcip, dstip;
 
 static int beep = 0;
 static int reverse_beep = 0;
-static int verbose = 0;
 static int alsototal = 0;
 /*static int pingmac = 0; */
 static int finddup = 0;
@@ -142,8 +141,10 @@ static char srcmac[ETH_ALEN];
 static char dstmac[ETH_ALEN];
 static char lastreplymac[ETH_ALEN];
 
+int verbose = 0;
+
 /* doesn't need to be volatile */
-volatile sig_atomic_t time_to_die = 0;
+static volatile sig_atomic_t time_to_die = 0;
 
 /**
  *

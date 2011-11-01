@@ -9,6 +9,7 @@
 #endif
 
 extern uint32_t srcip,dstip;
+extern int verbose;
 void do_libnet_init(const char *ifname);
 const char *arping_lookupdev_default(const char *ifname,
                                      uint32_t srcip, uint32_t dstip,

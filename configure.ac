@@ -82,6 +82,7 @@ AC_CACHE_CHECK([for CLOCK_MONOTONIC],
                                   AC_TRY_RUN(
                                         [
 #include <time.h>
+#include <sys/time.h>
 int main() {
 struct timespec ts;
 exit(!!clock_gettime(CLOCK_MONOTONIC, &ts));

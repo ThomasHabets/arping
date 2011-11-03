@@ -38,7 +38,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <poll.h>
-#include <time.h>
 
 #if HAVE_UNISTD_H
 #include <unistd.h>
@@ -1147,9 +1146,13 @@ int main(int argc, char **argv)
 	}
 
         if (verbose) {
+#if HAVE_CLOCK_MONOTONIC
                 struct timespec ts;
                 clock_getres(CLOCK_MONOTONIC, &ts);
                 printf("clock_getres() = %d %d\n", ts.tv_sec, ts.tv_nsec);
+#else 
+                printf("Using gettimeofday() for time measurements\n");
+#endif
         }
 
         if (display == DOT) {

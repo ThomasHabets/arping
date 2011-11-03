@@ -2,7 +2,7 @@ arping/README
 
  ARP Ping
 
-    By Thomas Habets <thomas@habets.pp.se>
+    By Thomas Habets <thomas@habets.se>
 
  http://www.habets.pp.se/synscan/
  http://github.com/ThomasHabets/arping
@@ -285,5 +285,5 @@ For pinging MAC addresses:
  range it searches is hard-coded.
  I may add this to arping some day, but don't hold your breath.
 
-----------------------------------------------------------------------------
-Send questions/suggestions/patches/rants/money/alphas to thomas@habets.pp.se
+-----------------------------------------------------------------------
+Send questions/suggestions/patches/rants/money/envy to thomas@habets.se

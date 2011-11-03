@@ -33,7 +33,7 @@ same package anymore.
 Standard autotools:   ./configure && make && make install
 
 The autotools build system is new with arping 2.09. If you have problems with
-it I want to hear about it. Email me at thomas@habets.pp.se and attach
+it I want to hear about it. Email me at thomas@habets.se and attach
 the config.log file. If it failed during 'make', give me all the output from
 that.
 

@@ -2,7 +2,7 @@
  *
  * arping
  *
- * By Thomas Habets <thomas@habets.pp.se>
+ * By Thomas Habets <thomas@habets.se>
  *
  * ARP 'ping' utility
  *
@@ -15,7 +15,7 @@
  *
  */
 /*
- *  Copyright (C) 2000-2010 Thomas Habets <thomas@habets.pp.se>
+ *  Copyright (C) 2000-2011 Thomas Habets <thomas@habets.se>
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public
@@ -328,7 +328,7 @@ extended_usage()
 	       "           pinging MACs.\n"
 	       "    -v     Verbose output. Use twice for more messages.\n"
 	       "    -w     Time to wait between pings, in microseconds.\n");
-        printf("Report bugs to: thomas@habets.pp.se\n"
+        printf("Report bugs to: thomas@habets.se\n"
                "Arping home page: <http://www.habets.pp.se/synscan/>\n"
                "Development repo: http://github.com/ThomasHabets/arping\n");
 }
@@ -339,7 +339,7 @@ extended_usage()
 static void
 standard_usage()
 {
-	printf("ARPing %s, by Thomas Habets <thomas@habets.pp.se>\n",
+	printf("ARPing %s, by Thomas Habets <thomas@habets.se>\n",
 	       version);
         printf("usage: arping [ -0aAbdDeFpqrRuv ] [ -w <us> ] "
                "[ -S <host/ip> ]\n"

@@ -109,9 +109,7 @@
  */
 const char *
 arping_lookupdev(const char *ifname,
-                 uint32_t srcip,
-                 uint32_t dstip,
-                 char *ebuf);
+                 uint32_t srcip, uint32_t dstip,char *ebuf);
 
 static const char *version = VERSION; /* from autoconf */
 
@@ -119,30 +117,46 @@ static libnet_t *libnet = 0;
 
 static struct timespec lastpacketsent;
 
-uint32_t srcip, dstip;
+/* target string */
+static char *target = "huh? bug in arping?";
 
-static int beep = 0;
-static int reverse_beep = 0;
-static int alsototal = 0;
-/*static int pingmac = 0; */
-static int finddup = 0;
-static int dupfound = 0;
-static unsigned int numsent = 0;
-static unsigned int numrecvd = 0;
-static unsigned int numdots = 0;
-static int addr_must_be_same = 0;
+/*
+ * Ping IP mode:   cmdline target
+ * Ping MAC mode:  255.255.255.255, override with -T
+ */
+static uint32_t dstip;
+
+/*
+ * Ping IP mode:   ethxmas, override with -t
+ * Ping MAC mode:  cmdline target
+ */
+static uint8_t dstmac[ETH_ALEN];
+
+static uint32_t srcip;            /* autodetected, override with -S/-b/-0 */
+static uint8_t srcmac[ETH_ALEN];  /* autodetected, override with -s */
+
+static int beep = 0;                 /* beep when reply is received. -a */
+static int reverse_beep = 0;         /* beep when expected reply absent. -e */
+static int alsototal = 0;            /* print sent as well as received. -u */
+static int addr_must_be_same = 0;    /* -A */
+
+static int finddup = 0;              /* finddup mode. -d */
+static int dupfound = 0;             /* set to 1 if dup found */
+static char lastreplymac[ETH_ALEN];  /* if last different from this then dup */
+
+static unsigned int numsent = 0;     /* packets sent */
+static unsigned int numrecvd = 0;    /* packets received */
+static unsigned int numdots = 0;     /* dots that should be printed */
+
 /* RAWRAW is RAW|RRAW */
 static enum { NORMAL, QUIET, RAW, RRAW, RAWRAW, DOT } display = NORMAL;
-static char *target = "huh? bug in arping?";
-static uint8_t ethnull[ETH_ALEN];
-static uint8_t ethxmas[ETH_ALEN];
-static char srcmac[ETH_ALEN];
-static char dstmac[ETH_ALEN];
-static char lastreplymac[ETH_ALEN];
+
+static const uint8_t ethnull[ETH_ALEN] = {0, 0, 0, 0, 0, 0};
+static const uint8_t ethxmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 int verbose = 0;
 
-/* doesn't need to be volatile */
+/* Doesn't really need to be volatile. */
 static volatile sig_atomic_t time_to_die = 0;
 
 /**
@@ -479,17 +493,11 @@ static char *ts2str(const struct timespec *tv, const struct timespec *tv2,
 
 /** Send directed IPv4 ICMP echo request.
  *
- * \param srcmac  Source MAC. From -s switch or autodetected
- * \param dstmac  Destination/target MAC. Target command line.
- * \param srcip   From -S switch or autodetected
- * \param dstip   From -D switch, or 255.255.255.255
  * \param id      IP id
  * \param seq     Ping seq
  */
 static void
-pingmac_send(uint8_t *srcmac, uint8_t *dstmac,
-	     uint32_t srcip, uint32_t dstip,
-	     uint16_t id, uint16_t seq)
+pingmac_send(uint16_t id, uint16_t seq)
 {
 	static libnet_ptag_t icmp = 0, ipv4 = 0,eth=0;
 	int c;
@@ -539,9 +547,9 @@ pingmac_send(uint8_t *srcmac, uint8_t *dstmac,
 	}
 	if (verbose > 1) {
                 getclock(&lastpacketsent);
-                printf("arping: sending packet at time %d.%09d\n",
-                       lastpacketsent.tv_sec,
-                       lastpacketsent.tv_nsec);
+                printf("arping: sending packet at time %ld.%09ld\n",
+                       (long)lastpacketsent.tv_sec,
+                       (long)lastpacketsent.tv_nsec);
 	}
 	if (-1 == (c = libnet_write(libnet))) {
 		fprintf(stderr, "arping: libnet_write(): %s\n",
@@ -554,15 +562,9 @@ pingmac_send(uint8_t *srcmac, uint8_t *dstmac,
 
 /** Send ARP who-has.
  *
- * \param srcmac   -s or autodetected
- * \param dstmac   -t or ff:ff:ff:ff:ff:ff
- * \param srcip    -S or autodetected
- * \param dstip    -T or or cmdline
- *
  */
 static void
-pingip_send(uint8_t *srcmac, uint8_t *dstmac,
-	    uint32_t srcip, uint32_t dstip)
+pingip_send()
 {
 	static libnet_ptag_t arp=0,eth=0;
 	if (-1 == (arp = libnet_build_arp(ARPHRD_ETHER,
@@ -595,9 +597,9 @@ pingip_send(uint8_t *srcmac, uint8_t *dstmac,
 	}
 	if (verbose > 1) {
                 getclock(&lastpacketsent);
-                printf("arping: sending packet at time %d.%09d\n",
-                       lastpacketsent.tv_sec,
-                       lastpacketsent.tv_nsec);
+                printf("arping: sending packet at time %ld.%09ld\n",
+                       (long)lastpacketsent.tv_sec,
+                       (long)lastpacketsent.tv_nsec);
 	}
 	if (-1 == libnet_write(libnet)) {
 		fprintf(stderr, "arping: libnet_write(): %s\n", 
@@ -614,8 +616,7 @@ pingip_send(uint8_t *srcmac, uint8_t *dstmac,
  * \param packet  packet data
  */
 static void
-pingip_recv(const char *unused, struct pcap_pkthdr *h,
-	    uint8_t *packet)
+pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 {
 	struct libnet_802_3_hdr *heth;
 	struct libnet_arp_hdr *harp;
@@ -718,8 +719,7 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h,
  * \param packet  packet data
  */
 static void
-pingmac_recv(const char *unused, struct pcap_pkthdr *h,
-	     uint8_t *packet)
+pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 {
 	struct libnet_802_3_hdr *heth;
 	struct libnet_ipv4_hdr *hip;
@@ -798,7 +798,7 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h,
  * untested for a long time. Maybe since arping 2.05 or so.
  */
 static void
-ping_recv_win32(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
+ping_recv_win32(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 {
         struct timespec tv,tv2;
        char done = 0;
@@ -869,8 +869,8 @@ ping_recv_unix(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 	       ts.tv_nsec = endtime.tv_nsec - ts.tv_nsec;
 	       fixup_timespec(&ts);
                if (verbose > 2) {
-                       printf("listen for replies for %d.%09d sec\n",
-                              ts.tv_sec, ts.tv_nsec);
+                       printf("listen for replies for %ld.%09ld sec\n",
+                              (long)ts.tv_sec, (long)ts.tv_nsec);
                }
 
                /* if time has passed, do one last check and then we're done.
@@ -987,7 +987,7 @@ int main(int argc, char **argv)
 	int dont_use_arping_lookupdev=0;
 	struct bpf_program bp;
 	pcap_t *pcap;
-	static enum { NONE, PINGMAC, PINGIP } mode = NONE;
+	enum { NONE, PINGMAC, PINGIP } mode = NONE;
 	unsigned int packetwait = 1000000;
 
         for (c = 1; c < argc; c++) {
@@ -998,12 +998,9 @@ int main(int argc, char **argv)
                 }
         }
 
-	memset(ethnull, 0, ETH_ALEN);
-
 	srcip = 0;
 	dstip = 0xffffffff;
-	memset(dstmac, 0xff, ETH_ALEN);
-	memset(ethxmas, 0xff, ETH_ALEN);
+	memcpy(dstmac, ethxmas, ETH_ALEN);
 
 	while (EOF!=(c=getopt(argc,argv,"0aAbBc:dDeFhi:I:pqrRs:S:t:T:uvw:"))) {
 		switch(c) {
@@ -1149,7 +1146,8 @@ int main(int argc, char **argv)
 #if HAVE_CLOCK_MONOTONIC
                 struct timespec ts;
                 clock_getres(CLOCK_MONOTONIC, &ts);
-                printf("clock_getres() = %d %d\n", ts.tv_sec, ts.tv_nsec);
+                printf("clock_getres() = %ld %ld\n",
+                       (long)ts.tv_sec, (long)ts.tv_nsec);
 #else 
                 printf("Using gettimeofday() for time measurements\n");
 #endif
@@ -1383,7 +1381,7 @@ int main(int argc, char **argv)
 		unsigned int c;
                 unsigned int r;
 		for (c = 0; c < maxcount && !time_to_die; c++) {
-			pingip_send(srcmac, dstmac, srcip, dstip);
+			pingip_send();
                         r = numrecvd;
 			ping_recv(pcap,packetwait,
 				  (pcap_handler)pingip_recv);
@@ -1396,7 +1394,7 @@ int main(int argc, char **argv)
 		unsigned int c;
                 unsigned int r;
 		for (c = 0; c < maxcount && !time_to_die; c++) {
-			pingmac_send(srcmac, dstmac, srcip, dstip, rand(), c);
+			pingmac_send(rand(), c);
                         r = numrecvd;
 			ping_recv(pcap,packetwait,
 				  (pcap_handler)pingmac_recv);

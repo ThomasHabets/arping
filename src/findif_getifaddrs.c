@@ -53,8 +53,6 @@ arping_lookupdev(const char *ifname_unused,
         /* Results */
         static char ifname[IFNAMSIZ];
 
-        ifname[0] = 0;
-
         if (getifaddrs(&ifa)) {
                 if (verbose) {
                         printf("getifaddrs(): %s\n", strerror(errno));
@@ -75,6 +73,7 @@ arping_lookupdev(const char *ifname_unused,
                 if ((addr & mask) != (dstip & mask)) {
                         continue;
                 }
+                match_count++;
                 if (ntohl(mask) > ntohl(best_mask)) {
                         memset(ifname, 0, sizeof(ifname));
                         strncpy(ifname, cur->ifa_name, sizeof(ifname)-1);
@@ -82,7 +81,7 @@ arping_lookupdev(const char *ifname_unused,
                         best_mask = mask;
                 }
         }
-        if (!ifname[0]) {
+        if (!match_count) {
                 if (verbose) {
                         printf("Failed to find iface using getifaddrs().\n");
                 }

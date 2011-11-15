@@ -108,8 +108,7 @@
  * OS-specific interface finding using routing table. See findif_*.c
  */
 const char *
-arping_lookupdev(const char *ifname,
-                 uint32_t srcip, uint32_t dstip,char *ebuf);
+arping_lookupdev(uint32_t srcip, uint32_t dstip,char *ebuf);
 
 static const char *version = VERSION; /* from autoconf */
 
@@ -154,7 +153,7 @@ static enum { NORMAL, QUIET, RAW, RRAW, RAWRAW, DOT } display = NORMAL;
 static const uint8_t ethnull[ETH_ALEN] = {0, 0, 0, 0, 0, 0};
 static const uint8_t ethxmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
-int verbose = 0;
+int verbose = 0;  /* Increase with -v */
 
 /* Doesn't really need to be volatile. */
 static volatile sig_atomic_t time_to_die = 0;
@@ -173,7 +172,7 @@ count_missing_dots()
 
 /**
  *
- */	
+ */
 void
 do_libnet_init(const char *ifname)
 {
@@ -205,8 +204,7 @@ do_libnet_init(const char *ifname)
  *
  */
 const char *
-arping_lookupdev_default(const char *ifname,
-			 uint32_t srcip, uint32_t dstip,
+arping_lookupdev_default(int32_t srcip, uint32_t dstip,
 			 char *ebuf)
 {
 #if WIN32
@@ -253,23 +251,6 @@ static void sigint(int i)
 }
 
 /**
- * idiot-proof gettimeofday() wrapper.
- */
-static void
-gettv(struct timespec *ts)
-{
-        struct timeval tv;
-        if (-1 == gettimeofday(&tv, NULL)) {
-                fprintf(stderr, "arping: "
-                        "gettimeofday(): %s\n",
-                        strerror(errno));
-                sigint(0);
-        }
-        ts->tv_sec = tv.tv_sec;
-        ts->tv_nsec = tv.tv_usec * 1000;
-}
-
-/**
  * idiot-proof clock_gettime() wrapper
  */
 static void
@@ -283,7 +264,14 @@ getclock(struct timespec *ts)
                 sigint(0);
         }
 #else
-        gettv(ts);
+        struct timeval tv;
+        if (-1 == gettimeofday(&tv, NULL)) {
+                fprintf(stderr, "arping: gettimeofday(): %s\n",
+                        strerror(errno));
+                sigint(0);
+        }
+        ts->tv_sec = tv.tv_sec;
+        ts->tv_nsec = tv.tv_usec * 1000;
 #endif
 }
 
@@ -574,7 +562,7 @@ pingip_send()
 					  ARPOP_REQUEST,
 					  srcmac,
 					  (uint8_t*)&srcip,
-					  ethnull,
+                                          (uint8_t*)ethnull,
 					  (uint8_t*)&dstip,
 					  NULL,
 					  0,
@@ -1261,15 +1249,24 @@ int main(int argc, char **argv)
 	 * Get some good iface.
 	 */
 	if (!ifname) {
-		if (dont_use_arping_lookupdev) {
-			ifname = arping_lookupdev_default(ifname,
-							  srcip,dstip,ebuf);
-		} else {
-			ifname = arping_lookupdev(ifname,srcip,dstip,ebuf);
+                if (!dont_use_arping_lookupdev) {
+                        ifname = arping_lookupdev(srcip, dstip, ebuf);
+                }
+                if (!ifname) {
+                        ifname = arping_lookupdev_default(srcip, dstip, ebuf);
+                        if (!dont_use_arping_lookupdev) {
+                                fprintf(stderr,
+                                        "arping: Unable to automatically find "
+                                        "interface to use. Is it on the local "
+                                        "LAN?\n"
+                                        "arping: Use -i to manually "
+                                        "specify interface. "
+                                        "Guessing interface %s.\n", ifname);
+                        }
 		}
 		if (!ifname) {
-			fprintf(stderr, "arping: arping_lookupdev(): %s\n",
-				ebuf);
+                        fprintf(stderr, "arping: Gave up looking for interface"
+                                " to use: %s\n", ebuf);
 			exit(1);
 		}
 		/* FIXME: check for other probably-not interfaces */
@@ -1347,8 +1344,12 @@ int main(int argc, char **argv)
 	}
 	if (!srcip_given) {
 		if (-1 == (srcip = libnet_get_ipaddr4(libnet))) {
-			fprintf(stderr, "arping: libnet_get_ipaddr4(libnet): "
-				"%s\n", libnet_geterror(libnet));
+			fprintf(stderr,
+                                "arping: Unable to get the IPv4 address of "
+                                "interface %s:\narping: %s"
+                                "arping: "
+                                "Use -S to specify address manually.\n",
+                                ifname, libnet_geterror(libnet));
 			exit(1);
 		}
 	}

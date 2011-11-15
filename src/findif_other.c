@@ -29,10 +29,7 @@
  *
  */
 const char *
-arping_lookupdev(const char *ifname,
-                 uint32_t srcip,
-                 uint32_t dstip,
-                 char *ebuf)
+arping_lookupdev(uint32_t srcip, uint32_t dstip, char *ebuf)
 {
-	return arping_lookupdev_default(ifname,srcip,dstip,ebuf);
+	return NULL;
 }

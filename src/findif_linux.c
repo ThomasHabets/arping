@@ -29,8 +29,7 @@
  * WARNING: non-reentrant
  */
 const char *
-arping_lookupdev(const char *ifname,
-                 uint32_t srcip,
+arping_lookupdev(uint32_t srcip,
                  uint32_t dstip,
                  char *ebuf)
 {
@@ -41,7 +40,7 @@ arping_lookupdev(const char *ifname,
 	char *p,*p2;
 	int n;
 
-	do_libnet_init(ifname);
+	do_libnet_init(NULL);
 	libnet_addr2name4_r(dstip,0,buf2,1024);
 	libnet_addr2name4_r(srcip,0,buf1,1024);
 
@@ -80,5 +79,5 @@ arping_lookupdev(const char *ifname,
 	*p2 = 0;
 	return p;
  failed:
-	return arping_lookupdev_default(ifname,srcip,dstip,ebuf);
+	return NULL;
 }

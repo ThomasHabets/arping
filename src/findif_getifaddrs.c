@@ -36,14 +36,13 @@
 #include "arping.h"
 
 const char *
-arping_lookupdev(const char *ifname_unused,
-                 uint32_t srcip,
+arping_lookupdev(uint32_t srcip,
                  uint32_t dstip,
                  char *ebuf)
 {
         struct ifaddrs *ifa = NULL;
         struct ifaddrs *cur;
-        const char *ret;
+        const char *ret = NULL;
         int match_count = 0;     /* Matching interfaces */
 
         /* best match */
@@ -57,7 +56,7 @@ arping_lookupdev(const char *ifname_unused,
                 if (verbose) {
                         printf("getifaddrs(): %s\n", strerror(errno));
                 }
-                goto failed;
+                goto out;
         }
         for (cur = ifa; cur; cur = cur->ifa_next) {
                 in_addr_t addr, mask;
@@ -81,22 +80,18 @@ arping_lookupdev(const char *ifname_unused,
                         best_mask = mask;
                 }
         }
-        if (!match_count) {
+        if (match_count) {
+                ret = ifname;
+        } else {
                 if (verbose) {
                         printf("Failed to find iface using getifaddrs().\n");
                 }
-                goto failed;
         }
-        ret = ifname;
  out:
         if (ifa) {
                 freeifaddrs(ifa);
         }
         return ret;
-
- failed:
-        ret = arping_lookupdev_default(ifname_unused, srcip, dstip, ebuf);
-        goto out;
 }
 /* ---- Emacs Variables ----
  * Local Variables:

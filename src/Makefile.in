@@ -51,7 +51,7 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 sbinPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(sbin_PROGRAMS)
-am_arping_OBJECTS = arping.$(OBJEXT)
+am_arping_OBJECTS = arping.$(OBJEXT) unix.$(OBJEXT)
 arping_OBJECTS = $(am_arping_OBJECTS)
 arping_DEPENDENCIES = $(LIBOBJS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -167,7 +167,7 @@ top_srcdir = @top_srcdir@
 # arping/Makefile.am.common
 AUTOMAKE_OPTIONS = foreign
 DISTCLEANFILES = *~
-arping_SOURCES = arping.c
+arping_SOURCES = arping.c unix.c
 arping_LDADD = $(LIBOBJS)
 all: all-am
 
@@ -241,6 +241,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/findif_other.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/findif_sysctl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/arping.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unix.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

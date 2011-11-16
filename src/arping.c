@@ -11,7 +11,7 @@
  * you don't yet have routing to. Then again, if you have no idea what I'm
  * talking about then you prolly don't need it.
  *
- * Also finds out IP of specified MAC
+ * Also finds out IP of specified MAC.
  *
  */
 /*
@@ -108,7 +108,10 @@
  * OS-specific interface finding using routing table. See findif_*.c
  */
 const char *
-arping_lookupdev(uint32_t srcip, uint32_t dstip,char *ebuf);
+arping_lookupdev(uint32_t srcip, uint32_t dstip, char *ebuf);
+
+const char *
+arping_lookupdev_default(uint32_t srcip, uint32_t dstip, char *ebuf);
 
 static const char *version = VERSION; /* from autoconf */
 
@@ -148,14 +151,20 @@ static unsigned int numrecvd = 0;    /* packets received */
 static unsigned int numdots = 0;     /* dots that should be printed */
 
 /* RAWRAW is RAW|RRAW */
-static enum { NORMAL, QUIET, RAW, RRAW, RAWRAW, DOT } display = NORMAL;
+static enum { NORMAL,      /* normal output */
+              QUIET,       /* No output. -q */
+              RAW,         /* Print MAC when pinging IP. -r */
+              RRAW,        /* Print IP when pinging IP. -R */
+              RAWRAW,      /* Print both. -r and -R */
+              DOT          /* Print '.' and '!', Cisco-style. -D */
+} display = NORMAL;
 
 static const uint8_t ethnull[ETH_ALEN] = {0, 0, 0, 0, 0, 0};
 static const uint8_t ethxmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 int verbose = 0;  /* Increase with -v */
 
-/* Doesn't really need to be volatile. */
+/* Doesn't really need to be volatile, but doesn't hurt. */
 static volatile sig_atomic_t time_to_die = 0;
 
 /**
@@ -171,23 +180,23 @@ count_missing_dots()
 }
 
 /**
- *
+ * Init libnet with specified ifname. Destroy if already inited.
  */
 void
 do_libnet_init(const char *ifname)
 {
 	char ebuf[LIBNET_ERRBUF_SIZE];
 	if (verbose > 1) {
-		printf("libnet_init(%s)\n", ifname?ifname:"<null>");
+                printf("libnet_init(%s)\n", ifname ? ifname : "<null>");
 	}
 	if (libnet) {
-		/* prolly going to switch interface from temp to real */
+		/* Probably going to switch interface from temp to real. */
 		libnet_destroy(libnet);
 		libnet = 0;
 	}
 
-        /* try libnet_init() even though we aren't root. We may have
-         * a capability or something */
+        /* Try libnet_init() even though we aren't root. We may have
+         * a capability or something. */
 	if (!(libnet = libnet_init(LIBNET_LINK,
 				   (char*)ifname,
 				   ebuf))) {
@@ -203,49 +212,8 @@ do_libnet_init(const char *ifname)
 /**
  *
  */
-const char *
-arping_lookupdev_default(int32_t srcip, uint32_t dstip,
-			 char *ebuf)
-{
-#if WIN32
-	WCHAR buf[LIBNET_ERRBUF_SIZE + PCAP_ERRBUF_SIZE];
-	WCHAR* ret = (WCHAR*)pcap_lookupdev((char*)buf);
-	if (ret != NULL) {
-		wcstombs(ebuf, ret, LIBNET_ERRBUF_SIZE + PCAP_ERRBUF_SIZE);
-		return ebuf;
-	}
-	return NULL;
-#else
-	return pcap_lookupdev(ebuf);
-#endif
-}
-
-#if WIN32
-static BOOL WINAPI arping_console_ctrl_handler(DWORD dwCtrlType)
-{
-	if(verbose) {
-		printf("arping_console_ctrl_handler( %d )\n", (int)dwCtrlType);
-	}
-	time_to_die = 1;
-
-#if 0
-	/* if SetConsoleCtrlHandler() does what I think, this isn't needed */
-	if (display == NORMAL) {
-		printf("\n--- %s statistics ---\n"
-		       "%d packets transmitted, %d packets received, %3.0f%% "
-		       "unanswered\n",target,numsent,numrecvd,
-		       100.0 - 100.0 * (float)(numrecvd)/(float)numsent);
-        }
-#endif
-	return TRUE;
-}
-#endif
-
-
-/**
- *
- */
-static void sigint(int i)
+void
+sigint(int i)
 {
 	time_to_die = 1;
 }
@@ -611,7 +579,7 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
         struct timespec arrival;
 	int c;
 
-	if(verbose>2) {
+        if (verbose > 2) {
 		printf("arping: received response for ip ping\n");
 	}
 
@@ -780,44 +748,6 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 	}
 }
 
-
-#if WIN32
-/**
- * untested for a long time. Maybe since arping 2.05 or so.
- */
-static void
-ping_recv_win32(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
-{
-        struct timespec tv,tv2;
-       char done = 0;
-       /* windows won't let us do select() */
-       getclock(&tv2);
-
-       while (!done && !time_to_die) {
-	       struct pcap_pkthdr *pkt_header;
-	       u_char *pkt_data;
-	       if (pcap_next_ex(pcap, &pkt_header, &pkt_data) == 1) {
-		       func(pcap, pkt_header, pkt_data);
-	       }
-               getclock(&tv);
-
-               /*
-                * setup next timespec, not very exact
-                */
-               tv.tv_sec  = (packetwait / 1000000)
-		       - (tv.tv_sec - tv2.tv_sec);
-	       tv.tv_nsec = (packetwait % 1000000)
-                       - (tv.tv_nsec - tv2.tv_nsec);
-               fixup_timespec(&tv);
-
-	       usleep(10);
-	       if (tv.tv_sec < 0) {
-		       done=1;
-	       }
-       }
-}
-#endif
-
 /**
  * while negative nanoseconds, take from whole seconds.
  * help function for measuring deltas.
@@ -835,12 +765,16 @@ fixup_timespec(struct timespec *tv)
  * try to receive a packet for 'packetwait' microseconds
  */
 static void
-ping_recv_unix(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
+ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 {
        struct timespec ts;
        struct timespec endtime;
        char done = 0;
        int fd;
+
+       if (verbose > 3) {
+               printf("arping: receiving packets...\n");
+       }
 
        getclock(&ts);
        endtime.tv_sec = ts.tv_sec + (packetwait / 1000000);
@@ -938,23 +872,6 @@ ping_recv_unix(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 		       }
 	       }
        }
-}
-
-/**
- * 
- */
-static void
-ping_recv(pcap_t *pcap,uint32_t packetwait, pcap_handler func)
-{
-       if(verbose>3) {
-               printf("arping: receiving packets...\n");
-       }
-
-#if WIN32
-       ping_recv_win32(pcap,packetwait,func);
-#else
-       ping_recv_unix(pcap,packetwait,func);
-#endif
 }
 
 /**
@@ -1353,12 +1270,7 @@ int main(int argc, char **argv)
 			exit(1);
 		}
 	}
-#if WIN32
-	/* SetConsoleCtrlHandler(NULL, TRUE); */
-	SetConsoleCtrlHandler(arping_console_ctrl_handler, TRUE);
-#else
-	signal(SIGINT, sigint);
-#endif
+        do_signal_init();
 
 	if (verbose) {
 		printf("This box:   Interface: %s  IP: %s   MAC address: ",

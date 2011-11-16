@@ -1,4 +1,4 @@
-/* arping/src/arping.h
+/* arping/src/unix.c
  *
  *  Copyright (C) 2000-2011 Thomas Habets <thomas@habets.se>
  *
@@ -16,18 +16,36 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-
-#if HAVE_STDINT_H
-#include <stdint.h>
+#if HAVE_CONFIG_H
+#include "config.h"
 #endif
 
-#if HAVE_INTTYPES_H
-#include <inttypes.h>
-#endif
+#include <signal.h>
 
-extern uint32_t srcip,dstip;
-extern int verbose;
-void do_libnet_init(const char *ifname);
-void sigint(int);
-const char *arping_lookupdev_default(uint32_t srcip, uint32_t dstip,
-				     char *ebuf);
+#include <pcap.h>
+
+#include "arping.h"
+
+/**
+ * Fall back on getting device name from pcap.
+ */
+const char *
+arping_lookupdev_default(uint32_t srcip, uint32_t dstip, char *ebuf)
+{
+        return pcap_lookupdev(ebuf);
+}
+
+/**
+ *
+ */
+void
+do_signal_init()
+{
+        signal(SIGINT, sigint);
+}
+/* ---- Emacs Variables ----
+ * Local Variables:
+ * c-basic-offset: 8
+ * indent-tabs-mode: nil
+ * End:
+ */

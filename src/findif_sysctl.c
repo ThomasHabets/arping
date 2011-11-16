@@ -17,7 +17,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 /**
- * This file should never be used. Systems that are chosed for sysctl()
+ * This file should never be used. Systems that are chosen for sysctl()
  * should always have getifaddrs() which is preferred to this.
  */
 #if HAVE_CONFIG_H

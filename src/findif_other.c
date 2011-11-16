@@ -33,3 +33,9 @@ arping_lookupdev(uint32_t srcip, uint32_t dstip, char *ebuf)
 {
 	return NULL;
 }
+/* ---- Emacs Variables ----
+ * Local Variables:
+ * c-basic-offset: 8
+ * indent-tabs-mode: nil
+ * End:
+ */

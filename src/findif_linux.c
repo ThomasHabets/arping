@@ -16,6 +16,10 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+/**
+ * Fallback to ugly solution. This should not actually be used, as
+ * modern systems have getifaddrs().
+ */
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -81,3 +85,9 @@ arping_lookupdev(uint32_t srcip,
  failed:
 	return NULL;
 }
+/* ---- Emacs Variables ----
+ * Local Variables:
+ * c-basic-offset: 8
+ * indent-tabs-mode: nil
+ * End:
+ */

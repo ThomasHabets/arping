@@ -40,15 +40,22 @@ that.
 Examples that I use on some systems:
 
 Linux:
+  apt-get install libnet1-dev libpcap-dev
   ./configure
 
 OpenBSD:
-  ./configure LDFLAGS=-L/usr/local/lib CPPFLAGS=-I/usr/local/include/libnet-1.1
+  ./configure CPPFLAGS=-I/usr/local/include/libnet-1.1 \
+              LDFLAGS=-L/usr/local/lib
 
+FreeBSD:
+  pkg_add -r libnet115  # (or similar)
+  pkg_add -r libpcap    # (or similar)
+  ./configure CPPFLAGS='-I/usr/local/include/libnet115' \
+              LDFLAGS='-L/usr/local/lib/libnet115'
 
 Solaris:
-  ./configure LDFLAGS="-R/usr/local/lib -L/opt/csw/lib -R/opt/csw/lib" \
-              CPPFLAGS="-I/usr/local/include"
+  ./configure CPPFLAGS="-I/usr/local/include" \
+              LDFLAGS="-R/usr/local/lib -L/opt/csw/lib -R/opt/csw/lib"
 
 IRIX:
   ./configure  LDFLAGS="-L/usr/local/lib -Wl,-rpath -Wl,/usr/local/lib"

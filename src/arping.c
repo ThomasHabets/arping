@@ -1047,7 +1047,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-        if (verbose) {
+        if (verbose > 1) {
 #if HAVE_CLOCK_MONOTONIC
                 struct timespec ts;
                 clock_getres(CLOCK_MONOTONIC, &ts);
@@ -1213,7 +1213,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "arping: pcap_set_nonblock(): %s\n", ebuf);
 		exit(1);
 	}
-	if (verbose) {
+	if (verbose > 1) {
 		printf("pcap_get_selectable(): %d\n",
 		       pcap_get_selectable_fd(pcap));
 	}

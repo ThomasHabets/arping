@@ -268,7 +268,7 @@ extended_usage()
 	       "    -d     Find duplicate replies. Exit with 1 if there are "
                "answers from\n"
                "           two different MAC addresses.\n"
-	       "    -D     Display answers as dots and missing packets as exclamation points.\n"
+	       "    -D     Display answers as exclamation points and missing packets as dots.\n"
                "    -e     Like -a but beep when there is no reply.\n"
 	       "    -F     Don't try to be smart about the interface name.  (even  if  this\n"
 	       "           switch is not given, -i overrides smartness)\n"

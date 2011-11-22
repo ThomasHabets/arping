@@ -53,7 +53,7 @@ for a host.
     dit(-c em(count)) Only send em(count) requests.
     dit(-d) Find duplicate replies. Exit with 1 if there are answers from
         two different MAC addresses.
-    dit(-D) Display answers as dots and missing packets as exclamation points.
+    dit(-D) Display answers as exclamation points and missing packets as dots.
         Like flood ping on a Cisco.
     dit(-e) Like -a but beep when there is no reply.
     dit(-F) Don't try to be smart about the interface name. Even if this

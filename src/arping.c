@@ -1218,7 +1218,7 @@ int main(int argc, char **argv)
 		       pcap_get_selectable_fd(pcap));
 	}
 
-#if HAVE_NET_BPF_H
+#ifdef BIOCIMMEDIATE
 	{
 		uint32_t on = 1;
 		if (0 < (ioctl(pcap_fileno(pcap), BIOCIMMEDIATE,

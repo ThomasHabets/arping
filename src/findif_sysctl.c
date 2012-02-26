@@ -180,7 +180,7 @@ arping_lookupdev(uint32_t srcip,
                         if (if_addr->sin_family != AF_INET) {
                                 continue;
                         }
-                        
+
                         if ((dstip & if_nmsk->sin_addr.s_addr)
                             != (if_addr->sin_addr.s_addr
                                 & if_nmsk->sin_addr.s_addr)) {

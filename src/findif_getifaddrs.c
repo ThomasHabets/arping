@@ -61,6 +61,11 @@ arping_lookupdev(uint32_t srcip,
         for (cur = ifa; cur; cur = cur->ifa_next) {
                 in_addr_t addr, mask;
 
+                if (!cur->ifa_addr
+                    || !cur->ifa_netmask
+                    || !cur->ifa_name) {
+                        continue;
+                }
                 if (cur->ifa_addr->sa_family != AF_INET) {
                         continue;
                 }
@@ -82,6 +87,9 @@ arping_lookupdev(uint32_t srcip,
         }
         if (match_count) {
                 ret = ifname;
+                if (verbose) {
+                        printf("Autodetected interface %s\n", ret);
+                }
         } else {
                 if (verbose) {
                         printf("Failed to find iface using getifaddrs().\n");

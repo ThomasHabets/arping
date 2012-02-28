@@ -61,6 +61,9 @@ arping_lookupdev(uint32_t srcip,
         for (cur = ifa; cur; cur = cur->ifa_next) {
                 in_addr_t addr, mask;
 
+                if (!(cur->ifa_flags & IFF_UP)) {
+                        continue;
+                }
                 if (!cur->ifa_addr
                     || !cur->ifa_netmask
                     || !cur->ifa_name) {

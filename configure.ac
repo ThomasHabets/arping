@@ -16,6 +16,7 @@ AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
 # Checks for libraries.
+AC_CHECK_LIB([m], [sqrt])
 AC_CHECK_LIB([socket], [socket])
 AC_CHECK_LIB([nsl], [gethostbyname])
 AC_CHECK_LIB([rt], [clock_gettime])

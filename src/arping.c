@@ -855,7 +855,7 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 
 	       if (trydispatch) {
 		       int ret;
-		       if (1 != (ret = pcap_dispatch(pcap, 1,
+		       if (1 != (ret = pcap_dispatch(pcap, 0,
 						     func,
 						     NULL))) {
 			       /* rest, so we don't take 100% CPU... mostly
@@ -1331,7 +1331,7 @@ int main(int argc, char **argv)
                        "unanswered (%d extra)\n",
                        target,numsent,numrecvd,
                        (succ < 0.0) ? 0.0 : succ,
-                       (succ < 0.0) ? (numrecvd - numsent): 0); 
+                       (succ < 0.0) ? (numrecvd - numsent): 0);
 	}
 
         if (finddup) {

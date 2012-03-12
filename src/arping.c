@@ -150,6 +150,11 @@ static unsigned int numsent = 0;     /* packets sent */
 static unsigned int numrecvd = 0;    /* packets received */
 static unsigned int numdots = 0;     /* dots that should be printed */
 
+static double stats_min_time = -1;
+static double stats_max_time = -1;
+static double stats_total_time = 0;
+static double stats_total_sq_time = 0;
+
 /* RAWRAW is RAW|RRAW */
 static enum { NORMAL,      /* normal output */
               QUIET,       /* No output. -q */
@@ -403,6 +408,31 @@ static int get_mac_addr(const char *in,
 }
 
 /**
+ *
+ */
+static void
+update_stats(double sample)
+{
+        if (stats_min_time < 0 || sample < stats_min_time) {
+                stats_min_time = sample;
+        }
+        if (sample > stats_max_time) {
+                stats_max_time = sample;
+        }
+        stats_total_time += sample;
+        stats_total_sq_time += sample * sample;
+}
+
+/**
+ *
+ */
+static double
+timespec2dbl(const struct timespec *tv)
+{
+        return tv->tv_sec + (double)tv->tv_nsec / 1000000000;
+}
+
+/**
  * max size of buffer is intsize + 1 + intsize + 4 = 70 bytes or so
  *
  * Still, I'm using at least 128bytes below
@@ -415,8 +445,8 @@ static char *ts2str(const struct timespec *tv, const struct timespec *tv2,
 	double f,f2;
 	int exp = 0;
 
-	f = tv->tv_sec + (double)tv->tv_nsec / 1000000000;
-	f2 = tv2->tv_sec + (double)tv2->tv_nsec / 1000000000;
+        f = timespec2dbl(tv);
+        f2 = timespec2dbl(tv2);
 	f = (f2 - f) * 1000000000;
 	while (f > 1000) {
 		exp += 3;
@@ -600,6 +630,8 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 			return;
 		}
 		if (dstip == ip) {
+                        update_stats(timespec2dbl(&arrival)
+                                     - timespec2dbl(&lastpacketsent));
 			switch(display) {
 			case DOT:
 				numdots++;
@@ -623,7 +655,8 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 				printf(" time=%s",
                                        ts2str(&lastpacketsent,
                                               &arrival,buf));
-				break; }
+                                break;
+                        }
 			case QUIET:
 				break;
 			case RAWRAW:
@@ -704,6 +737,8 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 				return;
 			}
 		}
+                update_stats(timespec2dbl(&arrival)
+                             - timespec2dbl(&lastpacketsent));
 		switch(display) {
 		case QUIET:
 			break;
@@ -1332,6 +1367,17 @@ int main(int argc, char **argv)
                        target,numsent,numrecvd,
                        (succ < 0.0) ? 0.0 : succ,
                        (succ < 0.0) ? (numrecvd - numsent): 0);
+                if (numrecvd) {
+                        double avg = stats_total_time / numrecvd;
+                        printf("rtt min/avg/max/std-dev = "
+                               "%.3f/%.3f/%.3f/%.3f ms",
+                               1000*stats_min_time,
+                               1000*avg,
+                               1000*stats_max_time,
+                               1000*sqrt(stats_total_sq_time/numrecvd
+                                         -avg*avg));
+                }
+                printf("\n");
 	}
 
         if (finddup) {

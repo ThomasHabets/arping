@@ -890,7 +890,7 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 
 	       if (trydispatch) {
 		       int ret;
-		       if (1 != (ret = pcap_dispatch(pcap, 0,
+		       if (1 != (ret = pcap_dispatch(pcap, -1,
 						     func,
 						     NULL))) {
 			       /* rest, so we don't take 100% CPU... mostly

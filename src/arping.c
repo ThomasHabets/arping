@@ -37,6 +37,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <poll.h>
 
 #if HAVE_UNISTD_H
@@ -87,6 +88,8 @@
 #include <net/bpf.h>
 #endif
 #include <pcap.h>
+
+#include "arping.h"
 
 #ifndef ETH_ALEN
 #define ETH_ALEN 6

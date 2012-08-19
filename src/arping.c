@@ -851,7 +851,7 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
                 * it here */
                if ((ts.tv_sec > packetwait / 1000000)
                    || ((ts.tv_sec == packetwait / 1000000)
-                       && (ts.tv_nsec > packetwait % 1000000))) {
+                       && (ts.tv_nsec/1000 > packetwait % 1000000))) {
 		       ts.tv_sec = 0;
 		       ts.tv_nsec = 1;
                        done = 1;
@@ -1098,7 +1098,7 @@ int main(int argc, char **argv)
                 clock_getres(CLOCK_MONOTONIC, &ts);
                 printf("clock_getres() = %ld %ld\n",
                        (long)ts.tv_sec, (long)ts.tv_nsec);
-#else 
+#else
                 printf("Using gettimeofday() for time measurements\n");
 #endif
         }

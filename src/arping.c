@@ -809,6 +809,7 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
        struct timespec endtime;
        char done = 0;
        int fd;
+       int old_received;
 
        if (verbose > 3) {
                printf("arping: receiving packets...\n");
@@ -820,6 +821,7 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
        fixup_timespec(&endtime);
 
        fd = pcap_get_selectable_fd(pcap);
+       old_received = numrecvd;
 
        for (;!done;) {
 	       int trydispatch = 0;
@@ -874,6 +876,11 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
                        r = select(fd + 1, &fds, NULL, NULL, &tv);
 		       switch (r) {
 		       case 0: /* timeout */
+                               if (display == NORMAL) {
+                                       if (numrecvd == old_received) {
+                                               printf("Timeout\n");
+                                       }
+                               }
 			       done = 1;
 			       break;
 		       case -1: /* error */

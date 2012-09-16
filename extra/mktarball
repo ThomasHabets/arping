@@ -1,0 +1,21 @@
+#!/bin/sh
+
+set -e
+
+VERSION="$1"
+
+if [ "$VERSION" == "" ]; then
+    echo "Usage: $0 <version>"
+    echo
+    echo "  Example:   $0 arping-2.11"
+    exit 1
+fi
+
+if [ "$VERSION" == "latest" ]; then
+    VERSION="$(git tag | tail -1)"
+fi
+
+OUTPUT="$VERSION.tar.gz"
+echo "Writing $OUTPUT"
+git archive --format=tar --prefix="$VERSION/" "$VERSION" \
+    | gzip -9 > "$OUTPUT"

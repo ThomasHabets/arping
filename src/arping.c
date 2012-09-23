@@ -15,7 +15,7 @@
  *
  */
 /*
- *  Copyright (C) 2000-2014 Thomas Habets <thomas@habets.se>
+ *  Copyright (C) 2000-2015 Thomas Habets <thomas@habets.se>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -143,7 +143,7 @@ static char *target = "huh? bug in arping?";
  * Ping IP mode:   cmdline target
  * Ping MAC mode:  255.255.255.255, override with -T
  */
-static uint32_t dstip;
+uint32_t dstip;
 
 /*
  * Ping IP mode:   ethxmas, override with -t
@@ -151,7 +151,7 @@ static uint32_t dstip;
  */
 static uint8_t dstmac[ETH_ALEN];
 
-static uint32_t srcip;            /* autodetected, override with -S/-b/-0 */
+uint32_t srcip;                   /* autodetected, override with -S/-b/-0 */
 static uint8_t srcmac[ETH_ALEN];  /* autodetected, override with -s */
 
 static int16_t vlan_tag = -1; /* 802.1Q tag to add to packets. -V */
@@ -168,8 +168,8 @@ static int finddup = 0;              /* finddup mode. -d */
 static int dupfound = 0;             /* set to 1 if dup found */
 static char lastreplymac[ETH_ALEN];  /* if last different from this then dup */
 
-static unsigned int numsent = 0;            /* packets sent */
-static unsigned int numrecvd = 0;           /* packets received */
+unsigned int numsent = 0;                   /* packets sent */
+unsigned int numrecvd = 0;                  /* packets received */
 static unsigned int max_replies = UINT_MAX; /* exit after -C replies */
 static unsigned int numdots = 0;            /* dots that should be printed */
 static const char* timestamp_type = NULL;   /* Incoming packet measurement ts type (-m) */
@@ -960,7 +960,7 @@ pingip_send()
  * \param h       packet metadata
  * \param packet  packet data
  */
-static void
+void
 pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 {
         const unsigned char *pkt_srcmac;
@@ -1095,7 +1095,7 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
  * \param h       packet metadata
  * \param packet  packet data
  */
-static void
+void
 pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 {
         const unsigned char *pkt_dstmac;
@@ -1346,7 +1346,8 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 /**
  *
  */
-int main(int argc, char **argv)
+int
+arping_main(int argc, char **argv)
 {
 	char ebuf[LIBNET_ERRBUF_SIZE + PCAP_ERRBUF_SIZE];
 	char *cp;

@@ -3,6 +3,11 @@
 include $(top_srcdir)/Makefile.am.common
 
 sbin_PROGRAMS = arping
-arping_SOURCES = arping.c unix.c
+arping_SOURCES = arping.c arping_main.c unix.c
 
 arping_LDADD = $(LIBOBJS)
+
+TESTS=arping_test
+check_PROGRAMS=arping_test
+arping_test_SOURCES=arping.c arping_test.c unix.c mock_libpcap.c findif_linux.c
+arping_test_LDADD=-lcheck -lpthread

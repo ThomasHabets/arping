@@ -25,9 +25,26 @@
 #include <inttypes.h>
 #endif
 
+/* Forward declarations */
+struct pcap_pkthdr;
+
 extern int verbose;
+extern uint32_t srcip;
+extern uint32_t dstip;
+extern unsigned int numrecvd;
+extern unsigned int numsent;
+
+const char *
+arping_lookupdev(uint32_t srcip, uint32_t dstip, char *ebuf);
 void do_signal_init();
 void do_libnet_init(const char *ifname);
 void sigint(int);
 const char *arping_lookupdev_default(uint32_t srcip, uint32_t dstip,
 				     char *ebuf);
+int arping_main(int argc, char **argv);
+
+
+void
+pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet);
+void
+pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet);

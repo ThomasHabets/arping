@@ -17,5 +17,19 @@ fi
 
 OUTPUT="$VERSION.tar.gz"
 echo "Writing $OUTPUT"
-git archive --format=tar --prefix="$VERSION/" "$VERSION" \
-    | gzip -9 > "$OUTPUT"
+
+GITDIR="$(realpath .)"
+TMPDIR="$(mktemp -d)"
+
+(
+    cd "$TMPDIR"
+    mkdir "$VERSION"
+    cd "$VERSION"
+    git init
+    git fetch --tags "$GITDIR"
+    git checkout "$VERSION"
+    rm -fr .git
+    autoreconf -i
+    cd ..
+    tar cfz - "$VERSION" > "$GITDIR/$OUTPUT"
+)

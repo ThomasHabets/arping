@@ -33,3 +33,4 @@ TMPDIR="$(mktemp -d)"
     cd ..
     tar cfz - "$VERSION" > "$GITDIR/$OUTPUT"
 )
+rm -fr -- "$TMPDIR"

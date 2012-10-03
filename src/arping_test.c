@@ -333,6 +333,48 @@ START_TEST(pingip_interesting_packet)
 } END_TEST
 
 /**
+ * Test that -A functionality works.
+ */
+START_TEST(pingip_flag_A)
+{
+        struct pcap_pkthdr pkthdr;
+        int prev_numrecvd = numrecvd;
+        addr_must_be_same = 1;
+
+        dstip = htonl(0x12345678);
+
+        uint8_t* packet = mkpacket(&pkthdr);
+
+        struct captured_output *sout;
+
+        // Wrong MAC.
+        sout = capture(1);
+        pingip_recv(NULL, &pkthdr, packet);
+        stop_capture(sout);
+        fail_unless(numrecvd == prev_numrecvd,
+                    "numrecvd changed");
+        fail_unless(!strcmp(sout->buffer, ""),
+                    sout->buffer);
+        uncapture(sout);
+
+        // Right MAC.
+        const char* correct =
+                "60 bytes from 77:88:99:aa:bb:cc (18.52.86.120): "
+                "index=0 time=";
+        memcpy(dstmac, packet + LIBNET_ETH_H + LIBNET_ARP_H, 6);
+        sout = capture(1);
+        pingip_recv(NULL, &pkthdr, packet);
+        stop_capture(sout);
+        fail_unless(numrecvd == prev_numrecvd + 1,
+                    "numrecvd not incremented");
+        fail_unless(!strncmp(sout->buffer, correct, strlen(correct)),
+                    sout->buffer);
+        uncapture(sout);
+
+        free(packet);
+} END_TEST
+
+/**
  * Set up test suite.
  */
 static Suite *
@@ -346,6 +388,7 @@ arping_suite (void)
         tcase_add_test(tc_core, test_mkpacket);
         tcase_add_test(tc_core, pingip_uninteresting_packet);
         tcase_add_test(tc_core, pingip_interesting_packet);
+        tcase_add_test(tc_core, pingip_flag_A);
         suite_add_tcase(s, tc_core);
         return s;
 }

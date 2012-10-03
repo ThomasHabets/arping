@@ -33,6 +33,8 @@ extern uint32_t srcip;
 extern uint32_t dstip;
 extern unsigned int numrecvd;
 extern unsigned int numsent;
+extern int addr_must_be_same;
+extern uint8_t dstmac[];
 
 const char *
 arping_lookupdev(uint32_t srcip, uint32_t dstip, char *ebuf);

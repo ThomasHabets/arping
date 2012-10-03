@@ -135,7 +135,7 @@ uint32_t dstip;
  * Ping IP mode:   ethxmas, override with -t
  * Ping MAC mode:  cmdline target
  */
-static uint8_t dstmac[ETH_ALEN];
+uint8_t dstmac[ETH_ALEN];
 
 uint32_t srcip;            /* autodetected, override with -S/-b/-0 */
 static uint8_t srcmac[ETH_ALEN];  /* autodetected, override with -s */
@@ -143,7 +143,7 @@ static uint8_t srcmac[ETH_ALEN];  /* autodetected, override with -s */
 static int beep = 0;                 /* beep when reply is received. -a */
 static int reverse_beep = 0;         /* beep when expected reply absent. -e */
 static int alsototal = 0;            /* print sent as well as received. -u */
-static int addr_must_be_same = 0;    /* -A */
+int addr_must_be_same = 0;    /* -A */
 
 static int finddup = 0;              /* finddup mode. -d */
 static int dupfound = 0;             /* set to 1 if dup found */

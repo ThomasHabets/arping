@@ -618,15 +618,29 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 
         getclock(&arrival);
 
+        // Short packet.
+        if (h->caplen < LIBNET_ETH_H + LIBNET_ARP_H + 2*(ETH_ALEN + 4)) {
+                return;
+        }
+
 	heth = (void*)packet;
 	harp = (void*)((char*)heth + LIBNET_ETH_H);
+
+        // Wrong length of hardware address.
+        if (harp->ar_hln != ETH_ALEN) {
+                return;
+        }
+
+        // Wrong length of protocol address.
+        if (harp->ar_pln != 4) {
+                return;
+        }
 
 	if ((htons(harp->ar_op) == ARPOP_REPLY)
 	    && (htons(harp->ar_pro) == ETHERTYPE_IP)
 	    && (htons(harp->ar_hrd) == ARPHRD_ETHER)) {
 		uint32_t ip;
-		memcpy(&ip, (char*)harp + harp->ar_hln
-		       + LIBNET_ARP_H,4);
+                memcpy(&ip, (char*)harp + harp->ar_hln + LIBNET_ARP_H, 4);
 		if (addr_must_be_same
 		    && (memcmp((u_char*)harp+sizeof(struct libnet_arp_hdr),
 			       dstmac, ETH_ALEN))) {
@@ -644,7 +658,7 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 			case NORMAL: {
 				char buf[128];
 				printf("%d bytes from ", h->len);
-				for (c = 0; c < 6; c++) {
+                                for (c = 0; c < ETH_ALEN; c++) {
 					printf("%.2x%c", heth->_802_3_shost[c],
 					       (c<5)?':':' ');
 				}

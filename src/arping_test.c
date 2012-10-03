@@ -3,6 +3,8 @@
 #include<stdlib.h>
 #include<errno.h>
 #include<fcntl.h>
+#include<inttypes.h>
+#include<libnet.h>
 
 #include<check.h>
 
@@ -116,57 +118,189 @@ uncapture(struct captured_output* out)
         free(out);
 }
 
+static uint8_t*
+mkpacket(struct pcap_pkthdr* pkthdr)
+{
+        uint8_t* packet = calloc(1, 1500);
+        fail_if(packet == NULL);
+
+        struct libnet_802_3_hdr* heth;
+        struct libnet_arp_hdr* harp;
+
+        // Set up ethernet header
+        heth = (void*)packet;
+        memcpy(heth->_802_3_dhost, "\x11\x22\x33\x44\x55\x66", 6);
+        memcpy(heth->_802_3_shost, "\x77\x88\x99\xaa\xbb\xcc", 6);
+        heth->_802_3_len = 0;  // FIXME: is this correct?
+
+        // Set up ARP header.
+        harp = (void*)((char*)heth + LIBNET_ETH_H);
+        harp->ar_hln = 6;
+        harp->ar_pln = 4;
+        harp->ar_hrd = htons(ARPHRD_ETHER);
+        harp->ar_op = htons(ARPOP_REPLY);
+        harp->ar_pro = htons(ETHERTYPE_IP);
+
+        memcpy((char*)harp + LIBNET_ARP_H, heth->_802_3_shost, 6);
+        memcpy((char*)harp + LIBNET_ARP_H + harp->ar_hln, &dstip, 4);
+
+        memcpy((char*)harp + LIBNET_ARP_H
+               + harp->ar_hln
+               + harp->ar_pln, heth->_802_3_dhost, 6);
+        memcpy((char*)harp + LIBNET_ARP_H
+               + harp->ar_hln
+               + harp->ar_pln
+               + harp->ar_hln, &srcip, 4);
+
+        pkthdr->ts.tv_sec = time(NULL);
+        pkthdr->ts.tv_usec = 0;
+        pkthdr->len = 60;
+        pkthdr->caplen = 60;
+
+        return packet;
+}
+
+static void
+dump_packet(uint8_t* packet, int len)
+{
+        int c;
+        for (c = 0; c < len; c++) {
+                fprintf(stderr, "0x%.2x, ", (int)packet[c]);
+                if (!((c+1) % 10)) {
+                        fprintf(stderr, "\n");
+                }
+        }
+        fprintf(stderr, "\n");
+}
+/**
+ * Test that test packet is build properly.
+ */
+START_TEST(test_mkpacket)
+{
+        uint8_t correct_packet[] = {
+                0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 
+                0xbb, 0xcc, 0x00, 0x00, 0x00, 0x01, 0x08, 0x00, 0x06, 0x04, 
+                0x00, 0x02, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0x12, 0x34, 
+                0x56, 0x78, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x87, 0x65, 
+                0x43, 0x21, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+        };
+        struct pcap_pkthdr pkthdr;
+        dstip = htonl(0x12345678);
+        srcip = htonl(0x87654321);
+
+        uint8_t* packet = mkpacket(&pkthdr);
+        fail_if(packet == NULL);
+        fail_unless(pkthdr.caplen == 60);
+        if (memcmp(packet, correct_packet, pkthdr.caplen)) {
+                dump_packet(packet, pkthdr.caplen);
+        }
+        fail_unless(!memcmp(packet, correct_packet, pkthdr.caplen));
+} END_TEST
+
 /**
  * Test that a bogus packet is ignored.
  */
-START_TEST(uninteresting_packet)
+START_TEST(pingip_uninteresting_packet)
 {
         struct pcap_pkthdr pkthdr;
-        uint8_t packet[128];
-
+        uint8_t *packet;
         int prev_numrecvd = numrecvd;
+        struct libnet_arp_hdr* harp;
+        struct captured_output *sout;
 
-        struct captured_output *sout = capture(1);
+        // Completely broken packet.
+        packet = calloc(1, 1500);
+        sout = capture(1);
         pingip_recv(NULL, &pkthdr, packet);
         stop_capture(sout);
         fail_unless(prev_numrecvd == numrecvd);
         fail_unless(strlen(sout->buffer) == 0);
         uncapture(sout);
+        free(packet);
+
+        // Not ETHERTYPE_IP.
+        packet = mkpacket(&pkthdr);
+        harp = (void*)((char*)packet + LIBNET_ETH_H);
+        harp->ar_pro = 0;
+        sout = capture(1);
+        pingip_recv(NULL, &pkthdr, packet);
+        stop_capture(sout);
+        fail_unless(prev_numrecvd == numrecvd);
+        fail_unless(strlen(sout->buffer) == 0);
+        uncapture(sout);
+        free(packet);
+
+        // Not ARPHRD_ETHER
+        packet = mkpacket(&pkthdr);
+        harp = (void*)((char*)packet + LIBNET_ETH_H);
+        harp->ar_hrd = 0;
+        sout = capture(1);
+        pingip_recv(NULL, &pkthdr, packet);
+        stop_capture(sout);
+        fail_unless(prev_numrecvd == numrecvd);
+        fail_unless(strlen(sout->buffer) == 0);
+        uncapture(sout);
+        free(packet);
+
+        // Wrong dstip
+        uint32_t wrongip = 123;
+        packet = mkpacket(&pkthdr);
+        harp = (void*)((char*)packet + LIBNET_ETH_H);
+        memcpy((char*)harp + harp->ar_hln + LIBNET_ARP_H, &wrongip, 4);
+        sout = capture(1);
+        pingip_recv(NULL, &pkthdr, packet);
+        stop_capture(sout);
+        fail_unless(prev_numrecvd == numrecvd);
+        fail_unless(strlen(sout->buffer) == 0);
+        uncapture(sout);
+        free(packet);
+
+        // Short packet.
+        packet = mkpacket(&pkthdr);
+        pkthdr.caplen = pkthdr.len = 41;
+        sout = capture(1);
+        pingip_recv(NULL, &pkthdr, packet);
+        stop_capture(sout);
+        fail_unless(prev_numrecvd == numrecvd);
+        fail_unless(strlen(sout->buffer) == 0);
+        uncapture(sout);
+        free(packet);
+
+        // Wrong length of hardware address.
+        packet = mkpacket(&pkthdr);
+        ((struct libnet_arp_hdr*)((char*)packet + LIBNET_ETH_H))->ar_hln = 4;
+        sout = capture(1);
+        pingip_recv(NULL, &pkthdr, packet);
+        stop_capture(sout);
+        fail_unless(prev_numrecvd == numrecvd);
+        fail_unless(strlen(sout->buffer) == 0);
+        uncapture(sout);
+        free(packet);
+
+        // Wrong length of protocol address.
+        packet = mkpacket(&pkthdr);
+        ((struct libnet_arp_hdr*)((char*)packet + LIBNET_ETH_H))->ar_pln = 6;
+        sout = capture(1);
+        pingip_recv(NULL, &pkthdr, packet);
+        stop_capture(sout);
+        fail_unless(prev_numrecvd == numrecvd);
+        fail_unless(strlen(sout->buffer) == 0);
+        uncapture(sout);
+        free(packet);
 } END_TEST
 
 /**
  * Test that a matching packet is successfully handled.
  */
-START_TEST(interesting_packet)
+START_TEST(pingip_interesting_packet)
 {
         struct pcap_pkthdr pkthdr;
-        uint8_t packet[] = {
-                0x11, 0x22, 0x33, 0x44, 0x55, 0x66, // dst
-                0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, // src
-                0x00, 0x00, // type
-                0x00, 0x01, // hardware
-                0x08, 0x00, // protocol
-                0x06, 0x04, // lengths
-                0x00, 0x02, // operator
-
-                0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, // sender
-                0x12, 0x34, 0x56, 0x78, // sender protocol address
-
-                0x11, 0x22, 0x33, 0x44, 0x55, 0x66, // receiver
-                0x87, 0x65, 0x43, 0x21, // receiver protocol address
-
-                0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x6f, 0xa8, 0x58, 0x63,
-        };
         int prev_numrecvd = numrecvd;
 
         dstip = htonl(0x12345678);
 
-        pkthdr.ts.tv_sec = time(NULL);
-        pkthdr.ts.tv_usec = 0;
-        pkthdr.len = 60;
-        pkthdr.caplen = 60;
+        uint8_t* packet = mkpacket(&pkthdr);
 
         struct captured_output *sout;
 
@@ -179,7 +313,8 @@ START_TEST(interesting_packet)
         stop_capture(sout);
         fail_unless(numrecvd == prev_numrecvd + 1,
                     "numrecvd not incremented");
-        fail_unless(!strncmp(sout->buffer, correct0, strlen(correct0)));
+        fail_unless(!strncmp(sout->buffer, correct0, strlen(correct0)),
+                    sout->buffer);
         uncapture(sout);
 
         // Second ping.
@@ -193,6 +328,8 @@ START_TEST(interesting_packet)
                     "numrecvd not incremented second time");
         fail_unless(!strncmp(sout->buffer, correct1, strlen(correct1)));
         uncapture(sout);
+
+        free(packet);
 } END_TEST
 
 /**
@@ -206,9 +343,10 @@ arping_suite (void)
         /* Core test case */
         TCase *tc_core = tcase_create ("Receiving");
         //tcase_add_checked_fixture (tc_core, setup, teardown);
-        tcase_add_test (tc_core, interesting_packet);
-        tcase_add_test (tc_core, uninteresting_packet);
-        suite_add_tcase (s, tc_core);
+        tcase_add_test(tc_core, test_mkpacket);
+        tcase_add_test(tc_core, pingip_uninteresting_packet);
+        tcase_add_test(tc_core, pingip_interesting_packet);
+        suite_add_tcase(s, tc_core);
         return s;
 }
 

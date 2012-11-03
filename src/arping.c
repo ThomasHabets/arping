@@ -176,6 +176,41 @@ int verbose = 0;  /* Increase with -v */
 static volatile sig_atomic_t time_to_die = 0;
 
 /**
+ * Some stupid OSs (Solaris) think it's a good idea to put network
+ * devices in /dev and then play musical chairs with them.
+ *
+ * Since libpcap doesn't seem to have a workaround for that, here's arpings
+ * workaround.
+ *
+ * E.g. if the network interface is called net0, pcap will fail because it
+ * fails to open /dev/net, because it's a directory.
+ */
+static pcap_t*
+do_pcap_open_live(const char *device, int snaplen,
+                  int promisc, int to_ms, char *errbuf)
+{
+        pcap_t* ret;
+        char buf[MAXPATHLEN];
+
+        if ((ret = pcap_open_live(device, snaplen, promisc, to_ms, errbuf))) {
+                return ret;
+        }
+
+        snprintf(buf, sizeof(buf), "/dev/%s", device);
+        if ((ret = pcap_open_live(buf, snaplen, promisc, to_ms, errbuf))) {
+                return ret;
+        }
+
+        snprintf(buf, sizeof(buf), "/dev/net/%s", device);
+        if ((ret = pcap_open_live(buf, snaplen, promisc, to_ms, errbuf))) {
+                return ret;
+        }
+
+        /* Call original again to reset the error message. */
+        return pcap_open_live(device, snaplen, promisc, to_ms, errbuf);
+}
+
+/**
  *
  */
 static void
@@ -1250,7 +1285,7 @@ int main(int argc, char **argv)
 	/*
 	 * pcap init
 	 */
-	if (!(pcap = pcap_open_live((char*)ifname, 100, promisc, 10, ebuf))) {
+        if (!(pcap = do_pcap_open_live(ifname, 100, promisc, 10, ebuf))) {
 		fprintf(stderr, "arping: pcap_open_live(): %s\n",ebuf);
 		exit(1);
 	}

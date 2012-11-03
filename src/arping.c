@@ -1259,7 +1259,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	if (verbose > 1) {
-		printf("pcap_get_selectable(): %d\n",
+		printf("pcap_get_selectable_fd(): %d\n",
 		       pcap_get_selectable_fd(pcap));
 	}
 

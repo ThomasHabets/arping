@@ -888,7 +888,7 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 				       done = 1;
 				       sigint(0);
 				       fprintf(stderr,
-					       "arping: poll() failed: %s\n",
+					       "arping: select() failed: %s\n",
 					       strerror(errno));
 			       }
 			       break;
@@ -910,7 +910,7 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 			       /* weird is normal on bsd :) */
 			       if (verbose > 3) {
 				       fprintf(stderr,
-					       "arping: poll says ok, but "
+					       "arping: select says ok, but "
 					       "pcap_dispatch=%d!\n",
 					       ret);
 			       }

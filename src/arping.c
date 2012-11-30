@@ -144,6 +144,7 @@ static int beep = 0;                 /* beep when reply is received. -a */
 static int reverse_beep = 0;         /* beep when expected reply absent. -e */
 static int alsototal = 0;            /* print sent as well as received. -u */
 static int addr_must_be_same = 0;    /* -A */
+static int unsolicited = 0;          /* -U */
 
 static int finddup = 0;              /* finddup mode. -d */
 static int dupfound = 0;             /* set to 1 if dup found */
@@ -339,6 +340,7 @@ extended_usage()
 	       "           \"own\" the MAC address you are using.\n"
 	       "    -u     Show index=received/sent instead  of  just  index=received  when\n"
 	       "           pinging MACs.\n"
+	       "    -U     Send unsolicited ARP.\n"
 	       "    -v     Verbose output. Use twice for more messages.\n"
 	       "    -w     Time to wait between pings, in microseconds.\n");
         printf("Report bugs to: thomas@habets.se\n"
@@ -354,7 +356,7 @@ standard_usage()
 {
 	printf("ARPing %s, by Thomas Habets <thomas@habets.se>\n",
 	       version);
-        printf("usage: arping [ -0aAbdDeFpqrRuv ] [ -w <us> ] "
+        printf("usage: arping [ -0aAbdDeFpqrRuUv ] [ -w <us> ] "
                "[ -S <host/ip> ]\n"
                "              "
                "[ -T <host/ip ] "
@@ -598,7 +600,7 @@ pingip_send()
 					  ARPOP_REQUEST,
 					  srcmac,
 					  (uint8_t*)&srcip,
-                                          (uint8_t*)ethnull,
+					  unsolicited ? (uint8_t*)ethxmas : (uint8_t*)ethnull,
 					  (uint8_t*)&dstip,
 					  NULL,
 					  0,
@@ -987,7 +989,7 @@ int main(int argc, char **argv)
 	dstip = 0xffffffff;
 	memcpy(dstmac, ethxmas, ETH_ALEN);
 
-	while (EOF!=(c=getopt(argc,argv,"0aAbBc:dDeFhi:I:pqrRs:S:t:T:uvw:"))) {
+	while (EOF!=(c=getopt(argc,argv,"0aAbBc:dDeFhi:I:pqrRs:S:t:T:uUvw:"))) {
 		switch(c) {
 		case '0':
 			srcip = 0;
@@ -1115,6 +1117,14 @@ int main(int argc, char **argv)
 			break;
 		case 'u':
 			alsototal = 1;
+			break;
+		case 'U':
+			if (mode == PINGMAC) {
+				fprintf(stderr, "arping: -U can only be used "
+					"in IP ping mode\n");
+				exit(1);
+			}
+			unsolicited = 1;
 			break;
 		case 'v':
 			verbose++;

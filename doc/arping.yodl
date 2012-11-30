@@ -84,6 +84,14 @@ mancommand(.sp)
 	$ arping -S <IP-B> -s <MAC-B> -p <MAC-A>
     dit(-u) Show index=received/sent instead of just index=received when
 	pinging MACs.
+    dit(-U) Send unsolicited ARP. This sets the destination MAC address in
+    the ARP frame to the broadcast address. Unsolicited ARP is used
+    to update the neighbours' ARP chaches.
+
+	em(Example):
+        mancommand(.nf)
+        mancommand(.sp)
+	$ arping -i <interface> -U <interface IP>
     dit(-v) Verbose output. Use twice for more messages.
     dit(-w) Time to wait between pings, in microseconds.
 enddit()

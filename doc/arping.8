@@ -5,7 +5,7 @@
 arping \- sends arp and/or ip pings to a given host
 .PP 
 .SH "SYNOPSIS"
-\fBarping\fP [\-abdDeFhpqrRd0uv] [\-S \fIhost/ip\fP] [\-T \fIhost/ip\fP] [\-s \fIMAC\fP]    [\-t \fIMAC\fP] [\-c \fIcount\fP] [\-i \fIinterface\fP] [ \-w \fIus\fP ] <\fIhost\fP | \-B>
+\fBarping\fP [\-0aAbBdDeFhpqrRuUv] [\-S \fIhost/ip\fP] [\-T \fIhost/ip\fP] [\-s \fIMAC\fP]    [\-t \fIMAC\fP] [\-c \fIcount\fP] [\-i \fIinterface\fP] [ \-w \fIus\fP ] <\fIhost\fP | \-B>
 .PP 
 \fBarping\fP \-\-help
 .PP 
@@ -14,24 +14,24 @@ The \fIarping\fP utility sends \fBARP\fP and/or \fBICMP\fP requests to the speci
 .PP 
 One request is sent each second\&.
 .PP 
-When pinging an IP an ARP who-has query is sent\&. When pinging a MAC
+When pinging an IP an ARP who\-has query is sent\&. When pinging a MAC
 address a directed broadcast ICMP Echo request is sent\&. For more
 technical explaination and an FAQ, see the README file\&.
 .PP 
 \fINote on timing\fP
 .PP 
 ARP packets are usually replied to (on a LAN) so fast that the OS task
-scheduler can\&'t keep up to get exact enough timing\&.
+scheduler can\(cq\&t keep up to get exact enough timing\&.
 On an idle system the roundtrip times will be pretty much accurate, but
 with more load the timing gets less exact\&.
 .PP 
-To get more exact timing on a non-idle system, re-nice arping to \-15 or so\&.
+To get more exact timing on a non\-idle system, re\-nice arping to \-15 or so\&.
 .PP 
 # nice \-n \-15 arping foobar
 .PP 
 This is not just an issue with arping, it is with normal ping also
-(at least it is on my system)\&. But it doesn\&'t show up as much with ping
-since arping packets (when pinging IP) doesn\&'t traverse the IP stack when
+(at least it is on my system)\&. But it doesn\(cq\&t show up as much with ping
+since arping packets (when pinging IP) doesn\(cq\&t traverse the IP stack when
 received and are therefore replied to faster\&.
 .PP 
 .SH "OPTIONS"
@@ -42,18 +42,18 @@ Show extended help\&. Not quite as extensive as this manpage,
 but more than \-h\&.
 .IP "\-0"
 Use this option to ping with source IP address 0\&.0\&.0\&.0\&. Use this
-when you haven\&'t configured your interface yet\&.
-Note that this may get the MAC-ping unanswered\&.
+when you haven\(cq\&t configured your interface yet\&.
+Note that this may get the MAC\-ping unanswered\&.
 This is an alias for \-S 0\&.0\&.0\&.0\&.
 .IP "\-a"
 Audible ping\&.
 .IP "\-A"
 Only count addresses matching requested address (This *WILL*
 break most things you do\&. Only useful if you are arpinging many
-hosts at once\&. See arping-scan-net\&.sh for an example)\&.
+hosts at once\&. See arping\-scan\-net\&.sh for an example)\&.
 .IP "\-b"
 Like \-0 but source broadcast source address (255\&.255\&.255\&.255)\&.
-Note that this may get the arping unanswered since it\&'s not normal behavior
+Note that this may get the arping unanswered since it\(cq\&s not normal behavior
 for a host\&.
 .IP "\-B"
 Use instead of host if you want to address 255\&.255\&.255\&.255\&.
@@ -68,45 +68,54 @@ Like flood ping on a Cisco\&.
 .IP "\-e"
 Like \-a but beep when there is no reply\&.
 .IP "\-F"
-Don\&'t try to be smart about the interface name\&. Even if this
+Don\(cq\&t try to be smart about the interface name\&. Even if this
 switch is not given, \-i disables this smartness\&.
 .IP "\-h"
 Displays a help message and exits\&.
 .IP "\-i \fIinterface\fP"
-Don\&'t guess, use the specified interface\&.
+Don\(cq\&t guess, use the specified interface\&.
 .IP "\-p"
-Turn on promiscious mode on interface, use this if you don\&'t
-"own" the MAC address you are using\&.
+Turn on promiscious mode on interface, use this if you don\(cq\&t
+\(dq\&own\(dq\& the MAC address you are using\&.
 .IP "\-q"
 Does not display messages, except error messages\&.
 .IP "\-r"
 Raw output: only the MAC/IP address is displayed for each reply\&.
 .IP "\-R"
-Raw output: Like \-r but shows "the other one", can be combined with
+Raw output: Like \-r but shows \(dq\&the other one\(dq\&, can be combined with
 \-r\&.
 .IP "\-s \fIMAC\fP"
 Set source MAC address\&. You may need to use \-p with this\&.
 .IP "\-S \fIIP\fP"
 Like \-b and \-0 but with set source address\&.
 Note that this may get the arping unanswered if the target does not have
-routing to the IP\&. If you don\&'t own the IP you are using, you may need to turn
+routing to the IP\&. If you don\(cq\&t own the IP you are using, you may need to turn
 on promiscious mode on the interface (with \-p)\&. With this switch you can find
-out what IP-address a host has without taking an IP-address yourself\&.
+out what IP\-address a host has without taking an IP\-address yourself\&.
 .IP "\-t \fIMAC\fP"
 Set target MAC address to use when pinging IP address\&.
 .IP "\-T \fIIP\fP"
-Use \-T as target address when pinging MACs that won\&'t
+Use \-T as target address when pinging MACs that won\(cq\&t
 respond to a broadcast ping but perhaps to a directed broadcast\&.
 .IP 
 \fIExample\fP:
 .nf
 .sp
-To check the address of MAC-A, use knowledge of MAC-B and IP-B\&.
+To check the address of MAC\-A, use knowledge of MAC\-B and IP\-B\&.
 .IP 
-$ arping \-S <IP-B> \-s <MAC-B> \-p <MAC-A>
+$ arping \-S <IP\-B> \-s <MAC\-B> \-p <MAC\-A>
 .IP "\-u"
 Show index=received/sent instead of just index=received when
 pinging MACs\&.
+.IP "\-U"
+Send unsolicited ARP\&. This sets the destination MAC address in
+the ARP frame to the broadcast address\&. Unsolicited ARP is used
+to update the neighbours\(cq\& ARP caches\&.
+.IP 
+\fIExample\fP:
+.nf
+.sp
+$ arping \-i <interface> \-U <interface IP>
 .IP "\-v"
 Verbose output\&. Use twice for more messages\&.
 .IP "\-w"

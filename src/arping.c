@@ -37,6 +37,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <math.h>
 #include <poll.h>
 
@@ -191,7 +192,7 @@ do_pcap_open_live(const char *device, int snaplen,
                   int promisc, int to_ms, char *errbuf)
 {
         pcap_t* ret;
-        char buf[MAXPATHLEN];
+        char buf[PATH_MAX];
 
         if ((ret = pcap_open_live(device, snaplen, promisc, to_ms, errbuf))) {
                 return ret;

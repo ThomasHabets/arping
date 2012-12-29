@@ -4,15 +4,19 @@ set -e
 
 VERSION="$1"
 
-if [ "$VERSION" == "" ]; then
+if [ x"$VERSION" = x"" ]; then
     echo "Usage: $0 <version>"
     echo
     echo "  Example:   $0 arping-2.11"
     exit 1
 fi
 
-if [ "$VERSION" == "latest" ]; then
+if [ x"$VERSION" = x"latest" ]; then
     VERSION="$(git tag | tail -1)"
+fi
+
+if [ x"$VERSION" = x"HEAD" ]; then
+    VERSION="$(git describe)"
 fi
 
 OUTPUT="$VERSION.tar.gz"
@@ -26,6 +30,7 @@ TMPDIR="$(mktemp -d)"
     mkdir "$VERSION"
     cd "$VERSION"
     git init
+    git fetch "$GITDIR"
     git fetch --tags "$GITDIR"
     git checkout "$VERSION"
     rm -fr .git

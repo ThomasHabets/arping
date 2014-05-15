@@ -154,7 +154,7 @@ static char lastreplymac[ETH_ALEN];  /* if last different from this then dup */
 static unsigned int numsent = 0;     /* packets sent */
 static unsigned int numrecvd = 0;    /* packets received */
 static unsigned int numdots = 0;     /* dots that should be printed */
-static unsigned int maxcount = -1;   /* maximum number of packets received */
+static unsigned int maxcount_recv = UINT_MAX;   /* maximum number of packets received */
 
 static double stats_min_time = -1;
 static double stats_max_time = -1;
@@ -311,6 +311,8 @@ extended_usage()
 	       "    -B     Use instead of host if you want to address 255.255.255.255.\n"
 	       "    -c count\n"
 	       "           Only send count requests.\n"
+	       "    -C count\n"
+	       "           Only receive count requests.\n"
 	       "    -d     Find duplicate replies. Exit with 1 if there are "
                "answers from\n"
                "           two different MAC addresses.\n"
@@ -740,6 +742,7 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
                         memcpy(lastreplymac, heth->_802_3_shost, ETH_ALEN);
 
 			numrecvd++;
+			if(numrecvd >= maxcount_recv) exit(0);
 		}
 	}
 }
@@ -822,7 +825,7 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 			printf(beep?"\a\n":"\n");
 		}
 		numrecvd++;
-                if(numrecvd >= maxcount)exit(0);
+                if(numrecvd >= maxcount_recv) exit(0);
 	}
 }
 
@@ -973,6 +976,7 @@ int main(int argc, char **argv)
 	const char *ifname = NULL;
 	char *parm;
 	int c;
+	unsigned int maxcount = -1;
 	int dont_use_arping_lookupdev=0;
 	struct bpf_program bp;
 	pcap_t *pcap;
@@ -991,7 +995,7 @@ int main(int argc, char **argv)
 	dstip = 0xffffffff;
 	memcpy(dstmac, ethxmas, ETH_ALEN);
 
-	while (EOF!=(c=getopt(argc,argv,"0aAbBc:dDeFhi:I:pqrRs:S:t:T:uUvw:"))) {
+	while (EOF!=(c=getopt(argc,argv,"0aAbBc:C:dDeFhi:I:pqrRs:S:t:T:uUvw:"))) {
 		switch(c) {
 		case '0':
 			srcip = 0;
@@ -1013,6 +1017,9 @@ int main(int argc, char **argv)
 			break;
 		case 'c':
 			maxcount = atoi(optarg);
+			break;
+		case 'C':
+			maxcount_recv = atoi(optarg);
 			break;
 		case 'd':
 			finddup = 1;

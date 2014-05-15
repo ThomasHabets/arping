@@ -154,6 +154,7 @@ static char lastreplymac[ETH_ALEN];  /* if last different from this then dup */
 static unsigned int numsent = 0;     /* packets sent */
 static unsigned int numrecvd = 0;    /* packets received */
 static unsigned int numdots = 0;     /* dots that should be printed */
+static unsigned int maxcount = -1;   /* maximum number of packets received */
 
 static double stats_min_time = -1;
 static double stats_max_time = -1;
@@ -821,6 +822,7 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 			printf(beep?"\a\n":"\n");
 		}
 		numrecvd++;
+                if(numrecvd >= maxcount)exit(0);
 	}
 }
 
@@ -971,7 +973,6 @@ int main(int argc, char **argv)
 	const char *ifname = NULL;
 	char *parm;
 	int c;
-	unsigned int maxcount = -1;
 	int dont_use_arping_lookupdev=0;
 	struct bpf_program bp;
 	pcap_t *pcap;

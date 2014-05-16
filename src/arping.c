@@ -752,14 +752,14 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
                 fprintf(stderr, "arping: can't happen!\n");
         }
 
+        if (beep) {
+                printf("\a");
+        }
         switch (display) {
         case QUIET:
         case DOT:
                 break;
         default:
-                if (beep) {
-                        printf("\a");
-                }
                 printf("\n");
         }
         if (numrecvd) {

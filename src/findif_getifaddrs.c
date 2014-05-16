@@ -54,7 +54,7 @@ arping_lookupdev(uint32_t srcip,
 
         if (getifaddrs(&ifa)) {
                 if (verbose) {
-                        printf("getifaddrs(): %s\n", strerror(errno));
+                        printf("arping: getifaddrs(): %s\n", strerror(errno));
                 }
                 goto out;
         }
@@ -91,7 +91,7 @@ arping_lookupdev(uint32_t srcip,
         if (match_count) {
                 ret = ifname;
                 if (verbose) {
-                        printf("Autodetected interface %s\n", ret);
+                        printf("arping: Autodetected interface %s\n", ret);
                 }
         } else {
                 if (verbose) {

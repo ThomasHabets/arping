@@ -121,6 +121,9 @@ static const char *version = VERSION; /* from autoconf */
 
 static libnet_t *libnet = 0;
 
+/* Timestamp of last packet sent.
+ * Used for timing, and assumes that reply is due to most recent sent query.
+ */
 static struct timespec lastpacketsent;
 
 /* target string */
@@ -232,7 +235,7 @@ do_libnet_init(const char *ifname)
 {
 	char ebuf[LIBNET_ERRBUF_SIZE];
 	if (verbose > 1) {
-                printf("libnet_init(%s)\n", ifname ? ifname : "<null>");
+                printf("arping: libnet_init(%s)\n", ifname ? ifname : "<null>");
 	}
 	if (libnet) {
 		/* Probably going to switch interface from temp to real. */
@@ -286,6 +289,16 @@ getclock(struct timespec *ts)
         ts->tv_sec = tv.tv_sec;
         ts->tv_nsec = tv.tv_usec * 1000;
 #endif
+}
+
+/**
+ *
+ */
+static char*
+format_mac(unsigned char* mac, char* buf) {
+        sprintf(buf, "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
+                mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+        return buf;
 }
 
 /**
@@ -651,7 +664,7 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 	int c;
 
         if (verbose > 2) {
-		printf("arping: received response for ip ping\n");
+		printf("arping: received response for IP ping\n");
 	}
 
         getclock(&arrival);
@@ -659,88 +672,105 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 	heth = (void*)packet;
 	harp = (void*)((char*)heth + LIBNET_ETH_H);
 
-	if ((htons(harp->ar_op) == ARPOP_REPLY)
-	    && (htons(harp->ar_pro) == ETHERTYPE_IP)
-	    && (htons(harp->ar_hrd) == ARPHRD_ETHER)) {
-		uint32_t ip;
-		memcpy(&ip, (char*)harp + harp->ar_hln
-		       + LIBNET_ARP_H,4);
-		if (addr_must_be_same
-		    && (memcmp((u_char*)harp+sizeof(struct libnet_arp_hdr),
-			       dstmac, ETH_ALEN))) {
-			return;
-		}
-		if (dstip == ip) {
-                        update_stats(timespec2dbl(&arrival)
-                                     - timespec2dbl(&lastpacketsent));
-			switch(display) {
-			case DOT:
-				numdots++;
-				count_missing_dots();
-				putchar('!');
-				break;
-			case NORMAL: {
-				char buf[128];
-				printf("%d bytes from ", h->len);
-				for (c = 0; c < 6; c++) {
-					printf("%.2x%c", heth->_802_3_shost[c],
-					       (c<5)?':':' ');
-				}
-				
-				printf("(%s): index=%d",
-				       libnet_addr2name4(ip,0),
-				       numrecvd);
-				if (alsototal) {
-					printf("/%u", numsent-1);
-				}
-				printf(" time=%s",
-                                       ts2str(&lastpacketsent,
-                                              &arrival,buf));
-                                break;
-                        }
-			case QUIET:
-				break;
-			case RAWRAW:
-				for (c = 0; c < 6; c++) {
-					printf("%.2x%c", heth->_802_3_shost[c],
-					       (c<5)?':':' ');
-				}
-				printf("%s", libnet_addr2name4(ip,0));
-				break;
-			case RRAW:
-				printf("%s", libnet_addr2name4(ip,0));
-				break;
-			case RAW:
-				for (c = 0; c < 6; c++) {
-					printf("%.2x%s", heth->_802_3_shost[c],
-					       (c<5)?":":"");
-				}
-				break;
-			default:
-				fprintf(stderr, "arping: can't happen!\n");
-			}
+        // ARP reply.
+        if (htons(harp->ar_op) != ARPOP_REPLY) {
+                return;
+        }
+        if (verbose > 3) {
+                printf("arping: ... packet is ARP reply\n");
+        }
 
-                        switch (display) {
-                        case QUIET:
-                        case DOT:
-                                break;
-                        default:
-                                if (beep) {
-                                        printf("\a");
-                                }
-                                printf("\n");
-                        }
-                        if (numrecvd) {
-                                if (memcmp(lastreplymac,
-                                           heth->_802_3_shost, ETH_ALEN)) {
-                                        dupfound = 1;
-                                }
-                        }
-                        memcpy(lastreplymac, heth->_802_3_shost, ETH_ALEN);
+        // From IPv4 address reply.
+        if (htons(harp->ar_pro) != ETHERTYPE_IP) {
+                return;
+        }
+        if (verbose > 3) {
+                printf("arping: ... from IPv4 address\n");
+        }
 
-			numrecvd++;
-		}
-	}
+        // To Ethernet address.
+        if (htons(harp->ar_hrd) != ARPHRD_ETHER) {
+                return;
+        }
+        if (verbose > 3) {
+                printf("arping: ... to Ethernet address\n");
+        }
+
+        // Must be sent from target address.
+        // Should very likely only be used if using -T.
+        if (addr_must_be_same) {
+                if (memcmp((u_char*)harp + sizeof(struct libnet_arp_hdr),
+                           dstmac, ETH_ALEN)) {
+                        return;
+                }
+        }
+        if (verbose > 3) {
+                printf("arping: ... sent by acceptable host\n");
+        }
+
+        // Actually the IPv4 address we asked for.
+        uint32_t ip;
+        memcpy(&ip, (char*)harp + harp->ar_hln + LIBNET_ARP_H, 4);
+        if (dstip != ip) {
+                return;
+        }
+        if (verbose > 3) {
+                printf("arping: ... for the right IPv4 address!\n");
+        }
+
+        update_stats(timespec2dbl(&arrival) - timespec2dbl(&lastpacketsent));
+        char buf[128];
+        switch(display) {
+        case DOT:
+                numdots++;
+                count_missing_dots();
+                putchar('!');
+                break;
+        case NORMAL:
+                printf("%d bytes from %s (%s): index=%d",
+                       h->len, format_mac(heth->_802_3_shost, buf),
+                       libnet_addr2name4(ip, 0), numrecvd);
+
+                if (alsototal) {
+                        printf("/%u", numsent-1);
+                }
+                printf(" time=%s", ts2str(&lastpacketsent, &arrival, buf));
+                break;
+        case QUIET:
+                break;
+        case RAWRAW:
+                printf("%s %s", format_mac(heth->_802_3_shost, buf),
+                       libnet_addr2name4(ip, 0));
+                break;
+        case RRAW:
+                printf("%s", libnet_addr2name4(ip, 0));
+                break;
+        case RAW:
+                printf("%s", format_mac(heth->_802_3_shost, buf));
+                break;
+        default:
+                fprintf(stderr, "arping: can't happen!\n");
+        }
+
+        switch (display) {
+        case QUIET:
+        case DOT:
+                break;
+        default:
+                if (beep) {
+                        printf("\a");
+                }
+                printf("\n");
+        }
+        if (numrecvd) {
+                if (memcmp(lastreplymac,
+                           heth->_802_3_shost, ETH_ALEN)) {
+                        dupfound = 1;
+                }
+        }
+        memcpy(lastreplymac, heth->_802_3_shost, ETH_ALEN);
+
+        numrecvd++;
 }
 
 /** handle incoming packet when pinging an MAC address.
@@ -767,61 +797,64 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 	hip = (void*)((char*)heth + LIBNET_ETH_H);
 	hicmp = (void*)((char*)hip + LIBNET_IPV4_H);
 
-	if ((htons(hicmp->icmp_type) == ICMP_ECHOREPLY)
-	    && ((!memcmp(heth->_802_3_shost, dstmac,ETH_ALEN)
-		 || !memcmp(dstmac, ethxmas, ETH_ALEN)))
-	    && !memcmp(heth->_802_3_dhost, srcmac, ETH_ALEN)) {
-		if (addr_must_be_same) {
-			uint32_t tmp;
-			memcpy(&tmp, &hip->ip_src, 4);
-			if (dstip != tmp) {
-				return;
-			}
-		}
-                update_stats(timespec2dbl(&arrival)
-                             - timespec2dbl(&lastpacketsent));
-		switch(display) {
-		case QUIET:
-			break;
-		case NORMAL: {
-			char buf[128];
-			printf("%d bytes from %s (",h->len,
-			       libnet_addr2name4(*(int*)&hip->ip_src, 0));
-			for (c = 0; c < 6; c++) {
-				printf("%.2x%c", heth->_802_3_shost[c],
-				       (c<5)?':':')');
-			}
-			printf(": icmp_seq=%d time=%s",
-                               htons(hicmp->icmp_seq),ts2str(&lastpacketsent,
-                                                             &arrival,buf));
-			break; }
-		case RAW:
-			printf("%s",
-			       libnet_addr2name4(hip->ip_src.s_addr, 0));
-			break;
-		case RRAW:
-			for (c = 0; c < 6; c++) {
-				printf("%.2x%s", heth->_802_3_shost[c],
-				       (c<5)?":":"");
-			}
-			break;
-		case RAWRAW:
-			for (c = 0; c < 6; c++) {
-				printf("%.2x%c", heth->_802_3_shost[c],
-				       (c<5)?':':' ');
-			}
-			printf("%s",
-			       libnet_addr2name4(hip->ip_src.s_addr, 0));
-			break;
-		default:
-			fprintf(stderr, "arping: can't-happen-bug\n");
-			sigint(0);
-		}
-		if (display != QUIET) {
-			printf(beep?"\a\n":"\n");
-		}
-		numrecvd++;
-	}
+        // Dest MAC must be me.
+        if (memcmp(heth->_802_3_dhost, srcmac, ETH_ALEN)) {
+                return;
+        }
+
+        // Source MAC must match, if set.
+        if (memcmp(dstmac, ethxmas, ETH_ALEN)) {
+                if (memcmp(heth->_802_3_shost, dstmac, ETH_ALEN)) {
+                        return;
+                }
+        }
+
+        // IPv4 Address must be me (maybe).
+        if (addr_must_be_same) {
+                uint32_t tmp;
+                memcpy(&tmp, &hip->ip_src, 4);
+                if (dstip != tmp) {
+                        return;
+                }
+        }
+
+        // Must be ICMP echo reply.
+        if (htons(hicmp->icmp_type) != ICMP_ECHOREPLY) {
+                return;
+        }
+
+        update_stats(timespec2dbl(&arrival) - timespec2dbl(&lastpacketsent));
+        char buf[128];
+        char buf2[128];
+        switch(display) {
+        case QUIET:
+                break;
+        case NORMAL:
+                printf("%d bytes from %s (%s): icmp_seq=%d time=%s", h->len,
+                       libnet_addr2name4(*(int*)&hip->ip_src, 0),
+                       format_mac(heth->_802_3_shost, buf),
+                       htons(hicmp->icmp_seq),
+                       ts2str(&lastpacketsent, &arrival, buf2));
+                break;
+        case RAW:
+                printf("%s", libnet_addr2name4(hip->ip_src.s_addr, 0));
+                break;
+        case RRAW:
+                printf("%s", format_mac(heth->_802_3_shost, buf));
+                break;
+        case RAWRAW:
+                printf("%s %s",
+                       format_mac(heth->_802_3_shost, buf),
+                       libnet_addr2name4(hip->ip_src.s_addr, 0));
+                break;
+        default:
+                fprintf(stderr, "arping: can't-happen-bug\n");
+                sigint(0);
+        }
+        if (display != QUIET) {
+                printf(beep ? "\a\n" : "\n");
+        }
+        numrecvd++;
 }
 
 /**
@@ -869,7 +902,7 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 	       ts.tv_nsec = endtime.tv_nsec - ts.tv_nsec;
 	       fixup_timespec(&ts);
                if (verbose > 2) {
-                       printf("listen for replies for %ld.%09ld sec\n",
+                       printf("arping: listen for replies for %ld.%09ld sec\n",
                               (long)ts.tv_sec, (long)ts.tv_nsec);
                }
 
@@ -1142,10 +1175,10 @@ int main(int argc, char **argv)
 #if HAVE_CLOCK_MONOTONIC
                 struct timespec ts;
                 clock_getres(CLOCK_MONOTONIC, &ts);
-                printf("clock_getres() = %ld %ld\n",
+                printf("arping: clock_getres() = %ld %ld\n",
                        (long)ts.tv_sec, (long)ts.tv_nsec);
 #else
-                printf("Using gettimeofday() for time measurements\n");
+                printf("arping: Using gettimeofday() for time measurements\n");
 #endif
         }
 
@@ -1305,7 +1338,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	if (verbose > 1) {
-		printf("pcap_get_selectable_fd(): %d\n",
+		printf("arping: pcap_get_selectable_fd(): %d\n",
 		       pcap_get_selectable_fd(pcap));
 	}
 
@@ -1364,13 +1397,11 @@ int main(int argc, char **argv)
         do_signal_init();
 
 	if (verbose) {
-		printf("This box:   Interface: %s  IP: %s   MAC address: ",
-		       ifname, libnet_addr2name4(libnet_get_ipaddr4(libnet),
-						 0));
-		for (c = 0; c < ETH_ALEN - 1; c++) {
-			printf("%.2x:", (uint8_t)srcmac[c]);
-		}
-		printf("%.2x\n", (uint8_t)srcmac[ETH_ALEN - 1]);
+                char buf[128];
+		printf("This box:   Interface: %s  IP: %s   MAC address: %s\n",
+		       ifname,
+                       libnet_addr2name4(libnet_get_ipaddr4(libnet), 0),
+                       format_mac(srcmac, buf));
 	}
 
 

@@ -829,6 +829,11 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
         switch(display) {
         case QUIET:
                 break;
+        case DOT:
+                numdots++;
+                count_missing_dots();
+                putchar('!');
+                break;
         case NORMAL:
                 printf("%d bytes from %s (%s): icmp_seq=%d time=%s", h->len,
                        libnet_addr2name4(*(int*)&hip->ip_src, 0),
@@ -851,8 +856,15 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
                 fprintf(stderr, "arping: can't-happen-bug\n");
                 sigint(0);
         }
-        if (display != QUIET) {
-                printf(beep ? "\a\n" : "\n");
+        if (beep) {
+                printf("\a");
+        }
+        switch (display) {
+        case QUIET:
+        case DOT:
+                break;
+        default:
+                printf("\n");
         }
         numrecvd++;
 }

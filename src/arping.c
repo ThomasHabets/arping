@@ -312,7 +312,7 @@ extended_usage()
 	       "    -c count\n"
 	       "           Only send count requests.\n"
 	       "    -C count\n"
-	       "           Only receive count requests.\n"
+	       "           Only receive count replies.\n"
 	       "    -d     Find duplicate replies. Exit with 1 if there are "
                "answers from\n"
                "           two different MAC addresses.\n"

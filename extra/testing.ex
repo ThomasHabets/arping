@@ -18,7 +18,7 @@
 # * -c
 # * -D
 # * -e
-# * -h (soon)
+# * -h
 # * -q (soon)
 # * -r (soon)
 # * -R (soon)
@@ -43,6 +43,40 @@
 set bin [lindex $argv 0]
 set ip [lindex $argv 1]
 set mac [lindex $argv 2]
+
+send_user -- "--------------- No options ------------------\n"
+spawn $bin
+expect -re "ARPing 2\.\d+, by Thomas Habets <thomas@habets.se>\r
+usage: arping \\\[ -0aAbdDeFpqrRuUv \\\] \\\[ -w <us> \\\] \\\[ -S <host/ip> \\\]\r
+\\\[ -T <host/ip \\\] \\\[ -s <MAC> \\\] \\\[ -t <MAC> \\\] \\\[ -c <count> \\\]\r
+\\\[ -i <interface> \\\] <host/ip/MAC | -B>\r
+For complete usage info, use --help or check the manpage.\r
+"
+expect eof
+
+send_user -- "--------------- -h ------------------\n"
+spawn $bin -h
+expect -re "ARPing 2\.\d+, by Thomas Habets <thomas@habets.se>\r
+usage: arping \\\[ -0aAbdDeFpqrRuUv \\\] \\\[ -w <us> \\\] \\\[ -S <host/ip> \\\]\r
+\\\[ -T <host/ip \\\] \\\[ -s <MAC> \\\] \\\[ -t <MAC> \\\] \\\[ -c <count> \\\]\r
+\\\[ -i <interface> \\\] <host/ip/MAC | -B>\r
+For complete usage info, use --help or check the manpage.\r
+"
+expect eof
+
+send_user -- "--------------- --help ------------------\n"
+spawn $bin --help
+expect -re "ARPing 2\.\d+, by Thomas Habets <thomas@habets.se>\r
+usage: arping \\\[ -0aAbdDeFpqrRuUv \\\] \\\[ -w <us> \\\] \\\[ -S <host/ip> \\\]\r
+\\\[ -T <host/ip \\\] \\\[ -s <MAC> \\\] \\\[ -t <MAC> \\\] \\\[ -c <count> \\\]\r
+\\\[ -i <interface> \\\] <host/ip/MAC | -B>\r
+\r
+"
+expect "Report bugs to: thomas@habets.se\r
+Arping home page: <http://www.habets.pp.se/synscan/>\r
+Development repo: http://github.com/ThomasHabets/arping\r
+"
+expect eof
 
 send_user -- "--------------- Ping IP Simple ------------------\n"
 spawn $bin -c 1 $ip

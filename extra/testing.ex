@@ -17,7 +17,7 @@
 # * -a
 # * -c
 # * -D
-# * -e (soon)
+# * -e
 # * -h (soon)
 # * -q (soon)
 # * -r (soon)
@@ -81,6 +81,29 @@ rtt min/avg/max/std-dev = \[0-9.\]+/\[0-9.\]+/\[0-9.\]+/\[0-9.\]+ ms\r
 "
 expect eof
 
+send_user -- "--------- Ping IP x 2 with inverted audio (-e)  ------------\n"
+spawn $bin -c 2 -e $ip
+expect -re "ARPING $ip\r
+60 bytes from $mac \\($ip\\): index=0 time=\[0-9.\]+ \[mu\]?sec\r
+60 bytes from $mac \\($ip\\): index=1 time=\[0-9.\]+ \[mu\]?sec\r
+\r
+--- $ip statistics ---\r
+2 packets transmitted, 2 packets received,   0% unanswered \\(0 extra\\)\r
+rtt min/avg/max/std-dev = \[0-9.\]+/\[0-9.\]+/\[0-9.\]+/\[0-9.\]+ ms\r
+"
+expect eof
+
+send_user -- "--------- Ping IP x 2 with inverted audio (-e -D)  ------------\n"
+spawn $bin -c 2 -e -D $ip
+expect -re "!!\t  0% packet loss\r\n"
+expect eof
+
+send_user -- "--------- Ping IP x 2 with inverted audio, bad IP (-e -D)  ------------\n"
+# TODO: surely this should be \a.\a. ?
+spawn $bin -c 2 -e -i eth0 -D 1.2.4.3
+expect "\a\a..\t100% packet loss\r\n"
+expect eof
+
 send_user -- "--------------- Ping IP cisco style (-D) ------------------\n"
 spawn $bin -c 3 -D $ip
 expect "!!!\t  0% packet loss\r\n"
@@ -131,4 +154,15 @@ expect eof
 send_user -- "--------------- Ping MAC cisco style with audio (-D -a) -----------\n"
 spawn $bin -c 3 -D -a $mac -T $ip
 expect "!\a!\a!\a\t  0% packet loss\r\n"
+expect eof
+
+send_user -- "--------- Ping MAC x 2 with inverted audio (-e -D)  ------------\n"
+spawn $bin -c 2 -D $mac -T $ip
+expect -re "!!\t  0% packet loss\r\n"
+expect eof
+
+send_user -- "--------- Ping MAC x 2 with inverted audio, bad dest (-e -D)  ------------\n"
+# TODO: surely this should be \a.\a. ?
+spawn $bin -c 2 -e -i eth0 -D 00:11:22:33:44:55 -T $ip
+expect "\a\a..\t100% packet loss\r\n"
 expect eof

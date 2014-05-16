@@ -1,0 +1,134 @@
+#!/usr/bin/expect -f
+#
+# Usage: testing.ex <path to arping> <ip address> <mac address>
+#
+# Test all cases against a "normal" machine:
+# * Responds to ARP
+# * Responds to ping
+# * Doesn't respond to broadcast pings.
+#
+# Abnormal machines, to be tested elsewhere:
+# * Proxy ARP
+# * Respond to broadcast pings
+# * Lost packets
+# * Duplicated replies
+#
+# Tested here:
+# * -a
+# * -c
+# * -D
+# * -e (soon)
+# * -h (soon)
+# * -q (soon)
+# * -r (soon)
+# * -R (soon)
+# * -s (soon)
+# * -S (soon)
+# * -t
+# * -T
+# * -u (soon)
+# * -v (soon)
+# * -w (soon)
+#
+# Not tested here:
+# * -0
+# * -A
+# * -b
+# * -B
+# * -d
+# * -p
+# * -U
+# * Mac ping without -T.
+#
+set bin [lindex $argv 0]
+set ip [lindex $argv 1]
+set mac [lindex $argv 2]
+
+send_user -- "--------------- Ping IP Simple ------------------\n"
+spawn $bin -c 1 $ip
+expect -re "ARPING $ip\r
+60 bytes from $mac \\($ip\\): index=0 time=(.*)sec\r
+\r
+--- $ip statistics ---\r
+1 packets transmitted, 1 packets received,   0% unanswered \\(0 extra\\)\r
+rtt min/avg/max/std-dev = \[0-9.\]+/\[0-9.\]+/\[0-9.\]+/0.000 ms\r
+"
+expect eof
+
+send_user -- "--------------- Ping IP x 3 (-c) ------------------\n"
+spawn $bin -c 3 $ip
+expect -re "ARPING $ip\r
+60 bytes from $mac \\($ip\\): index=0 time=\[0-9.\]+ \[mu\]?sec\r
+60 bytes from $mac \\($ip\\): index=1 time=\[0-9.\]+ \[mu\]?sec\r
+60 bytes from $mac \\($ip\\): index=2 time=\[0-9.\]+ \[mu\]?sec\r
+\r
+--- $ip statistics ---\r
+3 packets transmitted, 3 packets received,   0% unanswered \\(0 extra\\)\r
+rtt min/avg/max/std-dev = \[0-9.\]+/\[0-9.\]+/\[0-9.\]+/\[0-9.\]+ ms\r
+"
+expect eof
+
+send_user -- "--------------- Ping IP x 3 with audio (-a)  ------------------\n"
+spawn $bin -c 3 -a $ip
+expect -re "ARPING $ip\r
+60 bytes from $mac \\($ip\\): index=0 time=\[0-9.\]+ \[mu\]?sec\a\r
+60 bytes from $mac \\($ip\\): index=1 time=\[0-9.\]+ \[mu\]?sec\a\r
+60 bytes from $mac \\($ip\\): index=2 time=\[0-9.\]+ \[mu\]?sec\a\r
+\r
+--- $ip statistics ---\r
+3 packets transmitted, 3 packets received,   0% unanswered \\(0 extra\\)\r
+rtt min/avg/max/std-dev = \[0-9.\]+/\[0-9.\]+/\[0-9.\]+/\[0-9.\]+ ms\r
+"
+expect eof
+
+send_user -- "--------------- Ping IP cisco style (-D) ------------------\n"
+spawn $bin -c 3 -D $ip
+expect "!!!\t  0% packet loss\r\n"
+expect eof
+
+send_user -- "--------------- Ping IP cisco style with audio (-D -a) -----------\n"
+spawn $bin -c 3 -D -a $ip
+expect "!\a!\a!\a\t  0% packet loss\r\n"
+expect eof
+
+send_user -- "--------------- Ping IP Targeted (-t) ------------------\n"
+spawn $bin -c 1 $ip -t $mac
+expect -re "ARPING $ip\r
+60 bytes from $mac \\($ip\\): index=0 time=(.*)sec\r
+\r
+--- $ip statistics ---\r
+1 packets transmitted, 1 packets received,   0% unanswered \\(0 extra\\)\r
+rtt min/avg/max/std-dev = \[0-9.\]+/\[0-9.\]+/\[0-9.\]+/0.000 ms\r
+"
+expect eof
+
+send_user -- "--------------- Ping IP Mistargeted (-t) ------------------\n"
+spawn $bin -c 1 $ip -t 00:11:22:33:44:55
+expect "ARPING $ip\r
+Timeout\r
+\r
+--- $ip statistics ---\r
+1 packets transmitted, 0 packets received, 100% unanswered \\(0 extra\\)\r
+"
+expect eof
+
+send_user -- "--------------- Ping MAC with IP destination ------------------\n"
+spawn $bin -c 1 $mac -T $ip
+expect -re "ARPING $mac\r
+60 bytes from $ip \\($mac\\): icmp_seq=0 time=(.*)sec\r
+\r
+--- $mac statistics ---\r
+1 packets transmitted, 1 packets received,   0% unanswered \\(0 extra\\)\r
+rtt min/avg/max/std-dev = \[0-9.\]+/\[0-9.\]+/\[0-9.\]+/0.000 ms\r
+"
+expect eof
+
+send_user -- "--------------- Ping MAC cisco style (-D) ------------------\n"
+spawn $bin -c 3 -D $mac -T $ip
+expect "!!!\t  0% packet loss\r\n"
+expect eof
+
+send_user -- "--------------- Ping MAC cisco style with audio (-D -a) -----------\n"
+spawn $bin -c 3 -D -a $mac -T $ip
+expect "!\a!\a!\a\t  0% packet loss\r\n"
+expect eof

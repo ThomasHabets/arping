@@ -170,7 +170,7 @@ Timeout\r
 expect eof
 
 send_user -- "--------------- Ping MAC with IP destination ------------------\n"
-spawn $bin -c 1 $mac -T $ip
+spawn $bin -A -c 1 $mac -T $ip
 expect -re "ARPING $mac\r
 60 bytes from $ip \\($mac\\): icmp_seq=0 time=(.*)sec\r
 \r
@@ -181,22 +181,22 @@ rtt min/avg/max/std-dev = \[0-9.\]+/\[0-9.\]+/\[0-9.\]+/0.000 ms\r
 expect eof
 
 send_user -- "--------------- Ping MAC cisco style (-D) ------------------\n"
-spawn $bin -c 3 -D $mac -T $ip
+spawn $bin -A -c 3 -D $mac -T $ip
 expect "!!!\t  0% packet loss\r\n"
 expect eof
 
 send_user -- "--------------- Ping MAC cisco style with audio (-D -a) -----------\n"
-spawn $bin -c 3 -D -a $mac -T $ip
+spawn $bin -A -c 3 -D -a $mac -T $ip
 expect "!\a!\a!\a\t  0% packet loss\r\n"
 expect eof
 
 send_user -- "--------- Ping MAC x 2 with inverted audio (-e -D)  ------------\n"
-spawn $bin -c 2 -D $mac -T $ip
+spawn $bin -A -c 2 -D $mac -T $ip
 expect -re "!!\t  0% packet loss\r\n"
 expect eof
 
 send_user -- "--------- Ping MAC x 2 with inverted audio, bad dest (-e -D)  ------------\n"
 # TODO: surely this should be \a.\a. ?
-spawn $bin -c 2 -e -i eth0 -D 00:11:22:33:44:55 -T $ip
+spawn $bin -A -c 2 -e -i eth0 -D 00:11:22:33:44:55 -T $ip
 expect "\a\a..\t100% packet loss\r\n"
 expect eof

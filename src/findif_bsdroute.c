@@ -43,7 +43,7 @@ arping_lookupdev(uint32_t srcip,
 	char *p,*p2;
 	int n;
 
-	do_libnet_init(NULL);
+        do_libnet_init(NULL, 0);
 	libnet_addr2name4_r(dstip,0,buf1, 1024);
 
 	/*

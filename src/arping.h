@@ -27,7 +27,7 @@
 
 extern int verbose;
 void do_signal_init();
-void do_libnet_init(const char *ifname);
+void do_libnet_init(const char *ifname, int recursive);
 void sigint(int);
 const char *arping_lookupdev_default(uint32_t srcip, uint32_t dstip,
 				     char *ebuf);

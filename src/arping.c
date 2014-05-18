@@ -229,9 +229,12 @@ count_missing_dots()
 
 /**
  * Init libnet with specified ifname. Destroy if already inited.
+ * If this function retries with different parameter it will preserve
+ * the original error message and print that.
+ * Call with recursive=0.
  */
 void
-do_libnet_init(const char *ifname)
+do_libnet_init(const char *ifname, int recursive)
 {
 	char ebuf[LIBNET_ERRBUF_SIZE];
 	if (verbose > 1) {
@@ -248,7 +251,17 @@ do_libnet_init(const char *ifname)
 	if (!(libnet = libnet_init(LIBNET_LINK,
 				   (char*)ifname,
 				   ebuf))) {
-		fprintf(stderr, "arping: %s\n", ebuf);
+                if (!ifname) {
+                        /* Sometimes libnet guesses an interface that it then
+                         * can't use. Work around that by attempting to
+                         * use "lo". */
+                        return do_libnet_init("lo", 1);
+                } else if (recursive) {
+                        /* Continue original execution. */
+                        return;
+                }
+                fprintf(stderr, "arping: libnet_init(LIBNET_LINK, %s): %s\n",
+                        ifname ? ifname : "<null>", ebuf);
                 if (getuid() && geteuid()) {
                         fprintf(stderr,
                                 "arping: you may need to run as root\n");
@@ -1113,7 +1126,7 @@ int main(int argc, char **argv)
 			break;
 		}
 		case 'S': /* set source IP, may be null for don't-know */
-			do_libnet_init(ifname);
+                        do_libnet_init(ifname, 0);
 			if (-1 == (srcip = libnet_name2addr4(libnet,
 							     optarg,
 							     LIBNET_RESOLVE))){
@@ -1150,7 +1163,7 @@ int main(int argc, char **argv)
 					"in MAC ping mode\n");
 				exit(1);
 			}
-			do_libnet_init(ifname);
+                        do_libnet_init(ifname, 0);
 			if (-1 == (dstip = libnet_name2addr4(libnet,
 							     optarg,
 							     LIBNET_RESOLVE))){
@@ -1207,7 +1220,7 @@ int main(int argc, char **argv)
         /* default to own IP address when doing -d */
         if (finddup && !parm) {
                 dstip_given = 1;
-                do_libnet_init(ifname);
+                do_libnet_init(ifname, 0);
                 dstip = libnet_get_ipaddr4(libnet);
                 if (verbose) {
                         printf("defaulting to checking dup for %s\n",
@@ -1223,7 +1236,7 @@ int main(int argc, char **argv)
 			mode = is_mac_addr(parm)?PINGMAC:PINGIP;
 		} else if (dstip_given) {
 			mode = PINGIP;
-			do_libnet_init(ifname);
+                        do_libnet_init(ifname, 0);
 			parm = strdup(libnet_addr2name4(dstip,0));
 			if (!parm) {
 				fprintf(stderr, "arping: out of mem\n");
@@ -1246,8 +1259,8 @@ int main(int argc, char **argv)
 	/*
 	 * libnet init (may be done already for resolving)
 	 */
-	do_libnet_init(ifname);
-	
+        do_libnet_init(ifname, 0);
+
 	/*
 	 * Make sure dstip and parm like eachother
 	 */
@@ -1336,7 +1349,7 @@ int main(int argc, char **argv)
 	 * Init libnet again, because we now know the interface name.
 	 * We should know it by know at least
 	 */
-	do_libnet_init(ifname);
+        do_libnet_init(ifname, 0);
 
 	/*
 	 * pcap init

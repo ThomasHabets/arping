@@ -129,23 +129,23 @@ expect eof
 
 send_user -- "--------- Ping IP x 2 with inverted audio (-e -D)  ------------\n"
 spawn $bin -c 2 -e -D $ip
-expect -re "!!\t  0% packet loss\r\n"
+expect "!!\t  0% packet loss (0 extra)\r\n"
 expect eof
 
 send_user -- "--------- Ping IP x 2 with inverted audio, bad IP (-e -D)  ------------\n"
 # TODO: surely this should be \a.\a. ?
 spawn $bin -c 2 -e -i eth0 -D 1.2.4.3
-expect "\a\a..\t100% packet loss\r\n"
+expect "\a\a..\t100% packet loss (0 extra)\r\n"
 expect eof
 
 send_user -- "--------------- Ping IP cisco style (-D) ------------------\n"
 spawn $bin -c 3 -D $ip
-expect "!!!\t  0% packet loss\r\n"
+expect "!!!\t  0% packet loss (0 extra)\r\n"
 expect eof
 
 send_user -- "--------------- Ping IP cisco style with audio (-D -a) -----------\n"
 spawn $bin -c 3 -D -a $ip
-expect "!\a!\a!\a\t  0% packet loss\r\n"
+expect "!\a!\a!\a\t  0% packet loss (0 extra)\r\n"
 expect eof
 
 send_user -- "--------------- Ping IP Targeted (-t) ------------------\n"
@@ -182,21 +182,21 @@ expect eof
 
 send_user -- "--------------- Ping MAC cisco style (-D) ------------------\n"
 spawn $bin -A -c 3 -D $mac -T $ip
-expect "!!!\t  0% packet loss\r\n"
+expect "!!!\t  0% packet loss (0 extra)\r\n"
 expect eof
 
 send_user -- "--------------- Ping MAC cisco style with audio (-D -a) -----------\n"
 spawn $bin -A -c 3 -D -a $mac -T $ip
-expect "!\a!\a!\a\t  0% packet loss\r\n"
+expect "!\a!\a!\a\t  0% packet loss (0 extra)\r\n"
 expect eof
 
 send_user -- "--------- Ping MAC x 2 with inverted audio (-e -D)  ------------\n"
 spawn $bin -A -c 2 -D $mac -T $ip
-expect -re "!!\t  0% packet loss\r\n"
+expect "!!\t  0% packet loss (0 extra)\r\n"
 expect eof
 
 send_user -- "--------- Ping MAC x 2 with inverted audio, bad dest (-e -D)  ------------\n"
 # TODO: surely this should be \a.\a. ?
 spawn $bin -A -c 2 -e -i eth0 -D 00:11:22:33:44:55 -T $ip
-expect "\a\a..\t100% packet loss\r\n"
+expect "\a\a..\t100% packet loss (0 extra)\r\n"
 expect eof

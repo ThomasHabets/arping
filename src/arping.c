@@ -1465,12 +1465,13 @@ int main(int argc, char **argv)
 		}
 	}
         if (display == DOT) {
+                const float succ = 100.0 - 100.0 * (float)(numrecvd)/(float)numsent;
                 count_missing_dots();
-                printf("\t%3.0f%% packet loss\n",
-                       100.0 - 100.0 * (float)(numrecvd)/(float)numsent);
+                printf("\t%3.0f%% packet loss (%d extra)\n",
+                       (succ < 0.0) ? 0.0 : succ,
+                       (succ < 0.0) ? (numrecvd - numsent): 0);
         } else if (display == NORMAL) {
-                float succ;
-                succ = 100.0 - 100.0 * (float)(numrecvd)/(float)numsent;
+                const float succ = 100.0 - 100.0 * (float)(numrecvd)/(float)numsent;
                 printf("\n--- %s statistics ---\n"
                        "%d packets transmitted, "
                        "%d packets received, "

@@ -91,6 +91,18 @@ rtt min/avg/max/std-dev = \[0-9.\]+/\[0-9.\]+/\[0-9.\]+/0.000 ms\r
 "
 expect eof
 
+send_user -- "--------------- Ping IP max 2 (-C) ------------------\n"
+spawn $bin -C 2 -c 10 $ip
+expect -re "ARPING $ip\r
+60 bytes from $mac \\($ip\\): index=0 time=(.*)sec\r
+60 bytes from $mac \\($ip\\): index=1 time=(.*)sec\r
+\r
+--- $ip statistics ---\r
+2 packets transmitted, 2 packets received,   0% unanswered \\(0 extra\\)\r
+rtt min/avg/max/std-dev = \[0-9.\]+/\[0-9.\]+/\[0-9.\]+/\[0-9.\]+ ms\r
+"
+expect eof
+
 send_user -- "--------------- Ping IP x 3 (-c) ------------------\n"
 spawn $bin -c 3 $ip
 expect -re "ARPING $ip\r
@@ -191,6 +203,18 @@ expect -re "ARPING $mac\r
 --- $mac statistics ---\r
 1 packets transmitted, 1 packets received,   0% unanswered \\(0 extra\\)\r
 rtt min/avg/max/std-dev = \[0-9.\]+/\[0-9.\]+/\[0-9.\]+/0.000 ms\r
+"
+expect eof
+
+send_user -- "--------------- Ping MAC max 2 (-C) ------------------\n"
+spawn $bin -A -C 2 -c 10 $mac -T $ip
+expect -re "ARPING $mac\r
+60 bytes from $ip \\($mac\\): icmp_seq=0 time=(.*)sec\r
+60 bytes from $ip \\($mac\\): icmp_seq=1 time=(.*)sec\r
+\r
+--- $mac statistics ---\r
+2 packets transmitted, 2 packets received,   0% unanswered \\(0 extra\\)\r
+rtt min/avg/max/std-dev = \[0-9.\]+/\[0-9.\]+/\[0-9.\]+/\[0-9.\]+ ms\r
 "
 expect eof
 

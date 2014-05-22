@@ -51,6 +51,7 @@ Note that this may get the arping unanswered since it's not normal behavior
 for a host.
     dit(-B) Use instead of host if you want to address 255.255.255.255.
     dit(-c em(count)) Only send em(count) requests.
+    dit(-C em(count)) Only wait for em(count) replies, regardless of -c and -w.
     dit(-d) Find duplicate replies. Exit with 1 if there are answers from
         two different MAC addresses.
     dit(-D) Display answers as exclamation points and missing packets as dots.

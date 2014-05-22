@@ -15,7 +15,7 @@
  *
  */
 /*
- *  Copyright (C) 2000-2011 Thomas Habets <thomas@habets.se>
+ *  Copyright (C) 2000-2014 Thomas Habets <thomas@habets.se>
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public
@@ -154,9 +154,10 @@ static int finddup = 0;              /* finddup mode. -d */
 static int dupfound = 0;             /* set to 1 if dup found */
 static char lastreplymac[ETH_ALEN];  /* if last different from this then dup */
 
-static unsigned int numsent = 0;     /* packets sent */
-static unsigned int numrecvd = 0;    /* packets received */
-static unsigned int numdots = 0;     /* dots that should be printed */
+static unsigned int numsent = 0;            /* packets sent */
+static unsigned int numrecvd = 0;           /* packets received */
+static unsigned int max_replies = UINT_MAX; /* exit after -C replies */
+static unsigned int numdots = 0;            /* dots that should be printed */
 
 static double stats_min_time = -1;
 static double stats_max_time = -1;
@@ -336,6 +337,8 @@ extended_usage()
 	       "    -B     Use instead of host if you want to address 255.255.255.255.\n"
 	       "    -c count\n"
 	       "           Only send count requests.\n"
+               "    -C count\n"
+               "           Only wait for this many replies, regardless of -c and -w.\n"
 	       "    -d     Find duplicate replies. Exit with 1 if there are "
                "answers from\n"
                "           two different MAC addresses.\n"
@@ -784,6 +787,9 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
         memcpy(lastreplymac, heth->_802_3_shost, ETH_ALEN);
 
         numrecvd++;
+        if (numrecvd >= max_replies) {
+                sigint(0);
+        }
 }
 
 /** handle incoming packet when pinging an MAC address.
@@ -880,6 +886,9 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
                 printf("\n");
         }
         numrecvd++;
+        if (numrecvd >= max_replies) {
+                sigint(0);
+        }
 }
 
 /**
@@ -1048,7 +1057,8 @@ int main(int argc, char **argv)
 	dstip = 0xffffffff;
 	memcpy(dstmac, ethxmas, ETH_ALEN);
 
-	while (EOF!=(c=getopt(argc,argv,"0aAbBc:dDeFhi:I:pqrRs:S:t:T:uUvw:"))) {
+        while (EOF != (c = getopt(argc, argv,
+                                  "0aAbBC:c:dDeFhi:I:pqrRs:S:t:T:uUvw:"))) {
 		switch(c) {
 		case '0':
 			srcip = 0;
@@ -1071,6 +1081,9 @@ int main(int argc, char **argv)
 		case 'c':
 			maxcount = atoi(optarg);
 			break;
+                case 'C':
+                        max_replies = atoi(optarg);
+                        break;
 		case 'd':
 			finddup = 1;
 			break;

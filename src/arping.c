@@ -372,7 +372,8 @@ extended_usage()
 	       "           pinging MACs.\n"
 	       "    -U     Send unsolicited ARP.\n"
 	       "    -v     Verbose output. Use twice for more messages.\n"
-	       "    -w     Time to wait between pings, in microseconds.\n");
+               "    -w     Time to wait between pings, in microseconds.\n"
+               "    -W     Same as -w, but in floating point seconds.\n");
         printf("Report bugs to: thomas@habets.se\n"
                "Arping home page: <http://www.habets.pp.se/synscan/>\n"
                "Development repo: http://github.com/ThomasHabets/arping\n");
@@ -387,6 +388,7 @@ standard_usage()
 	printf("ARPing %s, by Thomas Habets <thomas@habets.se>\n",
 	       version);
         printf("usage: arping [ -0aAbdDeFpqrRuUv ] [ -w <us> ] "
+               "[ -W <sec> ] "
                "[ -S <host/ip> ]\n"
                "              "
                "[ -T <host/ip ] "
@@ -1058,7 +1060,7 @@ int main(int argc, char **argv)
 	memcpy(dstmac, ethxmas, ETH_ALEN);
 
         while (EOF != (c = getopt(argc, argv,
-                                  "0aAbBC:c:dDeFhi:I:pqrRs:S:t:T:uUvw:"))) {
+                                  "0aAbBC:c:dDeFhi:I:pqrRs:S:t:T:uUvw:W:"))) {
 		switch(c) {
 		case '0':
 			srcip = 0;
@@ -1204,6 +1206,9 @@ int main(int argc, char **argv)
 		case 'w':
 			packetwait = (unsigned)atoi(optarg);
 			break;
+                case 'W':
+                        packetwait = (unsigned)(1000000.0 * atof(optarg));
+                        break;
 		default:
 			usage(1);
 		}

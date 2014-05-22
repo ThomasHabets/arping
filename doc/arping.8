@@ -120,8 +120,10 @@ to update the neighbours\(cq\& ARP caches\&.
 $ arping \-i <interface> \-U <interface IP>
 .IP "\-v"
 Verbose output\&. Use twice for more messages\&.
-.IP "\-w"
+.IP "\-w \fIusec\fP"
 Time to wait between pings, in microseconds\&.
+.IP "\-W \fIsec\fP"
+Same as \-w, but in floating point seconds\&.
 
 .PP 
 .SH "EXAMPLES"
@@ -144,6 +146,10 @@ ARPING 00:11:85:4c:01:01
 .PP 
 \-\-\- 00:11:85:4c:01:01 statistics \-\-\-
 3 packets transmitted, 3 packets received,   0% unanswered
+.PP 
+# \fBarping \-C 2 \-c 10 \-r 88\&.1\&.180\&.225\fP
+00:11:85:4c:01:01
+00:11:85:4c:01:01
 .PP 
 .fi
 .in

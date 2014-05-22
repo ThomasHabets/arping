@@ -94,7 +94,8 @@ mancommand(.sp)
         mancommand(.sp)
 	$ arping -i <interface> -U <interface IP>
     dit(-v) Verbose output. Use twice for more messages.
-    dit(-w) Time to wait between pings, in microseconds.
+    dit(-w em(usec)) Time to wait between pings, in microseconds.
+    dit(-W em(sec)) Same as -w, but in floating point seconds.
 enddit()
 
 
@@ -118,6 +119,10 @@ mancommand(.sp)
 
   --- 00:11:85:4c:01:01 statistics ---
   3 packets transmitted, 3 packets received,   0% unanswered
+
+  # bf(arping -C 2 -c 10 -r 88.1.180.225)
+  00:11:85:4c:01:01
+  00:11:85:4c:01:01
 
 mancommand(.fi)
 mancommand(.in)

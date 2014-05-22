@@ -29,6 +29,7 @@
 # * -u (soon)
 # * -v (soon)
 # * -w (soon)
+# * -W (soon)
 #
 # Not tested here:
 # * -0

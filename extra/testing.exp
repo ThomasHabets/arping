@@ -33,7 +33,7 @@
 #
 # Not tested here:
 # * -0
-# * -A
+# * -A (forced on with mac ping)
 # * -b
 # * -B
 # * -d

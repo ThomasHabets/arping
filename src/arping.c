@@ -1487,7 +1487,7 @@ int main(int argc, char **argv)
                 count_missing_dots();
                 printf("\t%3.0f%% packet loss (%d extra)\n",
                        (succ < 0.0) ? 0.0 : succ,
-                       (succ < 0.0) ? (numrecvd - numsent): 0);
+                       (succ < 0.0) ? (numrecvd - numsent) : 0);
         } else if (display == NORMAL) {
                 const float succ = 100.0 - 100.0 * (float)(numrecvd)/(float)numsent;
                 printf("\n--- %s statistics ---\n"

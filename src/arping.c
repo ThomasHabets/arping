@@ -217,18 +217,6 @@ do_pcap_open_live(const char *device, int snaplen,
 }
 
 /**
- *
- */
-static void
-count_missing_dots()
-{
-        while (numsent > numdots) {
-                putchar('.');
-                numdots++;
-        }
-}
-
-/**
  * Init libnet with specified ifname. Destroy if already inited.
  * If this function retries with different parameter it will preserve
  * the original error message and print that.
@@ -738,10 +726,11 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 
         update_stats(timespec2dbl(&arrival) - timespec2dbl(&lastpacketsent));
         char buf[128];
+        if (beep) {
+                printf("\a");
+        }
         switch(display) {
         case DOT:
-                numdots++;
-                count_missing_dots();
                 putchar('!');
                 break;
         case NORMAL:
@@ -769,10 +758,8 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
         default:
                 fprintf(stderr, "arping: can't happen!\n");
         }
+        fflush(stdout);
 
-        if (beep) {
-                printf("\a");
-        }
         switch (display) {
         case QUIET:
         case DOT:
@@ -845,14 +832,15 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
         }
 
         update_stats(timespec2dbl(&arrival) - timespec2dbl(&lastpacketsent));
+        if (beep) {
+                printf("\a");
+        }
         char buf[128];
         char buf2[128];
         switch(display) {
         case QUIET:
                 break;
         case DOT:
-                numdots++;
-                count_missing_dots();
                 putchar('!');
                 break;
         case NORMAL:
@@ -877,9 +865,7 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
                 fprintf(stderr, "arping: can't-happen-bug\n");
                 sigint(0);
         }
-        if (beep) {
-                printf("\a");
-        }
+        fflush(stdout);
         switch (display) {
         case QUIET:
         case DOT:
@@ -983,10 +969,19 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
                        r = select(fd + 1, &fds, NULL, NULL, &tv);
 		       switch (r) {
 		       case 0: /* timeout */
-                               if (display == NORMAL) {
-                                       if (numrecvd == old_received) {
-                                               printf("Timeout\n");
+                               if (numrecvd == old_received) {
+                                       if (reverse_beep) {
+                                               printf("\a");
                                        }
+                                       switch (display) {
+                                       case NORMAL:
+                                               printf("Timeout\n");
+                                               break;
+                                       case DOT:
+                                               printf(".");
+                                               break;
+                                       }
+                                       fflush(stdout);
                                }
 			       done = 1;
 			       break;
@@ -1463,10 +1458,6 @@ int main(int argc, char **argv)
                         r = numrecvd;
 			ping_recv(pcap,packetwait,
 				  (pcap_handler)pingip_recv);
-                        if (reverse_beep && !time_to_die && (r == numrecvd)) {
-                                printf("\a");
-                                fflush(stdout);
-                        }
 		}
 	} else { /* PINGMAC */
 		unsigned int c;
@@ -1476,15 +1467,10 @@ int main(int argc, char **argv)
                         r = numrecvd;
 			ping_recv(pcap,packetwait,
 				  (pcap_handler)pingmac_recv);
-                        if (reverse_beep && !time_to_die && (r == numrecvd)) {
-                                printf("\a");
-                                fflush(stdout);
-                        }
 		}
 	}
         if (display == DOT) {
                 const float succ = 100.0 - 100.0 * (float)(numrecvd)/(float)numsent;
-                count_missing_dots();
                 printf("\t%3.0f%% packet loss (%d extra)\n",
                        (succ < 0.0) ? 0.0 : succ,
                        (succ < 0.0) ? (numrecvd - numsent) : 0);

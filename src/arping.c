@@ -217,6 +217,20 @@ do_pcap_open_live(const char *device, int snaplen,
 }
 
 /**
+ * Some Libnet error messages end with a newline. Strip that in place.
+ */
+void
+strip_newline(char* s) {
+        if (!*s) {
+                return;
+        }
+        size_t n;
+        for (n = strlen(s); s[n - 1] == '\n'; --n) {
+                s[n - 1] = 0;
+        }
+}
+
+/**
  * Init libnet with specified ifname. Destroy if already inited.
  * If this function retries with different parameter it will preserve
  * the original error message and print that.
@@ -226,6 +240,7 @@ void
 do_libnet_init(const char *ifname, int recursive)
 {
 	char ebuf[LIBNET_ERRBUF_SIZE];
+        ebuf[0] = 0;
 	if (verbose > 1) {
                 printf("arping: libnet_init(%s)\n", ifname ? ifname : "<null>");
 	}
@@ -240,6 +255,7 @@ do_libnet_init(const char *ifname, int recursive)
 	if (!(libnet = libnet_init(LIBNET_LINK,
 				   (char*)ifname,
 				   ebuf))) {
+                strip_newline(ebuf);
                 if (!ifname) {
                         /* Sometimes libnet guesses an interface that it then
                          * can't use. Work around that by attempting to
@@ -1041,6 +1057,7 @@ int main(int argc, char **argv)
 	pcap_t *pcap;
 	enum { NONE, PINGMAC, PINGIP } mode = NONE;
 	unsigned int packetwait = 1000000;
+        ebuf[0] = 0;
 
         for (c = 1; c < argc; c++) {
                 if (!strcmp(argv[c], "--help")) {
@@ -1330,9 +1347,11 @@ int main(int argc, char **argv)
 	if (!ifname) {
                 if (!dont_use_arping_lookupdev) {
                         ifname = arping_lookupdev(srcip, dstip, ebuf);
+                        strip_newline(ebuf);
                 }
                 if (!ifname) {
                         ifname = arping_lookupdev_default(srcip, dstip, ebuf);
+                        strip_newline(ebuf);
                         if (!dont_use_arping_lookupdev) {
                                 fprintf(stderr,
                                         "arping: Unable to automatically find "
@@ -1368,10 +1387,12 @@ int main(int argc, char **argv)
 	 * pcap init
 	 */
         if (!(pcap = do_pcap_open_live(ifname, 100, promisc, 10, ebuf))) {
-		fprintf(stderr, "arping: pcap_open_live(): %s\n",ebuf);
+                strip_newline(ebuf);
+                fprintf(stderr, "arping: pcap_open_live(): %s\n", ebuf);
 		exit(1);
 	}
 	if (pcap_setnonblock(pcap, 1, ebuf)) {
+                strip_newline(ebuf);
 		fprintf(stderr, "arping: pcap_set_nonblock(): %s\n", ebuf);
 		exit(1);
 	}

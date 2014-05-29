@@ -81,6 +81,14 @@ Development repo: http://github.com/ThomasHabets/arping\r
 "
 expect eof
 
+send_user -- "--------------- Bad interface ------------------\n"
+spawn $bin -i uhtaonuhoes $ip
+expect -re "arping: libnet_init.*No such device\r"
+expect "\r" {
+    # Make sure double-endline is stripped.
+    exit 1
+}
+
 send_user -- "--------------- Ping IP Simple ------------------\n"
 spawn $bin -c 1 $ip
 expect -re "ARPING $ip\r

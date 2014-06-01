@@ -514,11 +514,9 @@ timespec2dbl(const struct timespec *tv)
  * max size of buffer is intsize + 1 + intsize + 4 = 70 bytes or so
  *
  * Still, I'm using at least 128bytes below
- *
- * (because snprintf() sadly isn't as portable, that's why)
  */
 static char *ts2str(const struct timespec *tv, const struct timespec *tv2,
-		    char *buf)
+                    char *buf, size_t bufsize)
 {
 	double f,f2;
 	int exp = 0;
@@ -532,23 +530,23 @@ static char *ts2str(const struct timespec *tv, const struct timespec *tv2,
 	}
 	switch (exp) {
 	case 0:
-		sprintf(buf, "%.3f nsec", f);
+                snprintf(buf, bufsize, "%.3f nsec", f);
 		break;
 	case 3:
-		sprintf(buf, "%.3f usec", f);
+                snprintf(buf, bufsize, "%.3f usec", f);
 		break;
 	case 6:
-		sprintf(buf, "%.3f msec", f);
+                snprintf(buf, bufsize, "%.3f msec", f);
 		break;
 	case 9:
-		sprintf(buf, "%.3f sec", f);
+                snprintf(buf, bufsize, "%.3f sec", f);
 		break;
 	case 12:
-		sprintf(buf, "%.3f sec", f*1000);
+                snprintf(buf, bufsize, "%.3f sec", f*1000);
 		break;
         default:
 		/* huh, uh, huhuh */
-		sprintf(buf, "%.3fe%d sec", f, exp-9);
+                snprintf(buf, bufsize, "%.3fe%d sec", f, exp-9);
 	}
 	return buf;
 }
@@ -760,7 +758,8 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
                 if (alsototal) {
                         printf("/%u", numsent-1);
                 }
-                printf(" time=%s", ts2str(&lastpacketsent, &arrival, buf));
+                printf(" time=%s", ts2str(&lastpacketsent, &arrival, buf,
+                                          sizeof(buf)));
                 break;
         case QUIET:
                 break;
@@ -869,7 +868,7 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
                        libnet_addr2name4(*(int*)&hip->ip_src, 0),
                        format_mac(heth->_802_3_shost, buf, sizeof(buf)),
                        htons(hicmp->icmp_seq),
-                       ts2str(&lastpacketsent, &arrival, buf2));
+                       ts2str(&lastpacketsent, &arrival, buf2, sizeof(buf2)));
                 break;
         case RAW:
                 printf("%s", libnet_addr2name4(hip->ip_src.s_addr, 0));

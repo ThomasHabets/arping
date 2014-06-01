@@ -83,7 +83,7 @@ expect eof
 
 send_user -- "--------------- Bad interface ------------------\n"
 spawn $bin -i uhtaonuhoes $ip
-expect -re "arping: libnet_init.*No such device\r"
+expect -re "arping: libnet_init.*\r"
 expect "\r" {
     # Make sure double-endline is stripped.
     exit 1

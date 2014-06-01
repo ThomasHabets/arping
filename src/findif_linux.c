@@ -1,6 +1,6 @@
 /* arping/src/findif_linux.c
  *
- *  Copyright (C) 2000-2009 Thomas Habets <thomas@habets.se>
+ *  Copyright (C) 2000-2014 Thomas Habets <thomas@habets.se>
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public
@@ -27,6 +27,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#if HAVE_LIBNET_H
+#include <libnet.h>
+#endif
+
 #include "arping.h"
 
 /**
@@ -37,12 +41,14 @@ arping_lookupdev(uint32_t srcip,
                  uint32_t dstip,
                  char *ebuf)
 {
-	FILE *f;
+        FILE *f = NULL;
 	static char buf[1024];
 	char buf1[1024];
 	char buf2[1024];
 	char *p,*p2;
 	int n;
+
+        *ebuf = 0;
 
         do_libnet_init(NULL, 0);
 	libnet_addr2name4_r(dstip,0,buf2,1024);
@@ -54,35 +60,54 @@ arping_lookupdev(uint32_t srcip,
 	snprintf(buf, 1023, "/sbin/ip route get %s from %s 2>&1",
 		 buf2, buf1);
 	if (!(f = popen(buf, "r"))) {
+                snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                         "popen(/sbin/ip): %s", strerror(errno));
 		goto failed;
 	}
 	if (0>(n = fread(buf, 1, sizeof(buf)-1, f))) {
-		pclose(f);
+                snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                         "fread(/sbin/ip): %s", strerror(errno));
 		goto failed;
 	}
 	buf[n] = 0;
 	if (-1 == pclose(f)) {
-		perror("arping: pclose()");
+                snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                         "pclose(/sbin/ip): %s", strerror(errno));
 		goto failed;
 	}
+        f = NULL;
 
 	/*
 	 * Parse interface name
 	 */
-	p = strstr(buf, "dev ");
+        const char* head = "dev ";
+        p = strstr(buf, head);
 	if (!p) {
+                if (verbose) {
+                        printf("arping: /sbin/ip output: %s\n", buf);
+                }
+                snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                         "\"dev \" not found in /sbin/ip output.");
 		goto failed;
 	}
 
-	p+=4;
+        p += strlen(head);
 
 	p2 = strchr(p, ' ');
 	if (!p2) {
+                if (verbose) {
+                        printf("arping: /sbin/ip output: %s\n", buf);
+                }
+                snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                         "interface not found in /sbin/ip output.");
 		goto failed;
 	}
 	*p2 = 0;
 	return p;
  failed:
+        if (f) {
+                pclose(f);
+        }
 	return NULL;
 }
 /* ---- Emacs Variables ----

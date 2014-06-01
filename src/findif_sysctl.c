@@ -1,6 +1,6 @@
 /* arping/src/findif_sysctl.c
  *
- *  Copyright (C) 2000-2011 Thomas Habets <thomas@habets.se>
+ *  Copyright (C) 2000-2014 Thomas Habets <thomas@habets.se>
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public
@@ -72,7 +72,8 @@ arping_lookupdev(uint32_t srcip,
         int c;
 
         /* buffer */
-        char *buf, *lim;
+        char *buf = NULL;
+        char *lim;
         size_t bufsize;
 
         /* Matching interfaces */
@@ -84,26 +85,35 @@ arping_lookupdev(uint32_t srcip,
 
         /* Results */
         static char ifName[IFNAMSIZ];
+        *ebuf = 0;
 
         /* Allocate buffer and retrieve data. */
         for (c = 0;;) {
                 if (sysctl(mib, 6, NULL, &bufsize, NULL, 0) < 0) {
-                        strcpy(ebuf, "sysctl: get buffer size error");
+                        snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                                 "sysctl: get buffer size error: %s",
+                                 strerror(errno));
                         goto failed;
                 }
                 if ((buf = malloc(bufsize)) == NULL) {
-                        strcpy(ebuf, "malloc: error");
+                        snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                                 "malloc: error: %s", strerror(errno));
                         goto failed;
                 }
                 if (sysctl(mib, 6, buf, &bufsize, NULL, 0) == 0) {
                         break;
                 }
                 if (errno != ENOMEM || ++c >= 10 ) {
-                        strcpy(ebuf, "sysctl: get ifaces error");
+                        snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                                 "sysctl: get ifaces error: %s",
+                                 strerror(errno));
                         goto failed;
                 }
-                fprintf(stderr, "sysctl: buffer size changed");
+                if (verbose > 2) {
+                        printf("sysctl: buffer size changed.");
+                }
                 free(buf);
+                buf = NULL;
         }
 
         lim = buf + bufsize;
@@ -116,7 +126,8 @@ arping_lookupdev(uint32_t srcip,
 
                 struct if_msghdr *ifh = (struct if_msghdr *)buf;
                 if (ifh->ifm_type != RTM_IFINFO) {
-                        strcpy(ebuf, "Wrong data in NET_RT_IFLIST");
+                        snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                                 "Wrong data in NET_RT_IFLIST.");
                         return NULL;
                 }
                 sdl = (struct sockaddr_dl *)(buf +
@@ -189,7 +200,7 @@ arping_lookupdev(uint32_t srcip,
 
                         match_count++;
 
-                        if (verbose) {
+                        if (verbose > 1) {
                                 printf("Specified addr matches "
                                        "interface '%s':\n", tmpIfName);
                                 printf("  IP addr %s, ",
@@ -213,24 +224,27 @@ arping_lookupdev(uint32_t srcip,
 
         if (match_count == 0 ) {
                 if (verbose) {
-                        strcpy(ebuf,
-                               "No interface found that matches specified IP");
+                        snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                                 "No interface found that matches"
+                                 " specified IP.");
                 }
                 goto failed;
         }
 
         if (verbose && match_count > 1) {
-                printf("Using interface '%s' with src IP %s due to longer "
-                       "mask.\n", ifName, inet_ntoa(best_addr));
+                printf("arping: Using interface '%s' with src IP %s due "
+                       "to longer mask.\n", ifName, inet_ntoa(best_addr));
         }
 #if 0
         if (ifce_ip != 0) {
                 *ifce_ip = best_addr.s_addr;
         }
 #endif
+        free(buf);
         return ifName;
 
  failed:
+        free(buf);
 	return NULL;
 }
 

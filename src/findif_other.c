@@ -1,6 +1,6 @@
 /* arping/src/findif_other.c
  *
- *  Copyright (C) 2000-2009 Thomas Habets <thomas@habets.se>
+ *  Copyright (C) 2000-2014 Thomas Habets <thomas@habets.se>
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public
@@ -23,6 +23,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#if HAVE_LIBNET_H
+#include <libnet.h>
+#endif
+
 #include "arping.h"
 
 /**
@@ -31,6 +35,8 @@
 const char *
 arping_lookupdev(uint32_t srcip, uint32_t dstip, char *ebuf)
 {
+        snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                 "arping_lookupdev() not implemented for this system.");
 	return NULL;
 }
 /* ---- Emacs Variables ----

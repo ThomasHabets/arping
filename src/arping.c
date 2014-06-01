@@ -110,6 +110,8 @@
 
 /**
  * OS-specific interface finding using routing table. See findif_*.c
+ * ebuf must be called with a size of at least
+ * max(LIBNET_ERRBUF_SIZE, PCAP_ERRBUF_SIZE).
  */
 const char *
 arping_lookupdev(uint32_t srcip, uint32_t dstip, char *ebuf);
@@ -1348,11 +1350,15 @@ int main(int argc, char **argv)
                 if (!dont_use_arping_lookupdev) {
                         ifname = arping_lookupdev(srcip, dstip, ebuf);
                         strip_newline(ebuf);
+                        if (!ifname) {
+                                fprintf(stderr, "arping: lookup dev: %s\n",
+                                        ebuf);
+                        }
                 }
                 if (!ifname) {
                         ifname = arping_lookupdev_default(srcip, dstip, ebuf);
                         strip_newline(ebuf);
-                        if (!dont_use_arping_lookupdev) {
+                        if (ifname && !dont_use_arping_lookupdev) {
                                 fprintf(stderr,
                                         "arping: Unable to automatically find "
                                         "interface to use. Is it on the local "

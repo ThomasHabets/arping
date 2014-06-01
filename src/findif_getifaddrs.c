@@ -1,6 +1,6 @@
 /* arping/src/findif_getifaddrs.c
  *
- *  Copyright (C) 2000-2011 Thomas Habets <thomas@habets.se>
+ *  Copyright (C) 2000-2014 Thomas Habets <thomas@habets.se>
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public
@@ -33,6 +33,10 @@
 #include <net/if.h>
 #include <netinet/in.h>
 
+#if HAVE_LIBNET_H
+#include <libnet.h>
+#endif
+
 #include "arping.h"
 
 const char *
@@ -52,10 +56,14 @@ arping_lookupdev(uint32_t srcip,
         /* Results */
         static char ifname[IFNAMSIZ];
 
+        *ebuf = 0;
+
         if (getifaddrs(&ifa)) {
                 if (verbose) {
                         printf("arping: getifaddrs(): %s\n", strerror(errno));
                 }
+                snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                         "getifaddrs(): %s", strerror(errno));
                 goto out;
         }
         for (cur = ifa; cur; cur = cur->ifa_next) {
@@ -94,9 +102,12 @@ arping_lookupdev(uint32_t srcip,
                         printf("arping: Autodetected interface %s\n", ret);
                 }
         } else {
-                if (verbose) {
-                        printf("Failed to find iface using getifaddrs().\n");
+                if (verbose > 1) {
+                        printf("arping: Failed to find iface using"
+                               " getifaddrs().\n");
                 }
+                snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                         "No matching interface found using getifaddrs().");
         }
  out:
         if (ifa) {

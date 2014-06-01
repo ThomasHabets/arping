@@ -315,8 +315,8 @@ getclock(struct timespec *ts)
  *
  */
 static char*
-format_mac(unsigned char* mac, char* buf) {
-        sprintf(buf, "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
+format_mac(unsigned char* mac, char* buf, size_t bufsize) {
+        snprintf(buf, bufsize, "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
                 mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
         return buf;
 }
@@ -753,7 +753,8 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
                 break;
         case NORMAL:
                 printf("%d bytes from %s (%s): index=%d",
-                       h->len, format_mac(heth->_802_3_shost, buf),
+                       h->len, format_mac(heth->_802_3_shost,
+                                          buf, sizeof(buf)),
                        libnet_addr2name4(ip, 0), numrecvd);
 
                 if (alsototal) {
@@ -764,14 +765,16 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
         case QUIET:
                 break;
         case RAWRAW:
-                printf("%s %s", format_mac(heth->_802_3_shost, buf),
+                printf("%s %s", format_mac(heth->_802_3_shost,
+                                           buf, sizeof(buf)),
                        libnet_addr2name4(ip, 0));
                 break;
         case RRAW:
                 printf("%s", libnet_addr2name4(ip, 0));
                 break;
         case RAW:
-                printf("%s", format_mac(heth->_802_3_shost, buf));
+                printf("%s", format_mac(heth->_802_3_shost,
+                                        buf, sizeof(buf)));
                 break;
         default:
                 fprintf(stderr, "arping: can't happen!\n");
@@ -864,7 +867,7 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
         case NORMAL:
                 printf("%d bytes from %s (%s): icmp_seq=%d time=%s", h->len,
                        libnet_addr2name4(*(int*)&hip->ip_src, 0),
-                       format_mac(heth->_802_3_shost, buf),
+                       format_mac(heth->_802_3_shost, buf, sizeof(buf)),
                        htons(hicmp->icmp_seq),
                        ts2str(&lastpacketsent, &arrival, buf2));
                 break;
@@ -872,11 +875,11 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
                 printf("%s", libnet_addr2name4(hip->ip_src.s_addr, 0));
                 break;
         case RRAW:
-                printf("%s", format_mac(heth->_802_3_shost, buf));
+                printf("%s", format_mac(heth->_802_3_shost, buf, sizeof(buf)));
                 break;
         case RAWRAW:
                 printf("%s %s",
-                       format_mac(heth->_802_3_shost, buf),
+                       format_mac(heth->_802_3_shost, buf, sizeof(buf)),
                        libnet_addr2name4(hip->ip_src.s_addr, 0));
                 break;
         default:
@@ -1466,7 +1469,7 @@ int main(int argc, char **argv)
 		printf("This box:   Interface: %s  IP: %s   MAC address: %s\n",
 		       ifname,
                        libnet_addr2name4(libnet_get_ipaddr4(libnet), 0),
-                       format_mac(srcmac, buf));
+                       format_mac(srcmac, buf, sizeof(buf)));
 	}
 
 

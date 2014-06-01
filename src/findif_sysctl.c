@@ -40,6 +40,10 @@
 #include <net/if_dl.h>
 #include <net/route.h>
 
+#if HAVE_LIBNET_H
+#include <libnet.h>
+#endif
+
 #include "arping.h"
 
 #ifndef SALIGN
@@ -72,7 +76,7 @@ arping_lookupdev(uint32_t srcip,
         int c;
 
         /* buffer */
-        char *buf = NULL;
+        char *buf_memory = NULL;
         char *lim;
         size_t bufsize;
 
@@ -95,12 +99,12 @@ arping_lookupdev(uint32_t srcip,
                                  strerror(errno));
                         goto failed;
                 }
-                if ((buf = malloc(bufsize)) == NULL) {
+                if ((buf_memory = malloc(bufsize)) == NULL) {
                         snprintf(ebuf, LIBNET_ERRBUF_SIZE,
                                  "malloc: error: %s", strerror(errno));
                         goto failed;
                 }
-                if (sysctl(mib, 6, buf, &bufsize, NULL, 0) == 0) {
+                if (sysctl(mib, 6, buf_memory, &bufsize, NULL, 0) == 0) {
                         break;
                 }
                 if (errno != ENOMEM || ++c >= 10 ) {
@@ -112,10 +116,11 @@ arping_lookupdev(uint32_t srcip,
                 if (verbose > 2) {
                         printf("sysctl: buffer size changed.");
                 }
-                free(buf);
-                buf = NULL;
+                free(buf_memory);
+                buf_memory = NULL;
         }
 
+        const char* buf = buf_memory;
         lim = buf + bufsize;
 
         /* Loop through all interfaces */
@@ -240,11 +245,11 @@ arping_lookupdev(uint32_t srcip,
                 *ifce_ip = best_addr.s_addr;
         }
 #endif
-        free(buf);
+        free(buf_memory);
         return ifName;
 
  failed:
-        free(buf);
+        free(buf_memory);
 	return NULL;
 }
 

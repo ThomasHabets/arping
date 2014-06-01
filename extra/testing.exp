@@ -1,6 +1,6 @@
 #!/usr/bin/expect -f
 #
-# Usage: testing.exp <path to arping> <ip address> <mac address>
+# Usage: testing.exp <path to arping> <ifname> <ip address> <mac address>
 #
 # Test all cases against a "normal" machine:
 # * Responds to ARP
@@ -42,10 +42,21 @@
 # * Mac ping without -T.
 #
 set bin [lindex $argv 0]
-set ip [lindex $argv 1]
-set mac [lindex $argv 2]
+set ifname [lindex $argv 1]
+set ip [lindex $argv 2]
+set mac [lindex $argv 3]
 set bad_ip "1.2.4.3"
 set bad_mac "00:11:22:33:44:55"
+
+# Check if "stty -oxtabs" is a thing.
+# It is on OpenBSD, but not Linux.
+spawn tty
+expect eof
+spawn "stty" "-oxtabs"
+catch wait result
+if {[lindex $result 3] == 0} {
+    set stty_init "-oxtabs"
+}
 
 send_user -- "--------------- No options ------------------\n"
 spawn $bin
@@ -201,7 +212,7 @@ expect "!!\t  0% packet loss (0 extra)\r\n"
 expect eof
 
 send_user -- "--------- Ping IP x 2 with inverted audio, bad IP (-e -D)  ------------\n"
-spawn $bin -c 2 -e -i eth0 -D "$bad_ip"
+spawn $bin -c 2 -e -i $ifname -D "$bad_ip"
 expect "\a.\a.\t100% packet loss (0 extra)\r\n"
 expect eof
 
@@ -216,7 +227,7 @@ expect "\a!\a!\a!\t  0% packet loss (0 extra)\r\n"
 expect eof
 
 send_user -- "--------------- Ping IP Targeted (-t) ------------------\n"
-spawn $bin -c 1 $ip -t $mac
+spawn $bin -c 1 -t $mac $ip
 expect -re "ARPING $ip\r
 \(42|60\) bytes from $mac \\($ip\\): index=0 time=(.*)sec\r
 \r
@@ -227,7 +238,7 @@ rtt min/avg/max/std-dev = \[0-9.\]+/\[0-9.\]+/\[0-9.\]+/0.000 ms\r
 expect eof
 
 send_user -- "--------------- Ping IP Mistargeted (-t) ------------------\n"
-spawn $bin -c 1 $ip -t $bad_mac
+spawn $bin -c 1 -t $bad_mac $ip
 expect "ARPING $ip\r
 Timeout\r
 \r
@@ -237,7 +248,7 @@ Timeout\r
 expect eof
 
 send_user -- "--------------- Ping MAC with IP destination ------------------\n"
-spawn $bin -A -c 1 $mac -T $ip
+spawn $bin -A -c 1 -T $ip $mac
 expect -re "ARPING $mac\r
 \(42|60\) bytes from $ip \\($mac\\): icmp_seq=0 time=(.*)sec\r
 \r
@@ -248,33 +259,33 @@ rtt min/avg/max/std-dev = \[0-9.\]+/\[0-9.\]+/\[0-9.\]+/0.000 ms\r
 expect eof
 
 send_user -- "--------------- Ping MAC Raw (-r) ------------------\n"
-spawn $bin -c 2 -r $mac -T $ip
+spawn $bin -c 2 -r -T $ip $mac
 expect -re "$ip\r
 $ip\r
 "
 expect eof
 
 send_user -- "--------------- Ping MAC Raw audio (-r -a) ------------------\n"
-spawn $bin -c 2 -a -r $mac -T $ip
+spawn $bin -c 2 -a -r -T $ip $mac
 expect -re "\a$ip\r
 \a$ip\r
 "
 expect eof
 
 send_user -- "--------------- Ping MAC Raw audio bad dest (-r -e) ------------------\n"
-spawn $bin -c 2 -r -e $bad_mac -T $ip
+spawn $bin -c 2 -r -e -T $ip $bad_mac
 expect -re "\a\a"
 expect eof
 
 send_user -- "--------------- Ping MAC reverse raw (-R) ------------------\n"
-spawn $bin -c 2 -R $mac -T $ip
+spawn $bin -c 2 -R -T $ip $mac
 expect -re "$mac\r
 $mac\r
 "
 expect eof
 
 send_user -- "--------------- Ping MAC double raw (-a -R) ------------------\n"
-spawn $bin -c 2 -R -r $mac -T $ip
+spawn $bin -c 2 -R -r -T $ip $mac
 expect -re "$mac $ip\r
 $mac $ip\r
 "
@@ -282,7 +293,7 @@ expect eof
 
 
 send_user -- "--------------- Ping MAC max 2 (-C) ------------------\n"
-spawn $bin -A -C 2 -c 10 $mac -T $ip
+spawn $bin -A -C 2 -c 10 -T $ip $mac
 expect -re "ARPING $mac\r
 \(42|60\) bytes from $ip \\($mac\\): icmp_seq=0 time=(.*)sec\r
 \(42|60\) bytes from $ip \\($mac\\): icmp_seq=1 time=(.*)sec\r
@@ -294,17 +305,17 @@ rtt min/avg/max/std-dev = \[0-9.\]+/\[0-9.\]+/\[0-9.\]+/\[0-9.\]+ ms\r
 expect eof
 
 send_user -- "--------------- Ping MAC cisco style (-D) ------------------\n"
-spawn $bin -A -c 3 -D $mac -T $ip
+spawn $bin -A -c 3 -D -T $ip $mac
 expect "!!!\t  0% packet loss (0 extra)\r\n"
 expect eof
 
 send_user -- "--------------- Ping MAC cisco style with audio (-D -a) -----------\n"
-spawn $bin -A -c 3 -D -a $mac -T $ip
+spawn $bin -A -c 3 -D -a -T $ip $mac
 expect "\a!\a!\a!\t  0% packet loss (0 extra)\r\n"
 expect eof
 
 send_user -- "--------- Ping MAC x 2 with inverted audio (-e)  ------------\n"
-spawn $bin -c 2 "$mac" -T $ip
+spawn $bin -c 2 -T $ip "$mac"
 expect -re "ARPING $mac\r
 \(42|60\) bytes from $ip \\($mac\\): icmp_seq=0 time=(.*)sec\r
 \(42|60\) bytes from $ip \\($mac\\): icmp_seq=1 time=(.*)sec\r
@@ -316,7 +327,7 @@ rtt min/avg/max/std-dev = \[0-9.\]+/\[0-9.\]+/\[0-9.\]+/\[0-9.\]+ ms\r
 expect eof
 
 send_user -- "--------- Ping MAC x 2 with inverted audio, bad dest (-e)  ------------\n"
-spawn $bin -e -c 2 "$bad_mac" -T $ip
+spawn $bin -e -c 2 -T $ip "$bad_mac"
 expect -re "ARPING $bad_mac\r
 \aTimeout\r
 \aTimeout\r
@@ -328,11 +339,11 @@ expect -re "ARPING $bad_mac\r
 expect eof
 
 send_user -- "--------- Ping MAC x 2 with inverted audio (-e -D)  ------------\n"
-spawn $bin -A -e -c 2 -D $mac -T $ip
+spawn $bin -A -e -c 2 -D -T $ip $mac
 expect "!!\t  0% packet loss (0 extra)\r\n"
 expect eof
 
 send_user -- "--------- Ping MAC x 2 with inverted audio, bad dest (-e -D)  ------------\n"
-spawn $bin -A -c 2 -e -i eth0 -D $bad_mac -T $ip
+spawn $bin -A -c 2 -e -i $ifname -D -T $ip $bad_mac
 expect "\a.\a.\t100% packet loss (0 extra)\r\n"
 expect eof

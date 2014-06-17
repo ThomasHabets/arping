@@ -38,6 +38,7 @@
 # * -B
 # * -d
 # * -p
+# * -P
 # * -U
 # * Mac ping without -T.
 #

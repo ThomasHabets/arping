@@ -159,6 +159,7 @@ static int reverse_beep = 0;         /* beep when expected reply absent. -e */
 static int alsototal = 0;            /* print sent as well as received. -u */
 static int addr_must_be_same = 0;    /* -A */
 static int unsolicited = 0;          /* -U */
+static int send_reply = 0;           /* Send reply instead of request. -P */
 
 static int finddup = 0;              /* finddup mode. -d */
 static int dupfound = 0;             /* set to 1 if dup found */
@@ -495,7 +496,7 @@ extended_usage()
 	       "           with -r.\n"
 	       "    -s MAC Set source MAC address. You may need to use -p with this.\n"
 	       "    -S IP  Like  -b and -0 but with set source address.  Note that this may\n"
-	       "       	   get the arping unanswered if the target does not have routing to\n"
+	       "           get the arping unanswered if the target does not have routing to\n"
 	       "           the  IP.  If you don't own the IP you are using, you may need to\n"
 	       "           turn on promiscious mode on the interface (with -p).  With  this\n"
 	       "           switch  you can find out what IP-address a host has without tak-\n"
@@ -508,6 +509,7 @@ extended_usage()
 	       "           $ arping -S <IP-B> -s <MAC-B> -p <MAC-A>\n"
 	       "    -p     Turn  on  promiscious  mode  on interface, use this if you don't\n"
 	       "           \"own\" the MAC address you are using.\n"
+               "    -P     Send ARP replies instead of requests. Useful with -U.\n"
 	       "    -u     Show index=received/sent instead  of  just  index=received  when\n"
 	       "           pinging MACs.\n"
 	       "    -U     Send unsolicited ARP.\n"
@@ -527,7 +529,7 @@ standard_usage()
 {
 	printf("ARPing %s, by Thomas Habets <thomas@habets.se>\n",
 	       version);
-        printf("usage: arping [ -0aAbdDeFpqrRuUv ] [ -w <us> ] "
+        printf("usage: arping [ -0aAbdDeFpPqrRuUv ] [ -w <us> ] "
                "[ -W <sec> ] "
                "[ -S <host/ip> ]\n"
                "              "
@@ -767,7 +769,7 @@ pingip_send()
 					  ETHERTYPE_IP,
 					  ETH_ALEN,
 					  IP_ALEN,
-					  ARPOP_REQUEST,
+                                          send_reply ? ARPOP_REPLY : ARPOP_REQUEST,
 					  srcmac,
 					  (uint8_t*)&srcip,
 					  unsolicited ? (uint8_t*)ethxmas : (uint8_t*)ethnull,
@@ -1210,7 +1212,7 @@ int main(int argc, char **argv)
 	memcpy(dstmac, ethxmas, ETH_ALEN);
 
         while (EOF != (c = getopt(argc, argv,
-                                  "0aAbBC:c:dDeFhi:I:pqrRs:S:t:T:uUvw:W:"))) {
+                                  "0aAbBC:c:dDeFhi:I:pPqrRs:S:t:T:uUvw:W:"))) {
 		switch(c) {
 		case '0':
 			srcip = 0;
@@ -1266,6 +1268,9 @@ int main(int argc, char **argv)
 		case 'p':
 			promisc = 1;
 			break;
+                case 'P':
+                        send_reply = 1;
+                        break;
 		case 'q':
 			display = QUIET;
 			break;

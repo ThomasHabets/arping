@@ -63,6 +63,7 @@ switch is not given, -i disables this smartness.
     dit(-i em(interface)) Don't guess, use the specified interface.
     dit(-p) Turn on promiscious mode on interface, use this if you don't
             "own" the MAC address you are using.
+    dit(-P) Send ARP replies instead of requests. Useful with -U.
     dit(-q) Does not display messages, except error messages.
     dit(-r) Raw output: only the MAC/IP address is displayed for each reply.
     dit(-R) Raw output: Like -r but shows "the other one", can be combined with

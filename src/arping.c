@@ -536,7 +536,7 @@ standard_usage()
                "[ -T <host/ip ] "
                "[ -s <MAC> ] [ -t <MAC> ] [ -c <count> ]\n"
                "              "
-               "[ -i <interface> ] "
+               "[ -C <count> ] [ -i <interface> ] "
                "<host/ip/MAC | -B>\n");
 }
 

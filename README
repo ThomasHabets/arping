@@ -197,11 +197,10 @@ A: Be my guest, but if care about security *at all* you will have to restrict
    That being said, on Linux you can add the CAP_NET_RAW capability to arping
    limiting the damage if arping were to be compromised:
      sudo setcap cap_net_raw+ep  /usr/local/sbin/arping
-   This requires a libnet which does not explicitly check for uid 0. The
-   current version of libnet does check this, so unless you patch it it will
-   not help.
+   This requires a libnet 1.1.5 or higher, which does not explicitly check for
+   uid 0.
 
-   Patch:
+   For older versions of Libnet:
      http://github.com/ThomasHabets/libnet/commit/aaa383b5c816107082508b7646929a9479b81645
 ---
 Q: What's this -A switch all about, I don't understand it.

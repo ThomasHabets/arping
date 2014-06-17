@@ -19,6 +19,7 @@ AC_PROG_MAKE_SET
 AC_CHECK_LIB([m], [sqrt])
 AC_CHECK_LIB([socket], [socket])
 AC_CHECK_LIB([nsl], [gethostbyname])
+AC_CHECK_LIB([cap], [cap_init])
 AC_CHECK_LIB([rt], [clock_gettime])
 AC_CHECK_LIB([net], [libnet_name_resolve],
       [AC_MSG_ERROR([libnet 1.0.x found. Arping 2.x requires libnet 1.1.x])])
@@ -36,10 +37,12 @@ sys/socket.h \
 time.h \
 sys/time.h \
 sys/types.h \
+sys/capability.h \
 stdint.h \
 libnet.h \
 win32/libnet.h \
 net/bpf.h \
+pwd.h \
 unistd.h])
 
 # Libnet include file is not optional
@@ -62,7 +65,7 @@ AC_FUNC_SELECT_ARGTYPES
 AC_FUNC_SETVBUF_REVERSED
 AC_TYPE_SIGNAL
 AC_CHECK_FUNCS([gettimeofday memset select strchr strdup strerror strstr \
-getifaddrs])
+getifaddrs cap_init])
 
 if test x$ac_cv_func_getifaddrs = xyes; then
     AC_LIBOBJ([findif_getifaddrs])

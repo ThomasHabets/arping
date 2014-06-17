@@ -5,13 +5,16 @@ This is the short version. For more info see the README.
 Dependencies
 ------------
 libnet 1.1.x
-  www.packetfactory.net/libnet
+  https://github.com/sam-github/libnet
     or
   http://ftp.debian.org/debian/pool/main/libn/libnet/libnet_1.1.2.1.orig.tar.gz
+  Note: Libnet 1.1.5 or later needed for Linux capability support.
 libpcap:
   www.tcpdump.org
+optional: libcap
+  Adds support to drop Linux privileges.
 
-For debian, just: apt-get install libpcap-dev libnet1-dev
+For debian, just: apt-get install libpcap-dev libnet1-dev libcap-dev
 
 Installing, short version
 -------------------------

@@ -85,6 +85,14 @@
 #include <win32/libnet.h>
 #endif
 
+#if HAVE_PWD_H
+#include <pwd.h>
+#endif
+
+#if HAVE_SYS_CAPABILITY_H
+#include <sys/capability.h>
+#endif
+
 #if HAVE_NET_BPF_H
 #include <net/bpf.h>
 #endif
@@ -182,6 +190,132 @@ int verbose = 0;  /* Increase with -v */
 
 /* Doesn't really need to be volatile, but doesn't hurt. */
 static volatile sig_atomic_t time_to_die = 0;
+
+/**
+ * If possible, chroot.
+ *
+ * The sshd user is used for privilege separation in OpenSSH.
+ * Let's assume it's installed and chroot() to there.
+ */
+static void
+drop_fs_root()
+{
+        const char* chroot_user = "sshd";
+        struct passwd *pw;
+        errno = 0;
+        if (!(pw = getpwnam(chroot_user))) {
+                if (verbose) {
+                        printf("arping: getpwnam(%s): %s",
+                               chroot_user, strerror(errno));
+                }
+                return;
+        }
+        if (chdir(pw->pw_dir)) {
+                if (verbose) {
+                        printf("arping: chdir(%s): %s",
+                               pw->pw_dir, strerror(errno));
+                }
+                return;
+        }
+        if (chroot(pw->pw_dir)) {
+                if (verbose) {
+                        printf("arping: chroot(%s): %s",
+                               pw->pw_dir, strerror(errno));
+                }
+                return;
+        }
+        if (verbose > 1) {
+                printf("arping: Successfully chrooted to %s\n", pw->pw_dir);
+        }
+}
+
+/**
+ * If possible, drop uid to nobody.
+ *
+ * This code only successfully sets all [ug]ids if running as
+ * root. ARPing is most likely running as root unless using
+ * capabilities, and those are dropped elsewhere.
+ */
+static void
+drop_uid(uid_t uid, gid_t gid)
+{
+        int fail = 0;
+        if (setgroups(0, NULL)) {
+                if (verbose) {
+                        printf("arping: setgroups(0, NULL): %s\n", strerror(errno));
+                }
+                fail++;
+        }
+        if (gid && setgid(gid)) {
+                if (verbose) {
+                        printf("arping: setgid(): %s\n", strerror(errno));
+                }
+                fail++;
+        }
+        if (uid && setuid(uid)) {
+                if (verbose) {
+                        printf("arping: setuid(): %s\n", strerror(errno));
+                }
+                fail++;
+        }
+        if (!fail && verbose > 1) {
+                printf("arping: Successfully dropped uid/gid to %d/%d.\n",
+                       uid, gid);
+        }
+}
+
+/**
+ * Drop any and all capabilities.
+ */
+static void
+drop_capabilities()
+{
+#if HAVE_CAP_INIT
+        cap_t no_cap;
+        if (!(no_cap = cap_init())) {
+                if (verbose) {
+                        printf("arping: cap_init(): %s\n", strerror(errno));
+                }
+                return;
+        }
+        if (cap_set_proc(no_cap)) {
+                if (verbose) {
+                        printf("arping: cap_set_proc(): %s\n", strerror(errno));
+                }
+        }
+        if (verbose > 1) {
+                printf("arping: Successfully dropped all capabilities.\n");
+        }
+        cap_free(no_cap);
+#endif
+}
+
+/**
+ * drop all privileges.
+ */
+static void
+drop_privileges()
+{
+        // Need to get uid/gid of 'nobody' before chroot().
+        const char* drop_user = "nobody";
+        struct passwd *pw;
+        errno = 0;
+        uid_t uid = 0;
+        gid_t gid = 0;
+        if (!(pw = getpwnam(drop_user))) {
+                if (verbose) {
+                        printf("arping: getpwnam(%s): %s\n",
+                               drop_user, strerror(errno));
+                }
+                return;
+        } else {
+                uid = pw->pw_uid;
+                gid = pw->pw_gid;
+        }
+        drop_fs_root();
+        drop_uid(uid, gid);
+        drop_capabilities();
+}
 
 /**
  * Some stupid OSs (Solaris) think it's a good idea to put network
@@ -1399,6 +1533,7 @@ int main(int argc, char **argv)
                 fprintf(stderr, "arping: pcap_open_live(): %s\n", ebuf);
 		exit(1);
 	}
+        drop_privileges();
 	if (pcap_setnonblock(pcap, 1, ebuf)) {
                 strip_newline(ebuf);
 		fprintf(stderr, "arping: pcap_set_nonblock(): %s\n", ebuf);

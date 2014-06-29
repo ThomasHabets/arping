@@ -35,6 +35,7 @@ TMPDIR="$(mktemp -d)"
     git checkout "$VERSION"
     rm -fr .git
     autoreconf -i
+    rm -fr autom4te.cache
     cd ..
     tar cfz - "$VERSION" > "$GITDIR/$OUTPUT"
 )

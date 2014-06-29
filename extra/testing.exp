@@ -127,7 +127,7 @@ expect -re "\a$mac\r
 expect eof
 
 send_user -- "--------------- Ping IP Raw audio bad dest (-r -e) ------------------\n"
-spawn $bin -c 2 -r -e $bad_ip
+spawn $bin -c 2 -r -i "$ifname" -e $bad_ip
 expect -re "\a\a"
 expect eof
 
@@ -196,7 +196,7 @@ rtt min/avg/max/std-dev = \[0-9.\]+/\[0-9.\]+/\[0-9.\]+/\[0-9.\]+ ms\r
 expect eof
 
 send_user -- "--------- Ping IP x 2 with inverted audio, bad IP (-e)  ------------\n"
-spawn $bin -c 2 -e "$bad_ip"
+spawn $bin -c 2 -i "$ifname" -e "$bad_ip"
 expect -re "ARPING $bad_ip\r
 \aTimeout\r
 \aTimeout\r

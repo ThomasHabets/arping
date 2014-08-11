@@ -105,6 +105,7 @@
 
 #if HAVE_PWD_H
 #include <pwd.h>
+#include <grp.h>
 #endif
 
 #if HAVE_SYS_CAPABILITY_H

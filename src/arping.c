@@ -349,6 +349,17 @@ try_pcap_open_live(const char *device, int snaplen,
                 goto err;
         }
 
+#ifdef HAVE_PCAP_SET_IMMEDIATE_MODE
+        // Without immediate mode some architectures (e.g. Linux with
+        // TPACKET_V3) will buffer replies and incorrectly upwards of
+        // hundreds of milliseconds of delay.
+        if ((rc = pcap_set_immediate_mode(pcap, 1))) {
+                if (verbose) {
+                        fprintf(stderr, "arping: pcap_set_immediate_mode() failed: %s\n", pcap_statustostr(rc));
+                }
+        }
+#endif
+
         // FIXME: pcap_set_tstamp_type
         if ((rc = pcap_activate(pcap))) {
                 snprintf(errbuf, PCAP_ERRBUF_SIZE, "pcap_activate(): %s", pcap_statustostr(rc));

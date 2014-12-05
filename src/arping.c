@@ -169,6 +169,7 @@ static unsigned int numsent = 0;            /* packets sent */
 static unsigned int numrecvd = 0;           /* packets received */
 static unsigned int max_replies = UINT_MAX; /* exit after -C replies */
 static unsigned int numdots = 0;            /* dots that should be printed */
+static const char* timestamp_type = NULL;   /* Incoming packet measurement ts type (-m) */
 
 static double stats_min_time = -1;
 static double stats_max_time = -1;
@@ -359,12 +360,47 @@ try_pcap_open_live(const char *device, int snaplen,
                 }
         }
 #endif
-
-        // FIXME: pcap_set_tstamp_type
+#ifdef HAVE_PCAP_LIST_TSTAMP_TYPES
+        if (timestamp_type) {
+                int err;
+                int v = pcap_tstamp_type_name_to_val(timestamp_type);
+                if (v == PCAP_ERROR) {
+                        fprintf(stderr, "arping: Unknown timestamp type \"%s\"\n", timestamp_type);
+                        exit(1);
+                }
+                if ((err = pcap_set_tstamp_type(pcap, v))) {
+                        fprintf(stderr,
+                                "arping: Failed to set timestamp type \"%s\" (%d): %s\n",
+                                timestamp_type, v, pcap_statustostr(err));
+                }
+        }
+#endif
         if ((rc = pcap_activate(pcap))) {
                 snprintf(errbuf, PCAP_ERRBUF_SIZE, "pcap_activate(): %s", pcap_statustostr(rc));
                 goto err;
         }
+#ifdef HAVE_PCAP_LIST_TSTAMP_TYPES
+        // List timestamp types after activating, since we don't want to list
+        // them if activating failed.
+        if (verbose > 1) {
+                int *ts;
+                int count;
+                count = pcap_list_tstamp_types(pcap, &ts);
+                if (count == PCAP_ERROR) {
+                        fprintf(stderr, "arping: pcap_list_tstamp_types() failed\n");
+                } else {
+                        int c;
+                        const char* fmt = "  %-18s %s\n";
+                        fprintf(stderr, "Timestamp types:\n");
+                        fprintf(stderr, fmt, "Name", "Description");
+                        for (c = 0; c < count; c++) {
+                                fprintf(stderr, fmt, pcap_tstamp_type_val_to_name(ts[c]),
+                                        pcap_tstamp_type_val_to_description(ts[c]));
+                        }
+                        pcap_free_tstamp_types(ts);
+                }
+        }
+#endif
         return pcap;
 err:
         if (pcap) {
@@ -548,6 +584,12 @@ extended_usage()
 	       "    -h     Displays a help message and exits.\n"
 	       "    -i interface\n"
 	       "           Use the specified interface.\n"
+               "    -m type"
+#ifndef HAVE_PCAP_LIST_TSTAMP_TYPES
+               " (Disabled on this system. Option ignored)"
+#endif
+               "\n           Type of timestamp to use for incoming packets. Use -vv when\n"
+               "           pinging to list available ones.\n"
 	       "    -q     Does not display messages, except error messages.\n"
 	       "    -r     Raw output: only the MAC/IP address is displayed for each reply.\n"
 	       "    -R     Raw output: Like -r but shows \"the other one\", can  be  combined\n"
@@ -594,7 +636,7 @@ standard_usage()
                "[ -T <host/ip ] "
                "[ -s <MAC> ] [ -t <MAC> ] [ -c <count> ]\n"
                "              "
-               "[ -C <count> ] [ -i <interface> ] "
+               "[ -C <count> ] [ -i <interface> ] [ -m <type> ] "
                "<host/ip/MAC | -B>\n");
 }
 
@@ -1270,7 +1312,7 @@ int main(int argc, char **argv)
 	memcpy(dstmac, ethxmas, ETH_ALEN);
 
         while (EOF != (c = getopt(argc, argv,
-                                  "0aAbBC:c:dDeFhi:I:pPqrRs:S:t:T:uUvw:W:"))) {
+                                  "0aAbBC:c:dDeFhi:I:m:pPqrRs:S:t:T:uUvw:W:"))) {
 		switch(c) {
 		case '0':
 			srcip = 0;
@@ -1323,6 +1365,9 @@ int main(int argc, char **argv)
 		case 'I': /* FALL THROUGH */
 			ifname = optarg;
 			break;
+                case 'm':
+                        timestamp_type = optarg;
+                        break;
 		case 'p':
 			promisc = 1;
 			break;

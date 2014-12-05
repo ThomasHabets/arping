@@ -61,6 +61,8 @@ for a host.
 switch is not given, -i disables this smartness.
     dit(-h) Displays a help message and exits.
     dit(-i em(interface)) Don't guess, use the specified interface.
+    dit(-m em(type)) Type of timestamp to use for incoming packets.
+        Use -vv when pinging to list available ones.
     dit(-p) Turn on promiscious mode on interface, use this if you don't
             "own" the MAC address you are using.
     dit(-P) Send ARP replies instead of requests. Useful with -U.

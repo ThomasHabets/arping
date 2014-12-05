@@ -318,6 +318,53 @@ drop_privileges()
         drop_capabilities();
 }
 
+
+/**
+ * Do pcap_open_live(), except by using the pcap_create() interface
+ * introduced in 2008 (libpcap 0.4) where available.
+ *
+ * FIXME: Use pcap_set_buffer_size()?
+ */
+static pcap_t*
+try_pcap_open_live(const char *device, int snaplen,
+                   int promisc, int to_ms, char *errbuf)
+{
+#ifdef HAVE_PCAP_CREATE
+        pcap_t* pcap;
+        int rc;
+
+        if (!(pcap = pcap_create(device, errbuf))) {
+                goto err;
+        }
+        if ((rc = pcap_set_snaplen(pcap, snaplen))) {
+                snprintf(errbuf, PCAP_ERRBUF_SIZE, "pcap_set_snaplen(): %s", pcap_statustostr(rc));
+                goto err;
+        }
+        if ((rc = pcap_set_promisc(pcap, promisc))) {
+                snprintf(errbuf, PCAP_ERRBUF_SIZE, "pcap_set_promisc(): %s", pcap_statustostr(rc));
+                goto err;
+        }
+        if ((rc = pcap_set_timeout(pcap, to_ms))) {
+                snprintf(errbuf, PCAP_ERRBUF_SIZE, "pcap_set_timeout(): %s", pcap_statustostr(rc));
+                goto err;
+        }
+
+        // FIXME: pcap_set_tstamp_type
+        if ((rc = pcap_activate(pcap))) {
+                snprintf(errbuf, PCAP_ERRBUF_SIZE, "pcap_activate(): %s", pcap_statustostr(rc));
+                goto err;
+        }
+        return pcap;
+err:
+        if (pcap) {
+                pcap_close(pcap);
+        }
+        return NULL;
+#else
+        return pcap_open_live(device, snaplen, promisc, to_ms, errbuf);
+#endif
+}
+
 /**
  * Some stupid OSs (Solaris) think it's a good idea to put network
  * devices in /dev and then play musical chairs with them.
@@ -335,22 +382,22 @@ do_pcap_open_live(const char *device, int snaplen,
         pcap_t* ret;
         char buf[PATH_MAX];
 
-        if ((ret = pcap_open_live(device, snaplen, promisc, to_ms, errbuf))) {
+        if ((ret = try_pcap_open_live(device, snaplen, promisc, to_ms, errbuf))) {
                 return ret;
         }
 
         snprintf(buf, sizeof(buf), "/dev/%s", device);
-        if ((ret = pcap_open_live(buf, snaplen, promisc, to_ms, errbuf))) {
+        if ((ret = try_pcap_open_live(buf, snaplen, promisc, to_ms, errbuf))) {
                 return ret;
         }
 
         snprintf(buf, sizeof(buf), "/dev/net/%s", device);
-        if ((ret = pcap_open_live(buf, snaplen, promisc, to_ms, errbuf))) {
+        if ((ret = try_pcap_open_live(buf, snaplen, promisc, to_ms, errbuf))) {
                 return ret;
         }
 
         /* Call original again to reset the error message. */
-        return pcap_open_live(device, snaplen, promisc, to_ms, errbuf);
+        return try_pcap_open_live(device, snaplen, promisc, to_ms, errbuf);
 }
 
 /**

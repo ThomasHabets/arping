@@ -1658,6 +1658,7 @@ int main(int argc, char **argv)
 
 #ifdef BIOCIMMEDIATE
 	{
+                // This may be redundant if pcap_set_immediate_mode() is present.
 		uint32_t on = 1;
 		if (0 < (ioctl(pcap_fileno(pcap), BIOCIMMEDIATE,
 			       &on))) {

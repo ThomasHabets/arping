@@ -376,7 +376,11 @@ try_pcap_open_live(const char *device, int snaplen,
         }
 #endif
         if ((rc = pcap_activate(pcap))) {
-                snprintf(errbuf, PCAP_ERRBUF_SIZE, "pcap_activate(): %s", pcap_statustostr(rc));
+                if (timestamp_type) {
+                        snprintf(errbuf, PCAP_ERRBUF_SIZE, "pcap_activate(tstype=\"%s\"): %s. Try without setting timestamp type.", timestamp_type, pcap_statustostr(rc));
+                } else {
+                        snprintf(errbuf, PCAP_ERRBUF_SIZE, "pcap_activate(): %s", pcap_statustostr(rc));
+                }
                 goto err;
         }
 #ifdef HAVE_PCAP_LIST_TSTAMP_TYPES

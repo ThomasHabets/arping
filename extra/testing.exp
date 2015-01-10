@@ -348,3 +348,6 @@ send_user -- "--------- Ping MAC x 2 with inverted audio, bad dest (-e -D)  ----
 spawn $bin -A -c 2 -e -i $ifname -D -T $ip $bad_mac
 expect "\a.\a.\t100% packet loss (0 extra)\r\n"
 expect eof
+
+send_user -- "---------------------------------------------------------\n"
+send_user -- "All tests passed\n"

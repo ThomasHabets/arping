@@ -5,7 +5,7 @@
 arping \- sends arp and/or ip pings to a given host
 .PP 
 .SH "SYNOPSIS"
-\fBarping\fP [\-0aAbBdDeFhpqrRuUv] [\-S \fIhost/ip\fP] [\-T \fIhost/ip\fP] [\-s \fIMAC\fP]    [\-t \fIMAC\fP] [\-c \fIcount\fP] [\-i \fIinterface\fP] [ \-w \fIus\fP ] <\fIhost\fP | \-B>
+\fBarping\fP [\-0aAbBdDeFhpqrRuUv] [\-S \fIhost/ip\fP] [\-T \fIhost/ip\fP] [\-s \fIMAC\fP]    [\-t \fIMAC\fP] [\-c \fIcount\fP] [\-i \fIinterface\fP] [ \-w \fIus\fP ] [ \-V \fIvlan\fP ] <\fIhost\fP | \-B>
 .PP 
 \fBarping\fP \-\-help
 .PP 
@@ -125,6 +125,8 @@ to update the neighbours\(cq\& ARP caches\&.
 $ arping \-i <interface> \-U <interface IP>
 .IP "\-v"
 Verbose output\&. Use twice for more messages\&.
+.IP "\-V \fIvlan\fP"
+VLAN tag to set\&. Defaults to no VLAN tag\&.
 .IP "\-w \fIusec\fP"
 Time to wait between pings, in microseconds\&.
 .IP "\-W \fIsec\fP"

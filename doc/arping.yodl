@@ -4,7 +4,7 @@ manpagename(arping)(sends arp and/or ip pings to a given host)
 
 manpagesynopsis()
     bf(arping) [-0aAbBdDeFhpqrRuUv] [-S em(host/ip)] [-T em(host/ip)] [-s em(MAC)]    \
-[-t em(MAC)] [-c em(count)] [-i em(interface)] [ -w em(us) ] <em(host) | -B>
+[-t em(MAC)] [-c em(count)] [-i em(interface)] [ -w em(us) ] [ -V em(vlan) ] <em(host) | -B>
 
     bf(arping) --help
 
@@ -97,6 +97,7 @@ mancommand(.sp)
         mancommand(.sp)
 	$ arping -i <interface> -U <interface IP>
     dit(-v) Verbose output. Use twice for more messages.
+    dit(-V em(vlan)) VLAN tag to set. Defaults to no VLAN tag.
     dit(-w em(usec)) Time to wait between pings, in microseconds.
     dit(-W em(sec)) Same as -w, but in floating point seconds.
 enddit()

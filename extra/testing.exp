@@ -40,6 +40,7 @@
 # * -p
 # * -P
 # * -U
+# * -V
 # * Mac ping without -T.
 #
 set bin [lindex $argv 0]

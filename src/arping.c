@@ -154,6 +154,8 @@ static uint8_t dstmac[ETH_ALEN];
 static uint32_t srcip;            /* autodetected, override with -S/-b/-0 */
 static uint8_t srcmac[ETH_ALEN];  /* autodetected, override with -s */
 
+static int16_t vlan_tag = -1; /* 802.1Q tag to add to packets. -V */
+
 static int beep = 0;                 /* beep when reply is received. -a */
 static int reverse_beep = 0;         /* beep when expected reply absent. -e */
 static int alsototal = 0;            /* print sent as well as received. -u */
@@ -548,7 +550,7 @@ getclock(struct timespec *ts)
  *
  */
 static char*
-format_mac(unsigned char* mac, char* buf, size_t bufsize) {
+format_mac(const unsigned char* mac, char* buf, size_t bufsize) {
         snprintf(buf, bufsize, "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
                 mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
         return buf;
@@ -618,6 +620,7 @@ extended_usage()
 	       "           pinging MACs.\n"
 	       "    -U     Send unsolicited ARP.\n"
 	       "    -v     Verbose output. Use twice for more messages.\n"
+               "    -V num 802.1Q tag to add. Defaults to no VLAN tag.\n"
                "    -w     Time to wait between pings, in microseconds.\n"
                "    -W     Same as -w, but in floating point seconds.\n");
         printf("Report bugs to: thomas@habets.se\n"
@@ -640,7 +643,9 @@ standard_usage()
                "[ -T <host/ip ] "
                "[ -s <MAC> ] [ -t <MAC> ] [ -c <count> ]\n"
                "              "
-               "[ -C <count> ] [ -i <interface> ] [ -m <type> ] "
+               "[ -C <count> ] [ -i <interface> ] [ -m <type> ]\n"
+               "              "
+               "[ -V <vlan> ] "
                "<host/ip/MAC | -B>\n");
 }
 
@@ -836,17 +841,34 @@ pingmac_send(uint16_t id, uint16_t seq)
 			libnet_geterror(libnet));
 		sigint(0);
 	}
-	if (-1 == (eth = libnet_build_ethernet(dstmac,
-					       srcmac,
-					       ETHERTYPE_IP,
-					       NULL,
-					       0,
-					       libnet,
-					       eth))) {
-		fprintf(stderr, "libnet_build_ethernet(): %s\n",
-			libnet_geterror(libnet));
-		sigint(0);
-	}
+	if (vlan_tag >= 0) {
+                eth = libnet_build_802_1q(dstmac,
+                                          srcmac,
+                                          ETHERTYPE_VLAN,
+                                          0, // priority
+                                          0, // cfi
+                                          vlan_tag,
+                                          ETHERTYPE_IP,
+                                          NULL, // payload
+                                          0, // payload length
+                                          libnet,
+                                          eth);
+        } else {
+                eth = libnet_build_ethernet(dstmac,
+                                            srcmac,
+                                            ETHERTYPE_IP,
+                                            NULL, // payload
+                                            0, // payload length
+                                            libnet,
+                                            eth);
+        }
+        if (-1 == eth) {
+                fprintf(stderr, "arping: %s: %s\n",
+                        (vlan_tag >= 0) ? "libnet_build_802_1q()" :
+                        "libnet_build_ethernet()",
+                        libnet_geterror(libnet));
+                sigint(0);
+        }
 	if (verbose > 1) {
                 getclock(&lastpacketsent);
                 printf("arping: sending packet at time %ld.%09ld\n",
@@ -886,14 +908,32 @@ pingip_send()
 			libnet_geterror(libnet));
 		sigint(0);
 	}
-	if (-1 == (eth = libnet_build_ethernet(dstmac,
-					       srcmac,
-					       ETHERTYPE_ARP,
-					       NULL,
-					       0,
-					       libnet,
-					       eth))) {
-		fprintf(stderr, "arping: libnet_build_ethernet(): %s\n",
+
+        if (vlan_tag >= 0) {
+                eth = libnet_build_802_1q(dstmac,
+                                          srcmac,
+                                          ETHERTYPE_VLAN,
+                                          0, // priority
+                                          0, // cfi
+                                          vlan_tag,
+                                          ETHERTYPE_ARP,
+                                          NULL, // payload
+                                          0, // payload size
+                                          libnet,
+                                          eth);
+        } else {
+                eth = libnet_build_ethernet(dstmac,
+                                            srcmac,
+                                            ETHERTYPE_ARP,
+                                            NULL, // payload
+                                            0, // payload size
+                                            libnet,
+                                            eth);
+        }
+	if (-1 == eth) {
+		fprintf(stderr, "arping: %s: %s\n",
+			(vlan_tag >= 0) ? "libnet_build_802_1q()" :
+                        "libnet_build_ethernet()",
 			libnet_geterror(libnet));
 		sigint(0);
 	}
@@ -920,6 +960,8 @@ pingip_send()
 static void
 pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 {
+        const unsigned char *pkt_srcmac;
+        const struct libnet_802_1q_hdr *veth;
 	struct libnet_802_3_hdr *heth;
 	struct libnet_arp_hdr *harp;
         struct timespec arrival;
@@ -931,8 +973,15 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 
         getclock(&arrival);
 
-	heth = (void*)packet;
-	harp = (void*)((char*)heth + LIBNET_ETH_H);
+	if (vlan_tag >= 0) {
+		veth = (void*)packet;
+		harp = (void*)((char*)veth + LIBNET_802_1Q_H);
+		pkt_srcmac = veth->vlan_shost;
+	} else {
+		heth = (void*)packet;
+		harp = (void*)((char*)heth + LIBNET_ETH_H);
+		pkt_srcmac = heth->_802_3_shost;
+	}
 
         // ARP reply.
         if (htons(harp->ar_op) != ARPOP_REPLY) {
@@ -991,8 +1040,7 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
                 break;
         case NORMAL:
                 printf("%d bytes from %s (%s): index=%d",
-                       h->len, format_mac(heth->_802_3_shost,
-                                          buf, sizeof(buf)),
+                       h->len, format_mac(pkt_srcmac, buf, sizeof(buf)),
                        libnet_addr2name4(ip, 0), numrecvd);
 
                 if (alsototal) {
@@ -1004,16 +1052,14 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
         case QUIET:
                 break;
         case RAWRAW:
-                printf("%s %s", format_mac(heth->_802_3_shost,
-                                           buf, sizeof(buf)),
+                printf("%s %s", format_mac(pkt_srcmac, buf, sizeof(buf)),
                        libnet_addr2name4(ip, 0));
                 break;
         case RRAW:
                 printf("%s", libnet_addr2name4(ip, 0));
                 break;
         case RAW:
-                printf("%s", format_mac(heth->_802_3_shost,
-                                        buf, sizeof(buf)));
+                printf("%s", format_mac(pkt_srcmac, buf, sizeof(buf)));
                 break;
         default:
                 fprintf(stderr, "arping: can't happen!\n");
@@ -1029,11 +1075,11 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
         }
         if (numrecvd) {
                 if (memcmp(lastreplymac,
-                           heth->_802_3_shost, ETH_ALEN)) {
+                           pkt_srcmac, ETH_ALEN)) {
                         dupfound = 1;
                 }
         }
-        memcpy(lastreplymac, heth->_802_3_shost, ETH_ALEN);
+        memcpy(lastreplymac, pkt_srcmac, ETH_ALEN);
 
         numrecvd++;
         if (numrecvd >= max_replies) {
@@ -1049,6 +1095,9 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 static void
 pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 {
+        const unsigned char *pkt_dstmac;
+        const unsigned char *pkt_srcmac;
+        const struct libnet_802_1q_hdr *veth;
 	struct libnet_802_3_hdr *heth;
 	struct libnet_ipv4_hdr *hip;
 	struct libnet_icmpv4_hdr *hicmp;
@@ -1061,18 +1110,28 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 
         getclock(&arrival);
 
-	heth = (void*)packet;
-	hip = (void*)((char*)heth + LIBNET_ETH_H);
-	hicmp = (void*)((char*)hip + LIBNET_IPV4_H);
+        if (vlan_tag >= 0) {
+                veth = (void*)packet;
+                hip = (void*)((char*)veth + LIBNET_802_1Q_H);
+                hicmp = (void*)((char*)hip + LIBNET_IPV4_H);
+                pkt_srcmac = veth->vlan_shost;
+                pkt_dstmac = veth->vlan_dhost;
+        } else {
+                heth = (void*)packet;
+                hip = (void*)((char*)heth + LIBNET_ETH_H);
+                hicmp = (void*)((char*)hip + LIBNET_IPV4_H);
+                pkt_srcmac = heth->_802_3_shost;
+                pkt_dstmac = heth->_802_3_dhost;
+        }
 
         // Dest MAC must be me.
-        if (memcmp(heth->_802_3_dhost, srcmac, ETH_ALEN)) {
+        if (memcmp(pkt_dstmac, srcmac, ETH_ALEN)) {
                 return;
         }
 
         // Source MAC must match, if set.
         if (memcmp(dstmac, ethxmas, ETH_ALEN)) {
-                if (memcmp(heth->_802_3_shost, dstmac, ETH_ALEN)) {
+                if (memcmp(pkt_srcmac, dstmac, ETH_ALEN)) {
                         return;
                 }
         }
@@ -1106,7 +1165,7 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
         case NORMAL:
                 printf("%d bytes from %s (%s): icmp_seq=%d time=%s", h->len,
                        libnet_addr2name4(*(int*)&hip->ip_src, 0),
-                       format_mac(heth->_802_3_shost, buf, sizeof(buf)),
+                       format_mac(pkt_srcmac, buf, sizeof(buf)),
                        htons(hicmp->icmp_seq),
                        ts2str(&lastpacketsent, &arrival, buf2, sizeof(buf2)));
                 break;
@@ -1114,11 +1173,11 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
                 printf("%s", libnet_addr2name4(hip->ip_src.s_addr, 0));
                 break;
         case RRAW:
-                printf("%s", format_mac(heth->_802_3_shost, buf, sizeof(buf)));
+                printf("%s", format_mac(pkt_srcmac, buf, sizeof(buf)));
                 break;
         case RAWRAW:
                 printf("%s %s",
-                       format_mac(heth->_802_3_shost, buf, sizeof(buf)),
+                       format_mac(pkt_srcmac, buf, sizeof(buf)),
                        libnet_addr2name4(hip->ip_src.s_addr, 0));
                 break;
         default:
@@ -1301,6 +1360,7 @@ int main(int argc, char **argv)
 	pcap_t *pcap;
 	enum { NONE, PINGMAC, PINGIP } mode = NONE;
 	unsigned int packetwait = 1000000;
+        char bpf_filter[64];
         ebuf[0] = 0;
 
         for (c = 1; c < argc; c++) {
@@ -1316,7 +1376,7 @@ int main(int argc, char **argv)
 	memcpy(dstmac, ethxmas, ETH_ALEN);
 
         while (EOF != (c = getopt(argc, argv,
-                                  "0aAbBC:c:dDeFhi:I:m:pPqrRs:S:t:T:uUvw:W:"))) {
+                                  "0aAbBC:c:dDeFhi:I:m:pPqrRs:S:t:T:uUvV:w:W:"))) {
 		switch(c) {
 		case '0':
 			srcip = 0;
@@ -1465,6 +1525,15 @@ int main(int argc, char **argv)
 		case 'v':
 			verbose++;
 			break;
+		case 'V':
+			vlan_tag = atoi(optarg);
+                        if (vlan_tag < 0 || vlan_tag > 4095) {
+                                fprintf(stderr,
+                                        "arping: vlan tag must 0-4095. Is %d\n",
+                                        vlan_tag);
+                                exit(1);
+                        }
+                        break;
 		case 'w':
 			packetwait = (unsigned)atoi(optarg);
 			break;
@@ -1671,14 +1740,28 @@ int main(int argc, char **argv)
 
 	if (mode == PINGIP) {
 		/* FIXME: better filter with addresses? */
-		if (-1 == pcap_compile(pcap, &bp, "arp", 0,-1)) {
-			fprintf(stderr, "arping: pcap_compile(): error\n");
+                if (vlan_tag >= 0) {
+                        snprintf(bpf_filter, sizeof(bpf_filter),
+                                 "vlan %u and arp", vlan_tag);
+                } else {
+                        snprintf(bpf_filter, sizeof(bpf_filter), "arp");
+                }
+                if (-1 == pcap_compile(pcap, &bp, bpf_filter, 0, -1)) {
+                        fprintf(stderr, "arping: pcap_compile(%s): error\n",
+                                bpf_filter);
 			exit(1);
 		}
 	} else { /* ping mac */
 		/* FIXME: better filter with addresses? */
-		if (-1 == pcap_compile(pcap, &bp, "icmp", 0,-1)) {
-			fprintf(stderr, "arping: pcap_compile(): error\n");
+                if (vlan_tag >= 0) {
+                        snprintf(bpf_filter, sizeof(bpf_filter),
+                                 "vlan %u and icmp", vlan_tag);
+                } else {
+                        snprintf(bpf_filter, sizeof(bpf_filter), "icmp");
+                }
+                if (-1 == pcap_compile(pcap, &bp, bpf_filter, 0,-1)) {
+                        fprintf(stderr, "arping: pcap_compile(%s): error\n",
+                                bpf_filter);
 			exit(1);
 		}
 	}

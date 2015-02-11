@@ -4,7 +4,7 @@ manpagename(arping)(sends arp and/or ip pings to a given host)
 
 manpagesynopsis()
     bf(arping) [-0aAbBdDeFhpqrRuUv] [-S em(host/ip)] [-T em(host/ip)] [-s em(MAC)]    \
-[-t em(MAC)] [-c em(count)] [-i em(interface)] [ -w em(us) ] [ -V em(vlan) ] <em(host) | -B>
+[-t em(MAC)] [-c em(count)] [-i em(interface)] [ -w em(us) ] [ -V em(vlan) ] [ -Q em(priority) ] <em(host) | -B>
 
     bf(arping) --help
 
@@ -67,6 +67,8 @@ switch is not given, -i disables this smartness.
             "own" the MAC address you are using.
     dit(-P) Send ARP replies instead of requests. Useful with -U.
     dit(-q) Does not display messages, except error messages.
+    dit(-Q em(priority)) 802.1p priority to set. Should be used with 802.1Q tag (-V).
+        Defaults to 0.
     dit(-r) Raw output: only the MAC/IP address is displayed for each reply.
     dit(-R) Raw output: Like -r but shows "the other one", can be combined with
 -r.

@@ -155,6 +155,7 @@ static uint32_t srcip;            /* autodetected, override with -S/-b/-0 */
 static uint8_t srcmac[ETH_ALEN];  /* autodetected, override with -s */
 
 static int16_t vlan_tag = -1; /* 802.1Q tag to add to packets. -V */
+static int16_t vlan_prio = -1; /* 802.1p prio to use with 802.1Q. -Q */
 
 static int beep = 0;                 /* beep when reply is received. -a */
 static int reverse_beep = 0;         /* beep when expected reply absent. -e */
@@ -597,6 +598,8 @@ extended_usage()
                "\n           Type of timestamp to use for incoming packets. Use -vv when\n"
                "           pinging to list available ones.\n"
 	       "    -q     Does not display messages, except error messages.\n"
+	       "    -Q pri 802.1p priority to set. Should be used with 802.1Q (-V).\n"
+	       "           Defaults to 0.\n"
 	       "    -r     Raw output: only the MAC/IP address is displayed for each reply.\n"
 	       "    -R     Raw output: Like -r but shows \"the other one\", can  be  combined\n"
 	       "           with -r.\n"
@@ -845,7 +848,7 @@ pingmac_send(uint16_t id, uint16_t seq)
                 eth = libnet_build_802_1q(dstmac,
                                           srcmac,
                                           ETHERTYPE_VLAN,
-                                          0, // priority
+                                          vlan_prio, // priority
                                           0, // cfi
                                           vlan_tag,
                                           ETHERTYPE_IP,
@@ -913,7 +916,7 @@ pingip_send()
                 eth = libnet_build_802_1q(dstmac,
                                           srcmac,
                                           ETHERTYPE_VLAN,
-                                          0, // priority
+                                          vlan_prio, // priority
                                           0, // cfi
                                           vlan_tag,
                                           ETHERTYPE_ARP,
@@ -1376,7 +1379,7 @@ int main(int argc, char **argv)
 	memcpy(dstmac, ethxmas, ETH_ALEN);
 
         while (EOF != (c = getopt(argc, argv,
-                                  "0aAbBC:c:dDeFhi:I:m:pPqrRs:S:t:T:uUvV:w:W:"))) {
+                                  "0aAbBC:c:dDeFhi:I:m:pPqQ:rRs:S:t:T:uUvV:w:W:"))) {
 		switch(c) {
 		case '0':
 			srcip = 0;
@@ -1440,6 +1443,15 @@ int main(int argc, char **argv)
                         break;
 		case 'q':
 			display = QUIET;
+			break;
+		case 'Q':
+			vlan_prio = atoi(optarg);
+                        if (vlan_prio < 0 || vlan_prio > 7) {
+                                fprintf(stderr,
+                                        "arping: 802.1p priotity must be 0-7. It's %d\n",
+                                        vlan_prio);
+                                exit(1);
+                        }
 			break;
 		case 'r':
 			display = (display==RRAW)?RAWRAW:RAW;
@@ -1543,6 +1555,13 @@ int main(int argc, char **argv)
 		default:
 			usage(1);
 		}
+	}
+
+	if (vlan_prio >= 0 && vlan_tag == -1) {
+		fprintf(stderr, "arping: -Q requires the use of 802.1Q (-V)\n");
+		exit(1);
+	} else if (vlan_prio == -1 && vlan_tag >= 0) {
+		vlan_prio = 0;
 	}
 
         if (verbose > 1) {

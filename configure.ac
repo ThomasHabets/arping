@@ -35,8 +35,10 @@ netinet/in.h \
 stdlib.h \
 sys/socket.h \
 time.h \
+grp.h \
 sys/time.h \
 sys/types.h \
+sys/param.h \
 sys/capability.h \
 stdint.h \
 libnet.h \

@@ -16,10 +16,13 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#define _GNU_SOURCE
 #include<assert.h>
 #include<errno.h>
 #include<fcntl.h>
 #include<inttypes.h>
+#include<pthread.h>
+#include<stdio.h>
 #include<stdlib.h>
 
 #include<check.h>
@@ -77,7 +80,7 @@ read_main(void* p)
         struct captured_output* out = p;
         char *cur = out->buffer;
 
-        while (1) {
+        for (;;) {
                 ssize_t n;
                 n = out->bufsize - (cur - out->buffer);
                 assert(n > 0);
@@ -86,7 +89,7 @@ read_main(void* p)
                         cur += n;
                 }
                 if (n == 0) {
-                        break;
+                        return NULL;
                 }
         }
 }
@@ -406,7 +409,7 @@ MYTEST(pingip_interesting_packet)
         stop_capture(sout);
 
         char* emsg = NULL;
-        asprintf(&emsg, "Captured: <%s> (%d), want   <%s> %d\n", sout->buffer, strlen(sout->buffer), correct0, strlen(correct0));
+        asprintf(&emsg, "Captured: <%s> (%zd), want   <%s> %zd\n", sout->buffer, strlen(sout->buffer), correct0, strlen(correct0));
         fail_unless(!strncmp(sout->buffer, correct0, strlen(correct0)), emsg);
         uncapture(sout);
         free(emsg);

@@ -981,9 +981,23 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 		harp = (void*)((char*)veth + LIBNET_802_1Q_H);
 		pkt_srcmac = veth->vlan_shost;
 	} else {
+                // Short packet.
+                if (h->caplen < LIBNET_ETH_H + LIBNET_ARP_H + 2*(ETH_ALEN + 4)) {
+                        return;
+                }
+
 		heth = (void*)packet;
 		harp = (void*)((char*)heth + LIBNET_ETH_H);
 		pkt_srcmac = heth->_802_3_shost;
+                // Wrong length of hardware address.
+                if (harp->ar_hln != ETH_ALEN) {
+                        return;
+                }
+
+                // Wrong length of protocol address.
+                if (harp->ar_pln != 4) {
+                        return;
+                }
 	}
 
         // ARP reply.

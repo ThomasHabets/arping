@@ -1324,6 +1324,11 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
                                        case DOT:
                                                printf(".");
                                                break;
+                                       case RAW:
+                                       case RAWRAW:
+                                       case RRAW:
+                                       case QUIET:
+                                               break;
                                        }
                                        fflush(stdout);
                                }

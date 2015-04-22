@@ -1,0 +1,8 @@
+language: c
+compiler:
+  - clang
+  - gcc
+script: ./bootstrap.sh ./configure && make && make check
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq libpcap-dev libnet1-dev

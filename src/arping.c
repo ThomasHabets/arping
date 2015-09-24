@@ -334,6 +334,10 @@ drop_privileges()
 /**
  * Do pcap_open_live(), except by using the pcap_create() interface
  * introduced in 2008 (libpcap 0.4) where available.
+ * This is so that we can set some options, which can't be set with
+ * pcap_open_live:
+ * 1) Immediate mode -- this prevents pcap from buffering.
+ * 2) Set timestamp type -- specify what type of timer to use.
  *
  * FIXME: Use pcap_set_buffer_size()?
  */
@@ -363,7 +367,7 @@ try_pcap_open_live(const char *device, int snaplen,
 
 #ifdef HAVE_PCAP_SET_IMMEDIATE_MODE
         // Without immediate mode some architectures (e.g. Linux with
-        // TPACKET_V3) will buffer replies and incorrectly upwards of
+        // TPACKET_V3) will buffer replies and incorrectly report upwards of
         // hundreds of milliseconds of delay.
         if ((rc = pcap_set_immediate_mode(pcap, 1))) {
                 if (verbose) {
@@ -467,11 +471,8 @@ do_pcap_open_live(const char *device, int snaplen,
  */
 void
 strip_newline(char* s) {
-        if (!*s) {
-                return;
-        }
         size_t n;
-        for (n = strlen(s); s[n - 1] == '\n'; --n) {
+        for (n = strlen(s); n && (s[n - 1] == '\n'); --n) {
                 s[n - 1] = 0;
         }
 }
@@ -677,8 +678,11 @@ usage(int ret)
 }
 
 /**
+ * Check to see if it looks somewhat like a MAC address.
+ *
  * It was unclear from msdn.microsoft.com if their scanf() supported
  * [0-9a-fA-F], so I'll stay away from it.
+ *
  */
 static int is_mac_addr(const char *p)
 {
@@ -721,24 +725,31 @@ static int is_mac_addr(const char *p)
 }
 
 /**
- * lots of parms since C arrays suck
+ * parse mac address.
+ *
+ * return 1 on success.
  */
-static int get_mac_addr(const char *in,
-			unsigned int *n0,
-			unsigned int *n1,
-			unsigned int *n2,
-			unsigned int *n3,
-			unsigned int *n4,
-			unsigned int *n5)
+int
+get_mac_addr(const char *in, uint8_t *out)
 {
-	if (6 == sscanf(in, "%x:%x:%x:%x:%x:%x",n0,n1,n2,n3,n4,n5)) {
-		return 1;
-	} else if(6 == sscanf(in, "%2x%x.%2x%x.%2x%x",n0,n1,n2,n3,n4,n5)) {
-		return 1;
-	} else if(6 == sscanf(in, "%x-%x-%x-%x-%x-%x",n0,n1,n2,n3,n4,n5)) {
-		return 1;
-	}
-	return 0;
+        const char *formats[] = {
+                "%x:%x:%x:%x:%x:%x",
+                "%2x%x.%2x%x.%2x%x",
+                "%x-%x-%x-%x-%x-%x",
+                NULL,
+        };
+        int c;
+        for (c = 0; formats[c]; c++) {
+                unsigned int n[6];
+                if (6 == sscanf(in, formats[c],
+                                &n[0], &n[1], &n[2], &n[3], &n[4], &n[5])) {
+                        for (c = 0; c < 6; c++) {
+                                out[c] = n[c] & 0xff;
+                        }
+                        return 1;
+                }
+        }
+        return 0;
 }
 
 /**
@@ -1488,16 +1499,10 @@ arping_main(int argc, char **argv)
 			display = (display==RAW)?RAWRAW:RRAW;
 			break;
 		case 's': { /* spoof source MAC */
-			unsigned int n[6];
-			if (!get_mac_addr(optarg,
-					  &n[0],&n[1],&n[2],
-					  &n[3],&n[4],&n[5])){
+                        if (!get_mac_addr(optarg, srcmac)) {
 				fprintf(stderr, "arping: Weird MAC addr %s\n",
 					optarg);
 				exit(1);
-			}
-			for (c = 0; c < 6; c++) {
-				srcmac[c] = n[c] & 0xff;
 			}
 			srcmac_given = 1;
 			break;
@@ -1515,21 +1520,15 @@ arping_main(int argc, char **argv)
 			srcip_given = 1;
 			break;
 		case 't': { /* set taget mac */
-			unsigned int n[6];
 			if (mode == PINGMAC) {
 				fprintf(stderr, "arping: -t can only be used "
 					"in IP ping mode\n");
 				exit(1);
 			}
-			if (!get_mac_addr(optarg,
-					  &n[0],&n[1],&n[2],
-					  &n[3],&n[4],&n[5])){
+                        if (!get_mac_addr(optarg, dstmac)) {
 				fprintf(stderr, "Illegal MAC addr %s\n",
 					optarg);
 				exit(1);
-			}
-			for (c = 0; c < 6; c++) {
-				dstmac[c] = n[c] & 0xff;
 			}
 			mode = PINGIP;
 			break;
@@ -1681,7 +1680,6 @@ arping_main(int argc, char **argv)
 	 * parse parm into dstmac
 	 */
 	if (mode == PINGMAC) {
-		unsigned int n[6];
 		if (optind + 1 != argc) {
 			usage(1);
 		}
@@ -1691,17 +1689,12 @@ arping_main(int argc, char **argv)
 				"argument\n");
 			exit(1);
 		}
-		if (!get_mac_addr(argv[optind],
-				  &n[0],&n[1],&n[2],
-				  &n[3],&n[4],&n[5])) {
+                if (!get_mac_addr(argv[optind], dstmac)) {
 			fprintf(stderr, "arping: Illegal mac addr %s\n",
 				argv[optind]);
 			return 1;
 		}
-		for (c = 0; c < 6; c++) {
-			dstmac[c] = n[c] & 0xff;
-		}
-	}	
+	}
 
 	target = parm;
 	/*

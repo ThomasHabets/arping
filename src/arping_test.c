@@ -37,6 +37,8 @@ struct registered_test {
         const char* name;
 };
 static struct registered_test test_registry[1024];
+int get_mac_addr(const char *in, char *out);
+void strip_newline(char* s);
 
 
 #define MYTEST(a) static void a(int);__attribute__((constructor)) \
@@ -421,6 +423,72 @@ MYTEST(pingip_interesting_packet)
         fail_unless(numrecvd == prev_numrecvd + 2,
                     "numrecvd not incremented second time");
 } END_TEST
+
+MYTEST(strip_newline_test)
+{
+        const char *tests[][2] = {
+                {"", ""},
+                {"\n", ""},
+                {"\n\n\n", ""},
+                {"foo", "foo"},
+                {"foo\n", "foo"},
+                {"foo\n\n\n", "foo"},
+                {NULL, NULL},
+        };
+        for (int c = 0; tests[c][0]; c++){
+                char buf[128];
+                strcpy(buf, tests[c][0]);
+                strip_newline(buf);
+                fail_unless(!strcmp(buf, tests[c][1]));
+        }
+} END_TEST
+
+MYTEST(get_mac_addr_success)
+{
+        const char *tests[][2] = {
+                // Null.
+                {"0000.0000.0000", "\x00\x00\x00\x00\x00\x00"},
+                {"00:00:00:00:00:00", "\x00\x00\x00\x00\x00\x00"},
+                {"00-00-00-00-00-00", "\x00\x00\x00\x00\x00\x00"},
+
+                // Broadcast.
+                {"FFFF.FFFF.FFFF", "\xFF\xFF\xFF\xFF\xFF\xFF"},
+                {"FF:FF:FF:FF:FF:FF", "\xFF\xFF\xFF\xFF\xFF\xFF"},
+                {"FF-FF-FF-FF-FF-FF", "\xFF\xFF\xFF\xFF\xFF\xFF"},
+
+                // Normal looking.
+                {"1122.3344.5566", "\x11\x22\x33\x44\x55\x66"},
+                {"11:22:33:44:55:66", "\x11\x22\x33\x44\x55\x66"},
+                {"11-22-33-44-55-66", "\x11\x22\x33\x44\x55\x66"},
+
+                // Has some zeroes.
+                {"1100.0000.5566", "\x11\x00\x00\x00\x55\x66"},
+                {"11:00:00:00:55:66", "\x11\x00\x00\x00\x55\x66"},
+                {"11-00-00-00-55-66", "\x11\x00\x00\x00\x55\x66"},
+                {NULL, NULL},
+        };
+        for (int c = 0; tests[c][0]; c++){
+                char buf[6];
+                fail_unless(get_mac_addr(tests[c][0], buf));
+                fail_unless(!memcmp(buf, tests[c][1], 6));
+        }
+} END_TEST
+
+MYTEST(get_mac_addr_fail)
+{
+        const char *tests[] = {
+                "",
+                "blaha",
+                "11:22:33:44:55",
+                "11:22:33:44:55:zz",
+                NULL,
+        };
+        for (int c = 0; tests[c]; c++){
+                char buf[6];
+                fail_if(get_mac_addr(tests[c], buf));
+        }
+} END_TEST
+
 
 static Suite*
 arping_suite(void)

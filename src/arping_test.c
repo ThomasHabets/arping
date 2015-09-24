@@ -435,7 +435,8 @@ MYTEST(strip_newline_test)
                 {"foo\n\n\n", "foo"},
                 {NULL, NULL},
         };
-        for (int c = 0; tests[c][0]; c++){
+        int c;
+        for (c = 0; tests[c][0]; c++){
                 char buf[128];
                 strcpy(buf, tests[c][0]);
                 strip_newline(buf);
@@ -467,7 +468,8 @@ MYTEST(get_mac_addr_success)
                 {"11-00-00-00-55-66", "\x11\x00\x00\x00\x55\x66"},
                 {NULL, NULL},
         };
-        for (int c = 0; tests[c][0]; c++){
+        int c;
+        for (c = 0; tests[c][0]; c++){
                 char buf[6];
                 fail_unless(get_mac_addr(tests[c][0], buf));
                 fail_unless(!memcmp(buf, tests[c][1], 6));
@@ -483,7 +485,8 @@ MYTEST(get_mac_addr_fail)
                 "11:22:33:44:55:zz",
                 NULL,
         };
-        for (int c = 0; tests[c]; c++){
+        int c;
+        for (c = 0; tests[c]; c++){
                 char buf[6];
                 fail_if(get_mac_addr(tests[c], buf));
         }

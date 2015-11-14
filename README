@@ -123,7 +123,9 @@ A: -T <IP/host> allows you to restrict the arping to a limited subnet, which
 Q: ./configure says I need libnet and/or libpcap
 
 A: Arping depends on libnet 1.1.x and libpcap, get libnet at:
-   http://www.packetfactory.net/libnet and libpcap from http://www.tcpdump.org.
+   http://packetfactory.openwall.net/projects/libnet/
+   and libpcap from http://www.tcpdump.org.
+   Or more likely they were both included in your Linux distribution.
 
    Lately www.packetfactory.net seems to be down, so you can get the original
    tarball from the Debian archives:

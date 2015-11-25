@@ -1390,10 +1390,17 @@ arping_main(int argc, char **argv)
         char ebuf[LIBNET_ERRBUF_SIZE + PCAP_ERRBUF_SIZE];
         char *cp;
         int promisc = 0;
+        char *srcip_opt = NULL;
         int srcip_given = 0;
-        int srcmac_given = 0;
+        char *dstip_opt = NULL;
         int dstip_given = 0;
+        const char *srcmac_opt = NULL;
+        const char *dstmac_opt = NULL;
         const char *ifname = NULL;
+        int opt_t = 0;
+        int opt_B = 0;
+        int opt_T = 0;
+        int opt_U = 0;
         char *parm;
         int c;
         unsigned int maxcount = -1;
@@ -1437,6 +1444,7 @@ arping_main(int argc, char **argv)
                 case 'B':
                         dstip = 0xffffffff;
                         dstip_given = 1;
+                        opt_B = 1;
                         break;
                 case 'c':
                         maxcount = atoi(optarg);
@@ -1499,66 +1507,30 @@ arping_main(int argc, char **argv)
                         display = (display==RAW)?RAWRAW:RRAW;
                         break;
                 case 's': { /* spoof source MAC */
-                        if (!get_mac_addr(optarg, srcmac)) {
-                                fprintf(stderr, "arping: Weird MAC addr %s\n",
-                                        optarg);
-                                exit(1);
-                        }
-                        srcmac_given = 1;
+                        srcmac_opt = optarg;
                         break;
                 }
                 case 'S': /* set source IP, may be null for don't-know */
-                        do_libnet_init(ifname, 0);
-                        if (-1 == (srcip = libnet_name2addr4(libnet,
-                                                             optarg,
-                                                             LIBNET_RESOLVE))){
-                                fprintf(stderr, "arping: Can't resolve %s, or "
-                                        "%s is broadcast. If it is, use -b"
-                                        " instead of -S\n", optarg,optarg);
-                                exit(1);
-                        }
+                        srcip_opt = optarg;
                         srcip_given = 1;
                         break;
                 case 't': { /* set taget mac */
-                        if (mode == PINGMAC) {
-                                fprintf(stderr, "arping: -t can only be used "
-                                        "in IP ping mode\n");
-                                exit(1);
-                        }
-                        if (!get_mac_addr(optarg, dstmac)) {
-                                fprintf(stderr, "Illegal MAC addr %s\n",
-                                        optarg);
-                                exit(1);
-                        }
+                        opt_t = 1;
+                        dstmac_opt = optarg;
                         mode = PINGIP;
                         break;
                 }
                 case 'T': /* set destination IP */
-                        if (mode == PINGIP) {
-                                fprintf(stderr, "arping: -T can only be used "
-                                        "in MAC ping mode\n");
-                                exit(1);
-                        }
-                        do_libnet_init(ifname, 0);
-                        if (-1 == (dstip = libnet_name2addr4(libnet,
-                                                             optarg,
-                                                             LIBNET_RESOLVE))){
-                                fprintf(stderr,"arping: Can't resolve %s, or "
-                                        "%s is broadcast. If it is, use -B "
-                                        "instead of -T\n",optarg,optarg);
-                                exit(1);
-                        }
+                        opt_T = 1;
+                        dstip_given = 1;
+                        dstip_opt = optarg;
                         mode = PINGMAC;
                         break;
                 case 'u':
                         alsototal = 1;
                         break;
                 case 'U':
-                        if (mode == PINGMAC) {
-                                fprintf(stderr, "arping: -U can only be used "
-                                        "in IP ping mode\n");
-                                exit(1);
-                        }
+                        opt_U = 1;
                         unsolicited = 1;
                         break;
                 case 'v':
@@ -1581,6 +1553,55 @@ arping_main(int argc, char **argv)
                         break;
                 default:
                         usage(1);
+                }
+        }
+
+        if (opt_t && opt_T || opt_T && opt_U) {
+                fprintf(stderr, "arping: you can't use options in such combination "
+                                "-t and -T or -T and -U\n");
+                exit(1);
+        }
+
+        if (opt_T && opt_B) {
+                printf("arping: [WARNING] -B option ignored due to existing -T option\n");
+        }
+
+        if (srcmac_opt != NULL) {
+                if (!get_mac_addr(srcmac_opt, srcmac)) {
+                        fprintf(stderr, "arping: Weird MAC addr %s\n",
+                                srcmac_opt);
+                        exit(1);
+                }
+        }
+
+        if (dstmac_opt != NULL) {
+                if (!get_mac_addr(dstmac_opt, dstmac)) {
+                        fprintf(stderr, "Illegal MAC addr %s\n", dstmac_opt);
+                        exit(1);
+                }
+        }
+
+        if (srcip_given) {
+                do_libnet_init(ifname, 0);
+                if (-1 == (srcip = libnet_name2addr4(libnet,
+                                                     srcip_opt,
+                                                     LIBNET_RESOLVE))){
+                        fprintf(stderr, "arping: Can't resolve %s, or "
+                                "%s is broadcast. If it is, use -b"
+                                " instead of -S\n", srcip_opt,srcip_opt);
+                        exit(1);
+                }
+        }
+
+        if (opt_T) {
+                do_libnet_init(ifname, 0);
+                if (-1 == (dstip = libnet_name2addr4(libnet,
+                                                     dstip_opt,
+                                                     LIBNET_RESOLVE))){
+                        fprintf(stderr,"arping: Can't resolve %s, or "
+                                "%s is broadcast. If it is, use -B "
+                                "instead of -T\n",dstip_opt,dstip_opt);
+                        exit(1);
                 }
         }
 
@@ -1814,7 +1835,7 @@ arping_main(int argc, char **argv)
         /*
          * final init
          */
-        if (!srcmac_given) {
+        if (srcmac_opt == NULL) {
                 if (!(cp = (char*)libnet_get_hwaddr(libnet))) {
                         fprintf(stderr, "arping: libnet_get_hwaddr(): %s\n",
                                 libnet_geterror(libnet));

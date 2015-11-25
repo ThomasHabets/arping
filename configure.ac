@@ -88,6 +88,20 @@ else
     esac
 fi
 
+AC_CACHE_CHECK([for libnet_init signature has const],
+		    ac_cv_have_libnet_init_const, [
+		    AC_TRY_RUN(
+		    [
+#include<libnet.h>
+libnet_t*libnet_init(int a,const char* b,char* c){}
+int main(){}
+],
+  [ ac_cv_have_libnet_init_const="yes" ],
+  [ ac_cv_have_libnet_init_const="no" ])
+])
+if test x$ac_cv_have_libnet_init_const = xyes; then
+   AC_DEFINE([HAVE_LIBNET_INIT_CONST], [1], [Libnet init takes const char device])
+fi
 
 
 # check for CLOCK_MONOTONIC

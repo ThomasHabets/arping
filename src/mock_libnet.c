@@ -1,4 +1,5 @@
 #include<libnet.h>
+#include"config.h"
 
 int mock_libnet_null_ok = 1;
 int mock_libnet_lo_ok = 1;
@@ -9,8 +10,14 @@ libnet_destroy(libnet_t* l)
         free(l);
 }
 
+#if HAVE_LIBNET_INIT_CONST
+#define LIBNET_INIT_CONST const
+#else
+#define LIBNET_INIT_CONST
+#endif
+
 libnet_t*
-libnet_init(int injection_type, const char *device, char *err_buf)
+libnet_init(int injection_type, LIBNET_INIT_CONST char *device, char *err_buf)
 {
         if (device == NULL) {
                 if (mock_libnet_null_ok) {

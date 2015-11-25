@@ -137,7 +137,7 @@ arping_lookupdev_default(uint32_t srcip, uint32_t dstip, char *ebuf);
 
 static const char *version = VERSION; /* from autoconf */
 
-static libnet_t *libnet = 0;
+libnet_t *libnet = 0;
 
 /* Timestamp of last packet sent.
  * Used for timing, and assumes that reply is due to most recent sent query.
@@ -507,9 +507,13 @@ do_libnet_init(const char *ifname, int recursive)
                         /* Sometimes libnet guesses an interface that it then
                          * can't use. Work around that by attempting to
                          * use "lo". */
-                        return do_libnet_init("lo", 1);
+                        do_libnet_init("lo", 1);
+                        if (libnet != NULL) {
+                                return;
+                        }
                 } else if (recursive) {
-                        /* Continue original execution. */
+                        /* Continue original execution to get that
+                         * error message. */
                         return;
                 }
                 fprintf(stderr, "arping: libnet_init(LIBNET_LINK, %s): %s\n",

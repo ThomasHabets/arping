@@ -31,12 +31,21 @@
 
 #include"arping.h"
 
-static int numtests = 0;
+extern libnet_t* libnet;
+extern int mock_libnet_lo_ok;
+extern int mock_libnet_null_ok;
+
 struct registered_test {
         void* fn;
         const char* name;
 };
+
+static int numtests = 0;
 static struct registered_test test_registry[1024];
+
+static int num_exit_tests = 0;
+static struct registered_test test_exit_registry[1024];
+
 int get_mac_addr(const char *in, char *out);
 void strip_newline(char* s);
 
@@ -46,6 +55,13 @@ static void cons_##a() {                           \
                 test_registry[numtests].fn = a;    \
                 test_registry[numtests].name = #a; \
                 numtests++;                        \
+} START_TEST(a)
+
+#define MY_EXIT_TEST(a) static void a(int);__attribute__((constructor)) \
+static void cons_##a() {                                      \
+                test_exit_registry[num_exit_tests].fn = a;    \
+                test_exit_registry[num_exit_tests].name = #a; \
+                num_exit_tests++;                             \
 } START_TEST(a)
 
 /**
@@ -492,6 +508,35 @@ MYTEST(get_mac_addr_fail)
         }
 } END_TEST
 
+MY_EXIT_TEST(libnet_init_bad_nolo)
+{
+        // It'll only try lo if named interface fails.
+        // So by accepting lo, we make sure it doesn't try lo.
+        mock_libnet_lo_ok = 1;
+        do_libnet_init("bad", 0);
+} END_TEST
+
+MY_EXIT_TEST(libnet_init_null_nolo_nonull)
+{
+        mock_libnet_lo_ok = 0;
+        mock_libnet_null_ok = 0;
+        do_libnet_init(NULL, 0);
+} END_TEST
+
+MYTEST(libnet_init_good)
+{
+        mock_libnet_lo_ok = 0; // Don't even try falling back to lo.
+        do_libnet_init("good", 0);
+        fail_if(libnet == NULL);
+} END_TEST
+
+MYTEST(libnet_init_null_nolo)
+{
+        mock_libnet_lo_ok = 0;
+        mock_libnet_null_ok = 1;
+        do_libnet_init(NULL, 0);
+        fail_if(libnet == NULL);
+} END_TEST
 
 static Suite*
 arping_suite(void)
@@ -503,6 +548,11 @@ arping_suite(void)
         for (c = 0; c < numtests; c++) {
                 TCase *tc_core = tcase_create(test_registry[c].name);
                 tcase_add_test(tc_core, test_registry[c].fn);
+                suite_add_tcase(s, tc_core);
+        }
+        for (c = 0; c < num_exit_tests; c++) {
+                TCase *tc_core = tcase_create(test_exit_registry[c].name);
+                tcase_add_exit_test(tc_core, test_exit_registry[c].fn, 1);
                 suite_add_tcase(s, tc_core);
         }
         return s;

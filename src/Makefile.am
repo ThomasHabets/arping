@@ -9,5 +9,5 @@ arping_LDADD = $(LIBOBJS)
 
 TESTS=arping_test
 check_PROGRAMS=arping_test
-arping_test_SOURCES=arping.c arping_test.c unix.c mock_libpcap.c
+arping_test_SOURCES=arping.c arping_test.c unix.c mock_libpcap.c mock_libnet.c
 arping_test_LDADD=$(LIBOBJS) -lcheck -lpthread

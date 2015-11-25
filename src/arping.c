@@ -1909,4 +1909,6 @@ arping_main(int argc, char **argv)
  * c-basic-offset: 8
  * indent-tabs-mode: nil
  * End:
+ *
+ * vim: ts=8 sw=8
  */

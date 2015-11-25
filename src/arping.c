@@ -486,22 +486,22 @@ strip_newline(char* s) {
 void
 do_libnet_init(const char *ifname, int recursive)
 {
-	char ebuf[LIBNET_ERRBUF_SIZE];
+        char ebuf[LIBNET_ERRBUF_SIZE];
         ebuf[0] = 0;
-	if (verbose > 1) {
+        if (verbose > 1) {
                 printf("arping: libnet_init(%s)\n", ifname ? ifname : "<null>");
-	}
-	if (libnet) {
-		/* Probably going to switch interface from temp to real. */
-		libnet_destroy(libnet);
-		libnet = 0;
-	}
+        }
+        if (libnet) {
+                /* Probably going to switch interface from temp to real. */
+                libnet_destroy(libnet);
+                libnet = 0;
+        }
 
         /* Try libnet_init() even though we aren't root. We may have
          * a capability or something. */
-	if (!(libnet = libnet_init(LIBNET_LINK,
-				   (char*)ifname,
-				   ebuf))) {
+        if (!(libnet = libnet_init(LIBNET_LINK,
+                                   (char*)ifname,
+                                   ebuf))) {
                 strip_newline(ebuf);
                 if (!ifname) {
                         /* Sometimes libnet guesses an interface that it then
@@ -518,8 +518,8 @@ do_libnet_init(const char *ifname, int recursive)
                         fprintf(stderr,
                                 "arping: you may need to run as root\n");
                 }
-		exit(1);
-	}
+                exit(1);
+        }
 }
 
 /**
@@ -528,7 +528,7 @@ do_libnet_init(const char *ifname, int recursive)
 void
 sigint(int i)
 {
-	time_to_die = 1;
+        time_to_die = 1;
 }
 
 /**
@@ -572,66 +572,66 @@ format_mac(const unsigned char* mac, char* buf, size_t bufsize) {
 static void
 extended_usage()
 {
-	printf("\nOptions:\n");
-	printf("\n"
-	       "    -0     Use this option to ping with source IP address 0.0.0.0. Use this\n"
-	       "           when you haven't configured your interface yet.  Note that  this\n"
-	       "           may  get  the  MAC-ping  unanswered.   This  is  an alias for -S\n"
-	       "           0.0.0.0.\n"
-	       "    -a     Audiable ping.\n"
-	       "    -A     Only count addresses matching  requested  address  (This  *WILL*\n"
-	       "           break  most things you do. Only useful if you are arpinging many\n"
-	       "           hosts at once. See arping-scan-net.sh for an example).\n"
-	       "    -b     Like -0 but source broadcast source  address  (255.255.255.255).\n"
-	       "           Note that this may get the arping unanswered since it's not nor-\n"
-	       "           mal behavior for a host.\n"
-	       "    -B     Use instead of host if you want to address 255.255.255.255.\n"
-	       "    -c count\n"
-	       "           Only send count requests.\n"
+        printf("\nOptions:\n");
+        printf("\n"
+               "    -0     Use this option to ping with source IP address 0.0.0.0. Use this\n"
+               "           when you haven't configured your interface yet.  Note that  this\n"
+               "           may  get  the  MAC-ping  unanswered.   This  is  an alias for -S\n"
+               "           0.0.0.0.\n"
+               "    -a     Audiable ping.\n"
+               "    -A     Only count addresses matching  requested  address  (This  *WILL*\n"
+               "           break  most things you do. Only useful if you are arpinging many\n"
+               "           hosts at once. See arping-scan-net.sh for an example).\n"
+               "    -b     Like -0 but source broadcast source  address  (255.255.255.255).\n"
+               "           Note that this may get the arping unanswered since it's not nor-\n"
+               "           mal behavior for a host.\n"
+               "    -B     Use instead of host if you want to address 255.255.255.255.\n"
+               "    -c count\n"
+               "           Only send count requests.\n"
                "    -C count\n"
                "           Only wait for this many replies, regardless of -c and -w.\n"
-	       "    -d     Find duplicate replies. Exit with 1 if there are "
+               "    -d     Find duplicate replies. Exit with 1 if there are "
                "answers from\n"
                "           two different MAC addresses.\n"
-	       "    -D     Display answers as exclamation points and missing packets as dots.\n"
+               "    -D     Display answers as exclamation points and missing packets as dots.\n"
                "    -e     Like -a but beep when there is no reply.\n"
-	       "    -F     Don't try to be smart about the interface name.  (even  if  this\n"
-	       "           switch is not given, -i overrides smartness)\n"
-	       "    -h     Displays a help message and exits.\n"
-	       "    -i interface\n"
-	       "           Use the specified interface.\n"
+               "    -F     Don't try to be smart about the interface name.  (even  if  this\n"
+               "           switch is not given, -i overrides smartness)\n"
+               "    -h     Displays a help message and exits.\n"
+               "    -i interface\n"
+               "           Use the specified interface.\n"
                "    -m type"
 #ifndef HAVE_PCAP_LIST_TSTAMP_TYPES
                " (Disabled on this system. Option ignored)"
 #endif
                "\n           Type of timestamp to use for incoming packets. Use -vv when\n"
                "           pinging to list available ones.\n"
-	       "    -q     Does not display messages, except error messages.\n"
+               "    -q     Does not display messages, except error messages.\n"
                "    -Q pri 802.1p priority to set. Should be used with 802.1Q (-V).\n"
                "           Defaults to 0.\n"
-	       "    -r     Raw output: only the MAC/IP address is displayed for each reply.\n"
-	       "    -R     Raw output: Like -r but shows \"the other one\", can  be  combined\n"
-	       "           with -r.\n"
-	       "    -s MAC Set source MAC address. You may need to use -p with this.\n"
-	       "    -S IP  Like  -b and -0 but with set source address.  Note that this may\n"
-	       "           get the arping unanswered if the target does not have routing to\n"
-	       "           the  IP.  If you don't own the IP you are using, you may need to\n"
-	       "           turn on promiscious mode on the interface (with -p).  With  this\n"
-	       "           switch  you can find out what IP-address a host has without tak-\n"
-	       "           ing an IP-address yourself.\n"
-	       "    -t MAC Set target MAC address to use when pinging IP address.\n"
-	       "    -T IP  Use -T as target address when pinging MACs that won't respond to\n"
-	       "           a broadcast ping but perhaps to a directed broadcast.\n"
-	       "           Example:\n"
-	       "           To check the address of MAC-A, use knowledge of MAC-B and  IP-B.\n"
-	       "           $ arping -S <IP-B> -s <MAC-B> -p <MAC-A>\n"
-	       "    -p     Turn  on  promiscious  mode  on interface, use this if you don't\n"
-	       "           \"own\" the MAC address you are using.\n"
+               "    -r     Raw output: only the MAC/IP address is displayed for each reply.\n"
+               "    -R     Raw output: Like -r but shows \"the other one\", can  be  combined\n"
+               "           with -r.\n"
+               "    -s MAC Set source MAC address. You may need to use -p with this.\n"
+               "    -S IP  Like  -b and -0 but with set source address.  Note that this may\n"
+               "           get the arping unanswered if the target does not have routing to\n"
+               "           the  IP.  If you don't own the IP you are using, you may need to\n"
+               "           turn on promiscious mode on the interface (with -p).  With  this\n"
+               "           switch  you can find out what IP-address a host has without tak-\n"
+               "           ing an IP-address yourself.\n"
+               "    -t MAC Set target MAC address to use when pinging IP address.\n"
+               "    -T IP  Use -T as target address when pinging MACs that won't respond to\n"
+               "           a broadcast ping but perhaps to a directed broadcast.\n"
+               "           Example:\n"
+               "           To check the address of MAC-A, use knowledge of MAC-B and  IP-B.\n"
+               "           $ arping -S <IP-B> -s <MAC-B> -p <MAC-A>\n"
+               "    -p     Turn  on  promiscious  mode  on interface, use this if you don't\n"
+               "           \"own\" the MAC address you are using.\n"
                "    -P     Send ARP replies instead of requests. Useful with -U.\n"
-	       "    -u     Show index=received/sent instead  of  just  index=received  when\n"
-	       "           pinging MACs.\n"
-	       "    -U     Send unsolicited ARP.\n"
-	       "    -v     Verbose output. Use twice for more messages.\n"
+               "    -u     Show index=received/sent instead  of  just  index=received  when\n"
+               "           pinging MACs.\n"
+               "    -U     Send unsolicited ARP.\n"
+               "    -v     Verbose output. Use twice for more messages.\n"
                "    -V num 802.1Q tag to add. Defaults to no VLAN tag.\n"
                "    -w     Time to wait between pings, in microseconds.\n"
                "    -W     Same as -w, but in floating point seconds.\n");
@@ -646,8 +646,8 @@ extended_usage()
 static void
 standard_usage()
 {
-	printf("ARPing %s, by Thomas Habets <thomas@habets.se>\n",
-	       version);
+        printf("ARPing %s, by Thomas Habets <thomas@habets.se>\n",
+               version);
         printf("usage: arping [ -0aAbdDeFpPqrRuUv ] [ -w <us> ] "
                "[ -W <sec> ] "
                "[ -S <host/ip> ]\n"
@@ -674,7 +674,7 @@ usage(int ret)
                 printf("For complete usage info, use --help"
                        " or check the manpage.\n");
         }
-	exit(ret);
+        exit(ret);
 }
 
 /**
@@ -686,42 +686,42 @@ usage(int ret)
  */
 static int is_mac_addr(const char *p)
 {
-	/* cisco-style */
-	if (3*5-1 == strlen(p)) {
-		unsigned int c;
-		for (c = 0; c < strlen(p); c++) {
-			if ((c % 5) == 4) {
-				if ('.' != p[c]) {
-					goto checkcolon;
-				}
-			} else {
-				if (!isxdigit(p[c])) {
-					goto checkcolon;
-				}
-			}
-		}
-		return 1;
-	}
-	/* windows-style */
-	if (6*3-1 == strlen(p)) {
-		unsigned int c;
-		for (c = 0; c < strlen(p); c++) {
-			if ((c % 3) == 2) {
-				if ('-' != p[c]) {
-					goto checkcolon;
-				}
-			} else {
-				if (!isxdigit(p[c])) {
-					goto checkcolon;
-				}
-			}
-		}
-		return 1;
-	}
+        /* cisco-style */
+        if (3*5-1 == strlen(p)) {
+                unsigned int c;
+                for (c = 0; c < strlen(p); c++) {
+                        if ((c % 5) == 4) {
+                                if ('.' != p[c]) {
+                                        goto checkcolon;
+                                }
+                        } else {
+                                if (!isxdigit(p[c])) {
+                                        goto checkcolon;
+                                }
+                        }
+                }
+                return 1;
+        }
+        /* windows-style */
+        if (6*3-1 == strlen(p)) {
+                unsigned int c;
+                for (c = 0; c < strlen(p); c++) {
+                        if ((c % 3) == 2) {
+                                if ('-' != p[c]) {
+                                        goto checkcolon;
+                                }
+                        } else {
+                                if (!isxdigit(p[c])) {
+                                        goto checkcolon;
+                                }
+                        }
+                }
+                return 1;
+        }
 
  checkcolon:
-	/* unix */
-	return strchr(p, ':') ? 1 : 0;
+        /* unix */
+        return strchr(p, ':') ? 1 : 0;
 }
 
 /**
@@ -785,37 +785,37 @@ timespec2dbl(const struct timespec *tv)
 static char *ts2str(const struct timespec *tv, const struct timespec *tv2,
                     char *buf, size_t bufsize)
 {
-	double f,f2;
-	int exp = 0;
+        double f,f2;
+        int exp = 0;
 
         f = timespec2dbl(tv);
         f2 = timespec2dbl(tv2);
-	f = (f2 - f) * 1000000000;
-	while (f > 1000) {
-		exp += 3;
-		f /= 1000;
-	}
-	switch (exp) {
-	case 0:
+        f = (f2 - f) * 1000000000;
+        while (f > 1000) {
+                exp += 3;
+                f /= 1000;
+        }
+        switch (exp) {
+        case 0:
                 snprintf(buf, bufsize, "%.3f nsec", f);
-		break;
-	case 3:
+                break;
+        case 3:
                 snprintf(buf, bufsize, "%.3f usec", f);
-		break;
-	case 6:
+                break;
+        case 6:
                 snprintf(buf, bufsize, "%.3f msec", f);
-		break;
-	case 9:
+                break;
+        case 9:
                 snprintf(buf, bufsize, "%.3f sec", f);
-		break;
-	case 12:
+                break;
+        case 12:
                 snprintf(buf, bufsize, "%.3f sec", f*1000);
-		break;
+                break;
         default:
-		/* huh, uh, huhuh */
+                /* huh, uh, huhuh */
                 snprintf(buf, bufsize, "%.3fe%d sec", f, exp-9);
-	}
-	return buf;
+        }
+        return buf;
 }
 
 
@@ -828,42 +828,42 @@ static char *ts2str(const struct timespec *tv, const struct timespec *tv2,
 static void
 pingmac_send(uint16_t id, uint16_t seq)
 {
-	static libnet_ptag_t icmp = 0, ipv4 = 0,eth=0;
-	int c;
+        static libnet_ptag_t icmp = 0, ipv4 = 0,eth=0;
+        int c;
 
-	if (-1 == (icmp = libnet_build_icmpv4_echo(ICMP_ECHO, /* type */
-						   0, /* code */
-						   0, /* checksum */
-						   id, /* id */
-						   seq, /* seq */
-						   NULL, /* payload */
-						   0, /* payload len */
-						   libnet,
-						   icmp))) {
-		fprintf(stderr, "libnet_build_icmpv4_echo(): %s\n",
-			libnet_geterror(libnet));
-		sigint(0);
-	}
+        if (-1 == (icmp = libnet_build_icmpv4_echo(ICMP_ECHO, /* type */
+                                                   0, /* code */
+                                                   0, /* checksum */
+                                                   id, /* id */
+                                                   seq, /* seq */
+                                                   NULL, /* payload */
+                                                   0, /* payload len */
+                                                   libnet,
+                                                   icmp))) {
+                fprintf(stderr, "libnet_build_icmpv4_echo(): %s\n",
+                        libnet_geterror(libnet));
+                sigint(0);
+        }
 
-	if (-1==(ipv4 = libnet_build_ipv4(LIBNET_IPV4_H
-					  + LIBNET_ICMPV4_ECHO_H + 0,
-					  0, /* ToS */
-					  id, /* id */
-					  0, /* frag */
-					  64, /* ttl */
-					  IPPROTO_ICMP,
-					  0, /* checksum */
-					  srcip,
-					  dstip,
-					  NULL, /* payload */
-					  0,
-					  libnet,
-					  ipv4))) {
-		fprintf(stderr, "libnet_build_ipv4(): %s\n",
-			libnet_geterror(libnet));
-		sigint(0);
-	}
-	if (vlan_tag >= 0) {
+        if (-1==(ipv4 = libnet_build_ipv4(LIBNET_IPV4_H
+                                          + LIBNET_ICMPV4_ECHO_H + 0,
+                                          0, /* ToS */
+                                          id, /* id */
+                                          0, /* frag */
+                                          64, /* ttl */
+                                          IPPROTO_ICMP,
+                                          0, /* checksum */
+                                          srcip,
+                                          dstip,
+                                          NULL, /* payload */
+                                          0,
+                                          libnet,
+                                          ipv4))) {
+                fprintf(stderr, "libnet_build_ipv4(): %s\n",
+                        libnet_geterror(libnet));
+                sigint(0);
+        }
+        if (vlan_tag >= 0) {
                 eth = libnet_build_802_1q(dstmac,
                                           srcmac,
                                           ETHERTYPE_VLAN,
@@ -891,19 +891,19 @@ pingmac_send(uint16_t id, uint16_t seq)
                         libnet_geterror(libnet));
                 sigint(0);
         }
-	if (verbose > 1) {
+        if (verbose > 1) {
                 getclock(&lastpacketsent);
                 printf("arping: sending packet at time %ld.%09ld\n",
                        (long)lastpacketsent.tv_sec,
                        (long)lastpacketsent.tv_nsec);
-	}
-	if (-1 == (c = libnet_write(libnet))) {
-		fprintf(stderr, "arping: libnet_write(): %s\n",
-			libnet_geterror(libnet));
-		sigint(0);
-	}
+        }
+        if (-1 == (c = libnet_write(libnet))) {
+                fprintf(stderr, "arping: libnet_write(): %s\n",
+                        libnet_geterror(libnet));
+                sigint(0);
+        }
         getclock(&lastpacketsent);
-	numsent++;
+        numsent++;
 }
 
 /** Send ARP who-has.
@@ -912,24 +912,24 @@ pingmac_send(uint16_t id, uint16_t seq)
 static void
 pingip_send()
 {
-	static libnet_ptag_t arp=0,eth=0;
-	if (-1 == (arp = libnet_build_arp(ARPHRD_ETHER,
-					  ETHERTYPE_IP,
-					  ETH_ALEN,
-					  IP_ALEN,
+        static libnet_ptag_t arp=0,eth=0;
+        if (-1 == (arp = libnet_build_arp(ARPHRD_ETHER,
+                                          ETHERTYPE_IP,
+                                          ETH_ALEN,
+                                          IP_ALEN,
                                           send_reply ? ARPOP_REPLY : ARPOP_REQUEST,
-					  srcmac,
-					  (uint8_t*)&srcip,
-					  unsolicited ? (uint8_t*)ethxmas : (uint8_t*)ethnull,
-					  (uint8_t*)&dstip,
-					  NULL,
-					  0,
-					  libnet,
-					  arp))) {
-		fprintf(stderr, "arping: libnet_build_arp(): %s\n",
-			libnet_geterror(libnet));
-		sigint(0);
-	}
+                                          srcmac,
+                                          (uint8_t*)&srcip,
+                                          unsolicited ? (uint8_t*)ethxmas : (uint8_t*)ethnull,
+                                          (uint8_t*)&dstip,
+                                          NULL,
+                                          0,
+                                          libnet,
+                                          arp))) {
+                fprintf(stderr, "arping: libnet_build_arp(): %s\n",
+                        libnet_geterror(libnet));
+                sigint(0);
+        }
 
         if (vlan_tag >= 0) {
                 eth = libnet_build_802_1q(dstmac,
@@ -952,26 +952,26 @@ pingip_send()
                                             libnet,
                                             eth);
         }
-	if (-1 == eth) {
-		fprintf(stderr, "arping: %s: %s\n",
-			(vlan_tag >= 0) ? "libnet_build_802_1q()" :
+        if (-1 == eth) {
+                fprintf(stderr, "arping: %s: %s\n",
+                        (vlan_tag >= 0) ? "libnet_build_802_1q()" :
                         "libnet_build_ethernet()",
-			libnet_geterror(libnet));
-		sigint(0);
-	}
-	if (verbose > 1) {
+                        libnet_geterror(libnet));
+                sigint(0);
+        }
+        if (verbose > 1) {
                 getclock(&lastpacketsent);
                 printf("arping: sending packet at time %ld.%09ld\n",
                        (long)lastpacketsent.tv_sec,
                        (long)lastpacketsent.tv_nsec);
-	}
-	if (-1 == libnet_write(libnet)) {
-		fprintf(stderr, "arping: libnet_write(): %s\n", 
-			libnet_geterror(libnet));
-		sigint(0);
-	}
+        }
+        if (-1 == libnet_write(libnet)) {
+                fprintf(stderr, "arping: libnet_write(): %s\n", 
+                        libnet_geterror(libnet));
+                sigint(0);
+        }
         getclock(&lastpacketsent);
-	numsent++;
+        numsent++;
 }
 
 /** handle incoming packet when pinging an IP address.
@@ -984,30 +984,30 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 {
         const unsigned char *pkt_srcmac;
         const struct libnet_802_1q_hdr *veth;
-	struct libnet_802_3_hdr *heth;
-	struct libnet_arp_hdr *harp;
+        struct libnet_802_3_hdr *heth;
+        struct libnet_arp_hdr *harp;
         struct timespec arrival;
-	int c;
+        int c;
 
         if (verbose > 2) {
-		printf("arping: received response for IP ping\n");
-	}
+                printf("arping: received response for IP ping\n");
+        }
 
         getclock(&arrival);
 
-	if (vlan_tag >= 0) {
-		veth = (void*)packet;
-		harp = (void*)((char*)veth + LIBNET_802_1Q_H);
-		pkt_srcmac = veth->vlan_shost;
-	} else {
+        if (vlan_tag >= 0) {
+                veth = (void*)packet;
+                harp = (void*)((char*)veth + LIBNET_802_1Q_H);
+                pkt_srcmac = veth->vlan_shost;
+        } else {
                 // Short packet.
                 if (h->caplen < LIBNET_ETH_H + LIBNET_ARP_H + 2*(ETH_ALEN + 4)) {
                         return;
                 }
 
-		heth = (void*)packet;
-		harp = (void*)((char*)heth + LIBNET_ETH_H);
-		pkt_srcmac = heth->_802_3_shost;
+                heth = (void*)packet;
+                harp = (void*)((char*)heth + LIBNET_ETH_H);
+                pkt_srcmac = heth->_802_3_shost;
                 // Wrong length of hardware address.
                 if (harp->ar_hln != ETH_ALEN) {
                         return;
@@ -1017,7 +1017,7 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
                 if (harp->ar_pln != 4) {
                         return;
                 }
-	}
+        }
 
         // ARP reply.
         if (htons(harp->ar_op) != ARPOP_REPLY) {
@@ -1134,15 +1134,15 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
         const unsigned char *pkt_dstmac;
         const unsigned char *pkt_srcmac;
         const struct libnet_802_1q_hdr *veth;
-	struct libnet_802_3_hdr *heth;
-	struct libnet_ipv4_hdr *hip;
-	struct libnet_icmpv4_hdr *hicmp;
+        struct libnet_802_3_hdr *heth;
+        struct libnet_ipv4_hdr *hip;
+        struct libnet_icmpv4_hdr *hicmp;
         struct timespec arrival;
-	int c;
+        int c;
 
-	if(verbose>2) {
-		printf("arping: received response for mac ping\n");
-	}
+        if(verbose>2) {
+                printf("arping: received response for mac ping\n");
+        }
 
         getclock(&arrival);
 
@@ -1241,10 +1241,10 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 static void
 fixup_timespec(struct timespec *tv)
 {
-	while (tv->tv_nsec < 0) {
-		tv->tv_sec--;
-		tv->tv_nsec += 1000000000;
-	}
+        while (tv->tv_nsec < 0) {
+                tv->tv_sec--;
+                tv->tv_nsec += 1000000000;
+        }
 }
 
 /**
@@ -1272,12 +1272,12 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
        old_received = numrecvd;
 
        for (;!done;) {
-	       int trydispatch = 0;
+               int trydispatch = 0;
 
-	       getclock(&ts);
-	       ts.tv_sec = endtime.tv_sec - ts.tv_sec;
-	       ts.tv_nsec = endtime.tv_nsec - ts.tv_nsec;
-	       fixup_timespec(&ts);
+               getclock(&ts);
+               ts.tv_sec = endtime.tv_sec - ts.tv_sec;
+               ts.tv_nsec = endtime.tv_nsec - ts.tv_nsec;
+               fixup_timespec(&ts);
                if (verbose > 2) {
                        printf("arping: listen for replies for %ld.%09ld sec\n",
                               (long)ts.tv_sec, (long)ts.tv_nsec);
@@ -1286,11 +1286,11 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
                /* if time has passed, do one last check and then we're done.
                 * this also triggers if not using monotonic clock and time
                 * is set forwards */
-	       if (ts.tv_sec < 0) {
-		       ts.tv_sec = 0;
-		       ts.tv_nsec = 1;
-		       done = 1;
-	       }
+               if (ts.tv_sec < 0) {
+                       ts.tv_sec = 0;
+                       ts.tv_nsec = 1;
+                       done = 1;
+               }
 
                /* if wait-for-packet time is longer than full period,
                 * we're obviously not using a monotonic clock and the system
@@ -1300,20 +1300,20 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
                if ((ts.tv_sec > packetwait / 1000000)
                    || ((ts.tv_sec == packetwait / 1000000)
                        && (ts.tv_nsec/1000 > packetwait % 1000000))) {
-		       ts.tv_sec = 0;
-		       ts.tv_nsec = 1;
+                       ts.tv_sec = 0;
+                       ts.tv_nsec = 1;
                        done = 1;
                }
 
                /* check for sigint */
-	       if (time_to_die) {
-		       return;
-	       }
+               if (time_to_die) {
+                       return;
+               }
 
-	       /* try to wait for data */
-	       {
+               /* try to wait for data */
+               {
                        fd_set fds;
-		       int r;
+                       int r;
                        struct timeval tv;
                        tv.tv_sec = ts.tv_sec;
                        tv.tv_usec = ts.tv_nsec / 1000;
@@ -1322,8 +1322,8 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
                        FD_SET(fd, &fds);
 
                        r = select(fd + 1, &fds, NULL, NULL, &tv);
-		       switch (r) {
-		       case 0: /* timeout */
+                       switch (r) {
+                       case 0: /* timeout */
                                if (numrecvd == old_received) {
                                        if (reverse_beep) {
                                                printf("\a");
@@ -1343,41 +1343,41 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
                                        }
                                        fflush(stdout);
                                }
-			       done = 1;
-			       break;
-		       case -1: /* error */
-			       if (errno != EINTR) {
-				       done = 1;
-				       sigint(0);
-				       fprintf(stderr,
-					       "arping: select() failed: %s\n",
-					       strerror(errno));
-			       }
-			       break;
-		       default: /* data returned */
-			       trydispatch = 1;
-			       break;
-		       }
-	       }
+                               done = 1;
+                               break;
+                       case -1: /* error */
+                               if (errno != EINTR) {
+                                       done = 1;
+                                       sigint(0);
+                                       fprintf(stderr,
+                                               "arping: select() failed: %s\n",
+                                               strerror(errno));
+                               }
+                               break;
+                       default: /* data returned */
+                               trydispatch = 1;
+                               break;
+                       }
+               }
 
-	       if (trydispatch) {
-		       int ret;
+               if (trydispatch) {
+                       int ret;
                        if (0 > (ret = pcap_dispatch(pcap, -1,
                                                     func,
                                                     NULL))) {
-			       /* rest, so we don't take 100% CPU... mostly
+                               /* rest, so we don't take 100% CPU... mostly
                                   hmm... does usleep() exist everywhere? */
-			       usleep(1);
+                               usleep(1);
 
-			       /* weird is normal on bsd :) */
-			       if (verbose > 3) {
-				       fprintf(stderr,
-					       "arping: select says ok, but "
-					       "pcap_dispatch=%d!\n",
-					       ret);
-			       }
-		       }
-	       }
+                               /* weird is normal on bsd :) */
+                               if (verbose > 3) {
+                                       fprintf(stderr,
+                                               "arping: select says ok, but "
+                                               "pcap_dispatch=%d!\n",
+                                               ret);
+                               }
+                       }
+               }
        }
 }
 
@@ -1387,21 +1387,21 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 int
 arping_main(int argc, char **argv)
 {
-	char ebuf[LIBNET_ERRBUF_SIZE + PCAP_ERRBUF_SIZE];
-	char *cp;
-	int promisc = 0;
-	int srcip_given = 0;
-	int srcmac_given = 0;
-	int dstip_given = 0;
-	const char *ifname = NULL;
-	char *parm;
-	int c;
-	unsigned int maxcount = -1;
-	int dont_use_arping_lookupdev=0;
-	struct bpf_program bp;
-	pcap_t *pcap;
-	enum { NONE, PINGMAC, PINGIP } mode = NONE;
-	unsigned int packetwait = 1000000;
+        char ebuf[LIBNET_ERRBUF_SIZE + PCAP_ERRBUF_SIZE];
+        char *cp;
+        int promisc = 0;
+        int srcip_given = 0;
+        int srcmac_given = 0;
+        int dstip_given = 0;
+        const char *ifname = NULL;
+        char *parm;
+        int c;
+        unsigned int maxcount = -1;
+        int dont_use_arping_lookupdev=0;
+        struct bpf_program bp;
+        pcap_t *pcap;
+        enum { NONE, PINGMAC, PINGIP } mode = NONE;
+        unsigned int packetwait = 1000000;
         char bpf_filter[64];
         ebuf[0] = 0;
 
@@ -1413,76 +1413,76 @@ arping_main(int argc, char **argv)
                 }
         }
 
-	srcip = 0;
-	dstip = 0xffffffff;
-	memcpy(dstmac, ethxmas, ETH_ALEN);
+        srcip = 0;
+        dstip = 0xffffffff;
+        memcpy(dstmac, ethxmas, ETH_ALEN);
 
         while (EOF != (c = getopt(argc, argv,
                                   "0aAbBC:c:dDeFhi:I:m:pPqQ:rRs:S:t:T:uUvV:w:W:"))) {
-		switch(c) {
-		case '0':
-			srcip = 0;
-			srcip_given = 1;
-			break;
-		case 'a':
-			beep = 1;
-			break;
-		case 'A':
-			addr_must_be_same = 1;
-			break;
-		case 'b':
-			srcip = 0xffffffff;
-			srcip_given = 1;
-			break;
-		case 'B':
-			dstip = 0xffffffff;
-			dstip_given = 1;
-			break;
-		case 'c':
-			maxcount = atoi(optarg);
-			break;
+                switch(c) {
+                case '0':
+                        srcip = 0;
+                        srcip_given = 1;
+                        break;
+                case 'a':
+                        beep = 1;
+                        break;
+                case 'A':
+                        addr_must_be_same = 1;
+                        break;
+                case 'b':
+                        srcip = 0xffffffff;
+                        srcip_given = 1;
+                        break;
+                case 'B':
+                        dstip = 0xffffffff;
+                        dstip_given = 1;
+                        break;
+                case 'c':
+                        maxcount = atoi(optarg);
+                        break;
                 case 'C':
                         max_replies = atoi(optarg);
                         break;
-		case 'd':
-			finddup = 1;
-			break;
-		case 'D':
-			display = DOT;
-			break;
+                case 'd':
+                        finddup = 1;
+                        break;
+                case 'D':
+                        display = DOT;
+                        break;
                 case 'e':
                         reverse_beep = 1;
                         break;
-		case 'F':
-			dont_use_arping_lookupdev=1;
-			break;
-		case 'h':
-			usage(0);
-		case 'i':
-			if (strchr(optarg, ':')) {
-				fprintf(stderr, "arping: If you're trying to "
-					"feed me an interface alias then you "
-					"don't really\nknow what this programs"
-					" does, do you?\nUse -I if you really"
-					" mean it (undocumented on "
-					"purpose)\n");
-				exit(1);
-			}
-		case 'I': /* FALL THROUGH */
-			ifname = optarg;
-			break;
+                case 'F':
+                        dont_use_arping_lookupdev=1;
+                        break;
+                case 'h':
+                        usage(0);
+                case 'i':
+                        if (strchr(optarg, ':')) {
+                                fprintf(stderr, "arping: If you're trying to "
+                                        "feed me an interface alias then you "
+                                        "don't really\nknow what this programs"
+                                        " does, do you?\nUse -I if you really"
+                                        " mean it (undocumented on "
+                                        "purpose)\n");
+                                exit(1);
+                        }
+                case 'I': /* FALL THROUGH */
+                        ifname = optarg;
+                        break;
                 case 'm':
                         timestamp_type = optarg;
                         break;
-		case 'p':
-			promisc = 1;
-			break;
+                case 'p':
+                        promisc = 1;
+                        break;
                 case 'P':
                         send_reply = 1;
                         break;
-		case 'q':
-			display = QUIET;
-			break;
+                case 'q':
+                        display = QUIET;
+                        break;
                 case 'Q':
                         vlan_prio = atoi(optarg);
                         if (vlan_prio < 0 || vlan_prio > 7) {
@@ -1492,80 +1492,80 @@ arping_main(int argc, char **argv)
                                 exit(1);
                         }
                         break;
-		case 'r':
-			display = (display==RRAW)?RAWRAW:RAW;
-			break;
-		case 'R':
-			display = (display==RAW)?RAWRAW:RRAW;
-			break;
-		case 's': { /* spoof source MAC */
+                case 'r':
+                        display = (display==RRAW)?RAWRAW:RAW;
+                        break;
+                case 'R':
+                        display = (display==RAW)?RAWRAW:RRAW;
+                        break;
+                case 's': { /* spoof source MAC */
                         if (!get_mac_addr(optarg, srcmac)) {
-				fprintf(stderr, "arping: Weird MAC addr %s\n",
-					optarg);
-				exit(1);
-			}
-			srcmac_given = 1;
-			break;
-		}
-		case 'S': /* set source IP, may be null for don't-know */
+                                fprintf(stderr, "arping: Weird MAC addr %s\n",
+                                        optarg);
+                                exit(1);
+                        }
+                        srcmac_given = 1;
+                        break;
+                }
+                case 'S': /* set source IP, may be null for don't-know */
                         do_libnet_init(ifname, 0);
-			if (-1 == (srcip = libnet_name2addr4(libnet,
-							     optarg,
-							     LIBNET_RESOLVE))){
-				fprintf(stderr, "arping: Can't resolve %s, or "
-					"%s is broadcast. If it is, use -b"
-					" instead of -S\n", optarg,optarg);
-				exit(1);
-			}
-			srcip_given = 1;
-			break;
-		case 't': { /* set taget mac */
-			if (mode == PINGMAC) {
-				fprintf(stderr, "arping: -t can only be used "
-					"in IP ping mode\n");
-				exit(1);
-			}
+                        if (-1 == (srcip = libnet_name2addr4(libnet,
+                                                             optarg,
+                                                             LIBNET_RESOLVE))){
+                                fprintf(stderr, "arping: Can't resolve %s, or "
+                                        "%s is broadcast. If it is, use -b"
+                                        " instead of -S\n", optarg,optarg);
+                                exit(1);
+                        }
+                        srcip_given = 1;
+                        break;
+                case 't': { /* set taget mac */
+                        if (mode == PINGMAC) {
+                                fprintf(stderr, "arping: -t can only be used "
+                                        "in IP ping mode\n");
+                                exit(1);
+                        }
                         if (!get_mac_addr(optarg, dstmac)) {
-				fprintf(stderr, "Illegal MAC addr %s\n",
-					optarg);
-				exit(1);
-			}
-			mode = PINGIP;
-			break;
-		}
-		case 'T': /* set destination IP */
-			if (mode == PINGIP) {
-				fprintf(stderr, "arping: -T can only be used "
-					"in MAC ping mode\n");
-				exit(1);
-			}
+                                fprintf(stderr, "Illegal MAC addr %s\n",
+                                        optarg);
+                                exit(1);
+                        }
+                        mode = PINGIP;
+                        break;
+                }
+                case 'T': /* set destination IP */
+                        if (mode == PINGIP) {
+                                fprintf(stderr, "arping: -T can only be used "
+                                        "in MAC ping mode\n");
+                                exit(1);
+                        }
                         do_libnet_init(ifname, 0);
-			if (-1 == (dstip = libnet_name2addr4(libnet,
-							     optarg,
-							     LIBNET_RESOLVE))){
-				fprintf(stderr,"arping: Can't resolve %s, or "
-					"%s is broadcast. If it is, use -B "
-					"instead of -T\n",optarg,optarg);
-				exit(1);
-			}
-			mode = PINGMAC;
-			break;
-		case 'u':
-			alsototal = 1;
-			break;
-		case 'U':
-			if (mode == PINGMAC) {
-				fprintf(stderr, "arping: -U can only be used "
-					"in IP ping mode\n");
-				exit(1);
-			}
-			unsolicited = 1;
-			break;
-		case 'v':
-			verbose++;
-			break;
-		case 'V':
-			vlan_tag = atoi(optarg);
+                        if (-1 == (dstip = libnet_name2addr4(libnet,
+                                                             optarg,
+                                                             LIBNET_RESOLVE))){
+                                fprintf(stderr,"arping: Can't resolve %s, or "
+                                        "%s is broadcast. If it is, use -B "
+                                        "instead of -T\n",optarg,optarg);
+                                exit(1);
+                        }
+                        mode = PINGMAC;
+                        break;
+                case 'u':
+                        alsototal = 1;
+                        break;
+                case 'U':
+                        if (mode == PINGMAC) {
+                                fprintf(stderr, "arping: -U can only be used "
+                                        "in IP ping mode\n");
+                                exit(1);
+                        }
+                        unsolicited = 1;
+                        break;
+                case 'v':
+                        verbose++;
+                        break;
+                case 'V':
+                        vlan_tag = atoi(optarg);
                         if (vlan_tag < 0 || vlan_tag > 4095) {
                                 fprintf(stderr,
                                         "arping: vlan tag must 0-4095. Is %d\n",
@@ -1573,16 +1573,16 @@ arping_main(int argc, char **argv)
                                 exit(1);
                         }
                         break;
-		case 'w':
-			packetwait = (unsigned)atoi(optarg);
-			break;
+                case 'w':
+                        packetwait = (unsigned)atoi(optarg);
+                        break;
                 case 'W':
                         packetwait = (unsigned)(1000000.0 * atof(optarg));
                         break;
-		default:
-			usage(1);
-		}
-	}
+                default:
+                        usage(1);
+                }
+        }
 
         if (vlan_prio >= 0 && vlan_tag == -1) {
                 fprintf(stderr, "arping: -Q requires the use of 802.1Q (-V)\n");
@@ -1611,7 +1611,7 @@ arping_main(int argc, char **argv)
                 maxcount = 3;
         }
 
-	parm = (optind < argc) ? argv[optind] : NULL;
+        parm = (optind < argc) ? argv[optind] : NULL;
 
         /* default to own IP address when doing -d */
         if (finddup && !parm) {
@@ -1624,87 +1624,87 @@ arping_main(int argc, char **argv)
                 }
         }
 
-	/*
-	 * Handle dstip_given instead of ip address after parms (-B really)
-	 */
-	if (mode == NONE) {
-		if (optind + 1 == argc) {
-			mode = is_mac_addr(parm)?PINGMAC:PINGIP;
-		} else if (dstip_given) {
-			mode = PINGIP;
+        /*
+         * Handle dstip_given instead of ip address after parms (-B really)
+         */
+        if (mode == NONE) {
+                if (optind + 1 == argc) {
+                        mode = is_mac_addr(parm)?PINGMAC:PINGIP;
+                } else if (dstip_given) {
+                        mode = PINGIP;
                         do_libnet_init(ifname, 0);
-			parm = strdup(libnet_addr2name4(dstip,0));
-			if (!parm) {
-				fprintf(stderr, "arping: out of mem\n");
-				exit(1);
-			}
-		}
-	}
+                        parm = strdup(libnet_addr2name4(dstip,0));
+                        if (!parm) {
+                                fprintf(stderr, "arping: out of mem\n");
+                                exit(1);
+                        }
+                }
+        }
 
-	if (!parm) {
-		usage(1);
-	}
+        if (!parm) {
+                usage(1);
+        }
 
-	/*
-	 *
-	 */
-	if (mode == NONE) {
-		usage(1);
-	}
+        /*
+         *
+         */
+        if (mode == NONE) {
+                usage(1);
+        }
 
-	/*
-	 * libnet init (may be done already for resolving)
-	 */
+        /*
+         * libnet init (may be done already for resolving)
+         */
         do_libnet_init(ifname, 0);
 
-	/*
-	 * Make sure dstip and parm like eachother
-	 */
-	if (mode == PINGIP && (!dstip_given)) {
-		if (is_mac_addr(parm)) {
-			fprintf(stderr, "arping: Options given only apply to "
-				"IP ping, but MAC address given as argument"
-				"\n");
-			exit(1);
-		}
-		if (-1 == (dstip = libnet_name2addr4(libnet,
-						     parm,
-						     LIBNET_RESOLVE))) {
-			fprintf(stderr, "arping: Can't resolve %s\n", parm);
-			exit(1);
-		}
-		parm = strdup(libnet_addr2name4(dstip,0));
-	}
+        /*
+         * Make sure dstip and parm like eachother
+         */
+        if (mode == PINGIP && (!dstip_given)) {
+                if (is_mac_addr(parm)) {
+                        fprintf(stderr, "arping: Options given only apply to "
+                                "IP ping, but MAC address given as argument"
+                                "\n");
+                        exit(1);
+                }
+                if (-1 == (dstip = libnet_name2addr4(libnet,
+                                                     parm,
+                                                     LIBNET_RESOLVE))) {
+                        fprintf(stderr, "arping: Can't resolve %s\n", parm);
+                        exit(1);
+                }
+                parm = strdup(libnet_addr2name4(dstip,0));
+        }
 
-	/*
-	 * parse parm into dstmac
-	 */
-	if (mode == PINGMAC) {
-		if (optind + 1 != argc) {
-			usage(1);
-		}
-		if (!is_mac_addr(parm)) {
-			fprintf(stderr, "arping: Options given only apply to "
-				"MAC ping, but no MAC address given as "
-				"argument\n");
-			exit(1);
-		}
+        /*
+         * parse parm into dstmac
+         */
+        if (mode == PINGMAC) {
+                if (optind + 1 != argc) {
+                        usage(1);
+                }
+                if (!is_mac_addr(parm)) {
+                        fprintf(stderr, "arping: Options given only apply to "
+                                "MAC ping, but no MAC address given as "
+                                "argument\n");
+                        exit(1);
+                }
                 if (!get_mac_addr(argv[optind], dstmac)) {
-			fprintf(stderr, "arping: Illegal mac addr %s\n",
-				argv[optind]);
-			return 1;
-		}
-	}
+                        fprintf(stderr, "arping: Illegal mac addr %s\n",
+                                argv[optind]);
+                        return 1;
+                }
+        }
 
-	target = parm;
-	/*
-	 * Argument processing done, parameters considered sane below
-	 */
+        target = parm;
+        /*
+         * Argument processing done, parameters considered sane below
+         */
 
-	/*
-	 * Get some good iface.
-	 */
-	if (!ifname) {
+        /*
+         * Get some good iface.
+         */
+        if (!ifname) {
                 if (!dont_use_arping_lookupdev) {
                         ifname = arping_lookupdev(srcip, dstip, ebuf);
                         strip_newline(ebuf);
@@ -1725,62 +1725,62 @@ arping_main(int argc, char **argv)
                                         "specify interface. "
                                         "Guessing interface %s.\n", ifname);
                         }
-		}
-		if (!ifname) {
+                }
+                if (!ifname) {
                         fprintf(stderr, "arping: Gave up looking for interface"
                                 " to use: %s\n", ebuf);
-			exit(1);
-		}
-		/* FIXME: check for other probably-not interfaces */
-		if (!strcmp(ifname, "ipsec")
-		    || !strcmp(ifname,"lo")) {
-			fprintf(stderr, "arping: Um.. %s looks like the wrong "
-				"interface to use. Is it? "
-				"(-i switch)\n", ifname);
-			fprintf(stderr, "arping: using it anyway this time\n");
-		}
-	}
+                        exit(1);
+                }
+                /* FIXME: check for other probably-not interfaces */
+                if (!strcmp(ifname, "ipsec")
+                    || !strcmp(ifname,"lo")) {
+                        fprintf(stderr, "arping: Um.. %s looks like the wrong "
+                                "interface to use. Is it? "
+                                "(-i switch)\n", ifname);
+                        fprintf(stderr, "arping: using it anyway this time\n");
+                }
+        }
 
-	/*
-	 * Init libnet again, because we now know the interface name.
-	 * We should know it by know at least
-	 */
+        /*
+         * Init libnet again, because we now know the interface name.
+         * We should know it by know at least
+         */
         do_libnet_init(ifname, 0);
 
-	/*
-	 * pcap init
-	 */
+        /*
+         * pcap init
+         */
         if (!(pcap = do_pcap_open_live(ifname, 100, promisc, 10, ebuf))) {
                 strip_newline(ebuf);
                 fprintf(stderr, "arping: pcap_open_live(): %s\n", ebuf);
-		exit(1);
-	}
+                exit(1);
+        }
         drop_privileges();
-	if (pcap_setnonblock(pcap, 1, ebuf)) {
+        if (pcap_setnonblock(pcap, 1, ebuf)) {
                 strip_newline(ebuf);
-		fprintf(stderr, "arping: pcap_set_nonblock(): %s\n", ebuf);
-		exit(1);
-	}
-	if (verbose > 1) {
-		printf("arping: pcap_get_selectable_fd(): %d\n",
-		       pcap_get_selectable_fd(pcap));
-	}
+                fprintf(stderr, "arping: pcap_set_nonblock(): %s\n", ebuf);
+                exit(1);
+        }
+        if (verbose > 1) {
+                printf("arping: pcap_get_selectable_fd(): %d\n",
+                       pcap_get_selectable_fd(pcap));
+        }
 
 #ifdef BIOCIMMEDIATE
-	{
+        {
                 // This may be redundant if pcap_set_immediate_mode() is present.
-		uint32_t on = 1;
-		if (0 < (ioctl(pcap_fileno(pcap), BIOCIMMEDIATE,
-			       &on))) {
-			fprintf(stderr, "arping: ioctl(fd,BIOCIMMEDIATE, 1) "
-				"failed, continuing anyway, YMMV: %s\n",
-				strerror(errno));
-		}
-	}
+                uint32_t on = 1;
+                if (0 < (ioctl(pcap_fileno(pcap), BIOCIMMEDIATE,
+                               &on))) {
+                        fprintf(stderr, "arping: ioctl(fd,BIOCIMMEDIATE, 1) "
+                                "failed, continuing anyway, YMMV: %s\n",
+                                strerror(errno));
+                }
+        }
 #endif
 
-	if (mode == PINGIP) {
-		/* FIXME: better filter with addresses? */
+        if (mode == PINGIP) {
+                /* FIXME: better filter with addresses? */
                 if (vlan_tag >= 0) {
                         snprintf(bpf_filter, sizeof(bpf_filter),
                                  "vlan %u and arp", vlan_tag);
@@ -1790,10 +1790,10 @@ arping_main(int argc, char **argv)
                 if (-1 == pcap_compile(pcap, &bp, bpf_filter, 0, -1)) {
                         fprintf(stderr, "arping: pcap_compile(%s): error\n",
                                 bpf_filter);
-			exit(1);
-		}
-	} else { /* ping mac */
-		/* FIXME: better filter with addresses? */
+                        exit(1);
+                }
+        } else { /* ping mac */
+                /* FIXME: better filter with addresses? */
                 if (vlan_tag >= 0) {
                         snprintf(bpf_filter, sizeof(bpf_filter),
                                  "vlan %u and icmp", vlan_tag);
@@ -1803,73 +1803,73 @@ arping_main(int argc, char **argv)
                 if (-1 == pcap_compile(pcap, &bp, bpf_filter, 0,-1)) {
                         fprintf(stderr, "arping: pcap_compile(%s): error\n",
                                 bpf_filter);
-			exit(1);
-		}
-	}
-	if (-1 == pcap_setfilter(pcap, &bp)) {
-		fprintf(stderr, "arping: pcap_setfilter(): error\n");
-		exit(1);
-	}
+                        exit(1);
+                }
+        }
+        if (-1 == pcap_setfilter(pcap, &bp)) {
+                fprintf(stderr, "arping: pcap_setfilter(): error\n");
+                exit(1);
+        }
 
-	/*
-	 * final init
-	 */
-	if (!srcmac_given) {
-		if (!(cp = (char*)libnet_get_hwaddr(libnet))) {
-			fprintf(stderr, "arping: libnet_get_hwaddr(): %s\n",
-				libnet_geterror(libnet));
-			exit(1);
-		}
-		memcpy(srcmac, cp, ETH_ALEN);
-	}
-	if (!srcip_given) {
-		if (-1 == (srcip = libnet_get_ipaddr4(libnet))) {
-			fprintf(stderr,
+        /*
+         * final init
+         */
+        if (!srcmac_given) {
+                if (!(cp = (char*)libnet_get_hwaddr(libnet))) {
+                        fprintf(stderr, "arping: libnet_get_hwaddr(): %s\n",
+                                libnet_geterror(libnet));
+                        exit(1);
+                }
+                memcpy(srcmac, cp, ETH_ALEN);
+        }
+        if (!srcip_given) {
+                if (-1 == (srcip = libnet_get_ipaddr4(libnet))) {
+                        fprintf(stderr,
                                 "arping: Unable to get the IPv4 address of "
                                 "interface %s:\narping: %s"
                                 "arping: "
                                 "Use -S to specify address manually.\n",
                                 ifname, libnet_geterror(libnet));
-			exit(1);
-		}
-	}
+                        exit(1);
+                }
+        }
         do_signal_init();
 
-	if (verbose) {
+        if (verbose) {
                 char buf[128];
-		printf("This box:   Interface: %s  IP: %s   MAC address: %s\n",
-		       ifname,
+                printf("This box:   Interface: %s  IP: %s   MAC address: %s\n",
+                       ifname,
                        libnet_addr2name4(libnet_get_ipaddr4(libnet), 0),
                        format_mac(srcmac, buf, sizeof(buf)));
-	}
+        }
 
 
-	if (display == NORMAL) {
-		printf("ARPING %s\n", parm);
-	}
+        if (display == NORMAL) {
+                printf("ARPING %s\n", parm);
+        }
 
-	/*
-	 * let's roll
-	 */
-	if (mode == PINGIP) {
-		unsigned int c;
+        /*
+         * let's roll
+         */
+        if (mode == PINGIP) {
+                unsigned int c;
                 unsigned int r;
-		for (c = 0; c < maxcount && !time_to_die; c++) {
-			pingip_send();
+                for (c = 0; c < maxcount && !time_to_die; c++) {
+                        pingip_send();
                         r = numrecvd;
-			ping_recv(pcap,packetwait,
-				  (pcap_handler)pingip_recv);
-		}
-	} else { /* PINGMAC */
-		unsigned int c;
+                        ping_recv(pcap,packetwait,
+                                  (pcap_handler)pingip_recv);
+                }
+        } else { /* PINGMAC */
+                unsigned int c;
                 unsigned int r;
-		for (c = 0; c < maxcount && !time_to_die; c++) {
-			pingmac_send(rand(), c);
+                for (c = 0; c < maxcount && !time_to_die; c++) {
+                        pingmac_send(rand(), c);
                         r = numrecvd;
-			ping_recv(pcap,packetwait,
-				  (pcap_handler)pingmac_recv);
-		}
-	}
+                        ping_recv(pcap,packetwait,
+                                  (pcap_handler)pingmac_recv);
+                }
+        }
         if (display == DOT) {
                 const float succ = 100.0 - 100.0 * (float)(numrecvd)/(float)numsent;
                 printf("\t%3.0f%% packet loss (%d extra)\n",
@@ -1896,7 +1896,7 @@ arping_main(int argc, char **argv)
                                          -avg*avg));
                 }
                 printf("\n");
-	}
+        }
 
         if (finddup) {
                 return dupfound;

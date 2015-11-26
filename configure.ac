@@ -103,6 +103,21 @@ if test x$ac_cv_have_libnet_init_const = xyes; then
    AC_DEFINE([HAVE_LIBNET_INIT_CONST], [1], [Libnet init takes const char device])
 fi
 
+AC_CACHE_CHECK([for libnet_name2addr4 signature has const],
+		    ac_cv_have_libnet_name2addr4_const, [
+		    AC_TRY_RUN(
+		    [
+#include<libnet.h>
+uint32_t libnet_name2addr4(libnet_t*a,const char* b,uint8_t c){}
+int main(){}
+],
+  [ ac_cv_have_libnet_name2addr4_const="yes" ],
+  [ ac_cv_have_libnet_name2addr4_const="no" ])
+])
+if test x$ac_cv_have_libnet_name2addr4_const = xyes; then
+   AC_DEFINE([HAVE_LIBNET_NAME2ADDR4_CONST], [1], [Libnet name2addr4 takes const char* addr])
+fi
+
 
 # check for CLOCK_MONOTONIC
 AC_CACHE_CHECK([for CLOCK_MONOTONIC],

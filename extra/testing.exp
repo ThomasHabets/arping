@@ -16,6 +16,7 @@
 # Tested here:
 # * -a
 # * -c
+# * -d (minimally)
 # * -D
 # * -e
 # * -h
@@ -36,7 +37,6 @@
 # * -A (forced on with mac ping)
 # * -b
 # * -B
-# * -d
 # * -p
 # * -P
 # * -U
@@ -348,6 +348,14 @@ expect eof
 send_user -- "--------- Ping MAC x 2 with inverted audio, bad dest (-e -D)  ------------\n"
 spawn $bin -A -c 2 -e -i $ifname -D -T $ip $bad_mac
 expect "\a.\a.\t100% packet loss (0 extra)\r\n"
+expect eof
+
+send_user -- "--------- Detect duplicate  ------------\n"
+spawn $bin -c 2 -d $ip
+expect eof
+
+send_user -- "--------- Detect duplicate of self  ------------\n"
+spawn $bin -c 2 -d
 expect eof
 
 send_user -- "---------------------------------------------------------\n"

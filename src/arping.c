@@ -1536,6 +1536,7 @@ arping_main(int argc, char **argv)
 		case 'U':
                         opt_U = 1;
 			unsolicited = 1;
+                        mode = PINGIP;
 			break;
 		case 'v':
 			verbose++;
@@ -1560,14 +1561,17 @@ arping_main(int argc, char **argv)
 		}
 	}
 
-        if (opt_t && opt_T || opt_T && opt_U) {
-                fprintf(stderr, "arping: you can't use options in such combination "
-                                "-t and -T or -T and -U\n");
+        if (((mode == PINGIP) && opt_T)
+            || (mode == PINGMAC) && (opt_t || opt_U)) {
+                fprintf(stderr, "arping: -T can only be used to ping MAC"
+                        " and -U/-t only to ping IPs");
                 exit(1);
         }
-
         if (opt_T && opt_B) {
-                printf("arping: [WARNING] -B option ignored due to existing -T option\n");
+                fprintf(stderr,
+                        "arping: -B can't be used with -T,"
+                        " since they set the same thing\n");
+                exit(1);
         }
 
         if (srcmac_opt != NULL) {

@@ -198,6 +198,7 @@ static enum { NORMAL,      /* normal output */
 
 static const uint8_t ethnull[ETH_ALEN] = {0, 0, 0, 0, 0, 0};
 static const uint8_t ethxmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+static const char* ip_broadcast = "255.255.255.255";
 
 int verbose = 0;  /* Increase with -v */
 
@@ -1385,6 +1386,18 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
        }
 }
 
+// return 1 on success.
+static int
+xresolve(libnet_t* l, const char *name, int r, uint32_t *addr)
+{
+        if (!strcmp(ip_broadcast, name)) {
+                *addr = 0xffffffff;
+                return 1;
+        }
+        *addr = libnet_name2addr4(l, (char*)name, r);
+        return *addr != 0xffffffff;
+}
+
 /**
  *
  */
@@ -1395,13 +1408,14 @@ arping_main(int argc, char **argv)
 	char *cp;
 	int promisc = 0;
         const char *srcip_opt = NULL;
-	int srcip_given = 0;
         const char *dstip_opt = NULL;
+        // `dstip_given` can be set even when there's no arg past flags on the
+        // cmdline and -B not set. E.g. -d defaults to self, so requires no
+        // extra arg.
 	int dstip_given = 0;
         const char *srcmac_opt = NULL;
         const char *dstmac_opt = NULL;
 	const char *ifname = NULL;
-        int opt_t = 0;
         int opt_B = 0;
         int opt_T = 0;
         int opt_U = 0;
@@ -1432,8 +1446,7 @@ arping_main(int argc, char **argv)
                                   "0aAbBC:c:dDeFhi:I:m:pPqQ:rRs:S:t:T:uUvV:w:W:"))) {
 		switch(c) {
 		case '0':
-			srcip = 0;
-			srcip_given = 1;
+			srcip_opt = "0.0.0.0";
 			break;
 		case 'a':
 			beep = 1;
@@ -1442,12 +1455,11 @@ arping_main(int argc, char **argv)
 			addr_must_be_same = 1;
 			break;
 		case 'b':
-			srcip = 0xffffffff;
-			srcip_given = 1;
+			srcip_opt = ip_broadcast;
 			break;
 		case 'B':
-			dstip = 0xffffffff;
-			dstip_given = 1;
+                        dstip_opt = ip_broadcast;
+                        dstip_given = 1;
                         opt_B = 1;
 			break;
 		case 'c':
@@ -1516,17 +1528,14 @@ arping_main(int argc, char **argv)
 		}
 		case 'S': /* set source IP, may be null for don't-know */
                         srcip_opt = optarg;
-			srcip_given = 1;
 			break;
 		case 't': { /* set taget mac */
-                        opt_t = 1;
                         dstmac_opt = optarg;
 			mode = PINGIP;
 			break;
 		}
 		case 'T': /* set destination IP */
                         opt_T = 1;
-                        dstip_given = 1;
                         dstip_opt = optarg;
 			mode = PINGMAC;
 			break;
@@ -1562,9 +1571,9 @@ arping_main(int argc, char **argv)
 	}
 
         if (((mode == PINGIP) && opt_T)
-            || (mode == PINGMAC) && (opt_t || opt_U)) {
+            || (mode == PINGMAC) && (opt_B || dstmac_opt || opt_U)) {
                 fprintf(stderr, "arping: -T can only be used to ping MAC"
-                        " and -U/-t only to ping IPs");
+                        " and -BtU only to ping IPs");
                 exit(1);
         }
         if (opt_T && opt_B) {
@@ -1589,11 +1598,9 @@ arping_main(int argc, char **argv)
                 }
         }
 
-        if (srcip_given) {
+        if (srcip_opt != NULL) {
                 do_libnet_init(ifname, 0);
-                if (-1 == (srcip = libnet_name2addr4(libnet,
-                                                     (char*)srcip_opt,
-                                                     LIBNET_RESOLVE))){
+                if (!xresolve(libnet, srcip_opt, LIBNET_RESOLVE, &srcip)) {
                         fprintf(stderr, "arping: Can't resolve %s, or "
                                 "%s is broadcast. If it is, use -b"
                                 " instead of -S\n", srcip_opt,srcip_opt);
@@ -1601,11 +1608,9 @@ arping_main(int argc, char **argv)
                 }
         }
 
-        if (opt_T) {
+        if (dstip_opt) {
                 do_libnet_init(ifname, 0);
-                if (-1 == (dstip = libnet_name2addr4(libnet,
-                                                     (char*)dstip_opt,
-                                                     LIBNET_RESOLVE))){
+                if (!xresolve(libnet, dstip_opt, LIBNET_RESOLVE, &dstip)) {
                         fprintf(stderr,"arping: Can't resolve %s, or "
                                 "%s is broadcast. If it is, use -B "
                                 "instead of -T\n",dstip_opt,dstip_opt);
@@ -1696,9 +1701,7 @@ arping_main(int argc, char **argv)
 				"\n");
 			exit(1);
 		}
-		if (-1 == (dstip = libnet_name2addr4(libnet,
-                                                     (char*)parm,
-						     LIBNET_RESOLVE))) {
+                if (!xresolve(libnet, parm, LIBNET_RESOLVE, &dstip)) {
 			fprintf(stderr, "arping: Can't resolve %s\n", parm);
 			exit(1);
 		}
@@ -1851,7 +1854,7 @@ arping_main(int argc, char **argv)
 		}
 		memcpy(srcmac, cp, ETH_ALEN);
 	}
-	if (!srcip_given) {
+        if (srcip_opt == NULL) {
 		if (-1 == (srcip = libnet_get_ipaddr4(libnet))) {
 			fprintf(stderr,
                                 "arping: Unable to get the IPv4 address of "

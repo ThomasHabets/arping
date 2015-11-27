@@ -145,7 +145,7 @@ libnet_t *libnet = 0;
 static struct timespec lastpacketsent;
 
 /* target string */
-static char *target = "huh? bug in arping?";
+static const char *target = "huh? bug in arping?";
 
 /*
  * Ping IP mode:   cmdline target
@@ -1394,9 +1394,9 @@ arping_main(int argc, char **argv)
 	char ebuf[LIBNET_ERRBUF_SIZE + PCAP_ERRBUF_SIZE];
 	char *cp;
 	int promisc = 0;
-        char *srcip_opt = NULL;
+        const char *srcip_opt = NULL;
 	int srcip_given = 0;
-        char *dstip_opt = NULL;
+        const char *dstip_opt = NULL;
 	int dstip_given = 0;
         const char *srcmac_opt = NULL;
         const char *dstmac_opt = NULL;
@@ -1405,7 +1405,7 @@ arping_main(int argc, char **argv)
         int opt_B = 0;
         int opt_T = 0;
         int opt_U = 0;
-	char *parm;
+        const char *parm; // First argument, meaning the target IP.
 	int c;
 	unsigned int maxcount = -1;
 	int dont_use_arping_lookupdev=0;
@@ -1592,7 +1592,7 @@ arping_main(int argc, char **argv)
         if (srcip_given) {
                 do_libnet_init(ifname, 0);
                 if (-1 == (srcip = libnet_name2addr4(libnet,
-                                                     srcip_opt,
+                                                     (char*)srcip_opt,
                                                      LIBNET_RESOLVE))){
                         fprintf(stderr, "arping: Can't resolve %s, or "
                                 "%s is broadcast. If it is, use -b"
@@ -1604,7 +1604,7 @@ arping_main(int argc, char **argv)
         if (opt_T) {
                 do_libnet_init(ifname, 0);
                 if (-1 == (dstip = libnet_name2addr4(libnet,
-                                                     dstip_opt,
+                                                     (char*)dstip_opt,
                                                      LIBNET_RESOLVE))){
                         fprintf(stderr,"arping: Can't resolve %s, or "
                                 "%s is broadcast. If it is, use -B "
@@ -1697,7 +1697,7 @@ arping_main(int argc, char **argv)
 			exit(1);
 		}
 		if (-1 == (dstip = libnet_name2addr4(libnet,
-						     parm,
+                                                     (char*)parm,
 						     LIBNET_RESOLVE))) {
 			fprintf(stderr, "arping: Can't resolve %s\n", parm);
 			exit(1);

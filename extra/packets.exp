@@ -1,0 +1,110 @@
+#!/usr/bin/expect -f
+#
+# Usage: packets.exp <path to arping>
+#
+# Uses dummy0 interface on linux to verify that packets are byte-perfect
+# when they're sent out from arping.
+#
+# Ideas:
+#   * Run this with a new network namespace, to eliminate stray packets.
+#   * Merge with testing.exp.
+#
+# Currently tested:
+#  -b
+#  -d
+#  -0
+#  -S
+#
+set bin [lindex $argv 0]
+set DEV "dummy0"
+set PACKETDUMP "packetdump.pcap"
+
+proc dotest {name count filter cmd lines} {
+    upvar DEV DEV
+    upvar PACKETDUMP PACKETDUMP
+    upvar bin bin
+
+    send_user -- "----------- $name -----------\n"
+    send_user -- "Command: $cmd\n"
+    spawn ip a a 192.0.2.100/24 dev "$DEV"
+    expect eof
+
+    spawn ip l set up "$DEV"
+    expect eof
+
+    spawn tcpdump -c $count -i "$DEV" -s1500 -w "${PACKETDUMP}" "${filter}"
+    set tcpdump_id $spawn_id
+    expect -re "tcpdump: listening on .*bytes\r"
+
+    spawn $bin {*}[eval "concat $cmd"]
+    expect eof
+
+    spawn ip l set down "$DEV"
+    spawn ip a d 192.0.2.100/24 dev "$DEV"
+
+    set spawn_id $tcpdump_id
+    wait
+
+    spawn -noecho tcpdump -etnXXr "${PACKETDUMP}" "${filter}"
+    log_user 0
+    foreach l $lines {
+        puts "Expecting $l..."
+        expect "$l\r"
+    }
+    expect eof
+    log_user 1
+}
+
+
+dotest "Simple" 1 "arp" {-c 1 -i "$DEV" 192.0.2.1} {
+    "52:2b:c8:eb:1e:4e > ff:ff:ff:ff:ff:ff, ethertype ARP (0x0806), length 42: Request who-has 192.0.2.1 tell 192.0.2.100, length 28"
+    "\t0x0000:  ffff ffff ffff 522b c8eb 1e4e 0806 0001  ......R+...N...."
+    "\t0x0010:  0800 0604 0001 522b c8eb 1e4e c000 0264  ......R+...N...d"
+    "\t0x0020:  0000 0000 0000 c000 0201                 .........."
+}
+
+dotest "SrcIP 0 -0" 1 "arp" {-0 -c 1 -i "$DEV" 192.0.2.1} {
+    "52:2b:c8:eb:1e:4e > ff:ff:ff:ff:ff:ff, ethertype ARP (0x0806), length 42: Request who-has 192.0.2.1 tell 0.0.0.0, length 28"
+    "\t0x0000:  ffff ffff ffff 522b c8eb 1e4e 0806 0001  ......R+...N...."
+    "\t0x0010:  0800 0604 0001 522b c8eb 1e4e 0000 0000  ......R+...N...."
+    "\t0x0020:  0000 0000 0000 c000 0201                 .........."
+}
+
+dotest "SrcIP bc -b" 1 "arp" {-b -c 1 -i "$DEV" 192.0.2.1} {
+    "52:2b:c8:eb:1e:4e > ff:ff:ff:ff:ff:ff, ethertype ARP (0x0806), length 42: Request who-has 192.0.2.1 tell 255.255.255.255, length 28"
+    "\t0x0000:  ffff ffff ffff 522b c8eb 1e4e 0806 0001  ......R+...N...."
+    "\t0x0010:  0800 0604 0001 522b c8eb 1e4e ffff ffff  ......R+...N...."
+    "\t0x0020:  0000 0000 0000 c000 0201                 .........."
+}
+
+dotest "SrcIP bc manual" 1 "arp" {-S 255.255.255.255 -c 1 -i "$DEV" 192.0.2.1} {
+    "52:2b:c8:eb:1e:4e > ff:ff:ff:ff:ff:ff, ethertype ARP (0x0806), length 42: Request who-has 192.0.2.1 tell 255.255.255.255, length 28"
+    "\t0x0000:  ffff ffff ffff 522b c8eb 1e4e 0806 0001  ......R+...N...."
+    "\t0x0010:  0800 0604 0001 522b c8eb 1e4e ffff ffff  ......R+...N...."
+    "\t0x0020:  0000 0000 0000 c000 0201                 .........."
+}
+
+dotest "SrcIP other manual" 1 "arp" {-S 61.62.63.64 -c 1 -i "$DEV" 192.0.2.1} {
+    "52:2b:c8:eb:1e:4e > ff:ff:ff:ff:ff:ff, ethertype ARP (0x0806), length 42: Request who-has 192.0.2.1 tell 61.62.63.64, length 28"
+    "\t0x0000:  ffff ffff ffff 522b c8eb 1e4e 0806 0001  ......R+...N...."
+    "\t0x0010:  0800 0604 0001 522b c8eb 1e4e 3d3e 3f40  ......R+...N=>?@"
+    "\t0x0020:  0000 0000 0000 c000 0201                 .........."
+}
+
+dotest "Finddup" 1 "arp" {-c 1 -d -i "$DEV"} {
+    "52:2b:c8:eb:1e:4e > ff:ff:ff:ff:ff:ff, ethertype ARP (0x0806), length 42: Request who-has 192.0.2.100 tell 192.0.2.100, length 28"
+    "\t0x0000:  ffff ffff ffff 522b c8eb 1e4e 0806 0001  ......R+...N...."
+    "\t0x0010:  0800 0604 0001 522b c8eb 1e4e c000 0264  ......R+...N...d"
+    "\t0x0020:  0000 0000 0000 c000 0264                 .........d"
+}
+
+send_user "\n==================== ALL DONE =================\n"
+
+# ---- Emacs Variables ----
+# Local Variables:
+# c-basic-offset: 8
+# tcl-basic-offset: 8
+# indent-tabs-mode: nil
+# End:
+#
+# vim: ts=8 sw=8

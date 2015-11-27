@@ -1570,6 +1570,13 @@ arping_main(int argc, char **argv)
 		}
 	}
 
+        if (argc - optind > 1) {
+                // Can be zero if using -d or -B.
+                fprintf(stderr, "arping: Too many args on command line."
+                        " Expected at most one.\n");
+                exit(1);
+        }
+
         if (((mode == PINGIP) && opt_T)
             || (mode == PINGMAC) && (opt_B || dstmac_opt || opt_U)) {
                 fprintf(stderr, "arping: -T can only be used to ping MAC"

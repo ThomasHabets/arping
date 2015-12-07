@@ -1,6 +1,6 @@
 #!/usr/bin/expect -f
 #
-# Usage: packets.exp <path to arping> <my mac>
+# Usage: packets.exp <path to arping>
 #
 # Uses dummy0 interface on linux to verify that packets are byte-perfect
 # when they're sent out from arping.

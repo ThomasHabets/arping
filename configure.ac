@@ -94,7 +94,7 @@ AC_CACHE_CHECK([for libnet_init signature has const],
 		    [
 #include<libnet.h>
 libnet_t*libnet_init(int a,const char* b,char* c){}
-int main(){}
+int main(){return 0;}
 ],
   [ ac_cv_have_libnet_init_const="yes" ],
   [ ac_cv_have_libnet_init_const="no" ])
@@ -109,7 +109,7 @@ AC_CACHE_CHECK([for libnet_name2addr4 signature has const],
 		    [
 #include<libnet.h>
 uint32_t libnet_name2addr4(libnet_t*a,const char* b,uint8_t c){}
-int main(){}
+int main(){return 0;}
 ],
   [ ac_cv_have_libnet_name2addr4_const="yes" ],
   [ ac_cv_have_libnet_name2addr4_const="no" ])

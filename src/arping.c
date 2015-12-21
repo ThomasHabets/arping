@@ -219,21 +219,21 @@ drop_fs_root()
         errno = 0;
         if (!(pw = getpwnam(chroot_user))) {
                 if (verbose) {
-                        printf("arping: getpwnam(%s): %s",
+                        printf("arping: getpwnam(%s): %s\n",
                                chroot_user, strerror(errno));
                 }
                 return;
         }
         if (chdir(pw->pw_dir)) {
                 if (verbose) {
-                        printf("arping: chdir(%s): %s",
+                        printf("arping: chdir(%s): %s\n",
                                pw->pw_dir, strerror(errno));
                 }
                 return;
         }
         if (chroot(pw->pw_dir)) {
                 if (verbose) {
-                        printf("arping: chroot(%s): %s",
+                        printf("arping: chroot(%s): %s\n",
                                pw->pw_dir, strerror(errno));
                 }
                 return;

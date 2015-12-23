@@ -1645,7 +1645,11 @@ arping_main(int argc, char **argv)
         }
 
         if (display == DOT) {
-                setvbuf(stdout, NULL, _IONBF, 0);
+                if (0 != setvbuf(stdout, NULL, _IONBF, 0)) {
+                        fprintf(stderr,
+                                "arping: setvbuf(stdout, NULL, IONBF, 0): %s\n",
+                                strerror(errno));
+                }
         }
 
         if (finddup && maxcount == -1) {

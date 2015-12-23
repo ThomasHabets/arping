@@ -1676,9 +1676,14 @@ arping_main(int argc, char **argv)
         if (verbose > 1) {
 #if HAVE_CLOCK_MONOTONIC
                 struct timespec ts;
-                clock_getres(CLOCK_MONOTONIC, &ts);
-                printf("arping: clock_getres() = %ld %ld\n",
-                       (long)ts.tv_sec, (long)ts.tv_nsec);
+                if (clock_getres(CLOCK_MONOTONIC, &ts)) {
+                        fprintf(stderr,
+                                "arping: clock_getres(CLOCK_MONOTONIC, ...): %s\n",
+                                strerror(errno));
+                } else {
+                        printf("arping: clock_getres() = %ld %ld\n",
+                               (long)ts.tv_sec, (long)ts.tv_nsec);
+                }
 #else
                 printf("arping: Using gettimeofday() for time measurements\n");
 #endif

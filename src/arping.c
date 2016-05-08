@@ -834,6 +834,13 @@ static void
 pingmac_send(uint16_t id, uint16_t seq)
 {
 	static libnet_ptag_t icmp = 0, ipv4 = 0,eth=0;
+
+        // Padding size chosen fairly arbitrarily.
+        // Without this padding some systems (e.g. Raspberry Pi 3
+        // wireless interface) failed. dmesg said:
+        //   arping: packet size is too short (42 <= 50)
+        const char padding[16] = {0};
+
 	int c;
 
 	if (-1 == (icmp = libnet_build_icmpv4_echo(ICMP_ECHO, /* type */
@@ -841,8 +848,8 @@ pingmac_send(uint16_t id, uint16_t seq)
 						   0, /* checksum */
 						   id, /* id */
 						   seq, /* seq */
-						   NULL, /* payload */
-						   0, /* payload len */
+						   padding, /* payload */
+						   sizeof padding, /* payload len */
 						   libnet,
 						   icmp))) {
 		fprintf(stderr, "libnet_build_icmpv4_echo(): %s\n",
@@ -918,6 +925,13 @@ static void
 pingip_send()
 {
 	static libnet_ptag_t arp=0,eth=0;
+
+        // Padding size chosen fairly arbitrarily.
+        // Without this padding some systems (e.g. Raspberry Pi 3
+        // wireless interface) failed. dmesg said:
+        //   arping: packet size is too short (42 <= 50)
+        const char padding[16] = {0};
+
 	if (-1 == (arp = libnet_build_arp(ARPHRD_ETHER,
 					  ETHERTYPE_IP,
 					  ETH_ALEN,
@@ -927,8 +941,8 @@ pingip_send()
 					  (uint8_t*)&srcip,
 					  unsolicited ? (uint8_t*)ethxmas : (uint8_t*)ethnull,
 					  (uint8_t*)&dstip,
-					  NULL,
-					  0,
+					  padding,
+					  sizeof padding,
 					  libnet,
 					  arp))) {
 		fprintf(stderr, "arping: libnet_build_arp(): %s\n",

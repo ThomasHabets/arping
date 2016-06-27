@@ -427,7 +427,9 @@ MYTEST(pingip_interesting_packet)
         stop_capture(sout);
 
         char* emsg = NULL;
-        asprintf(&emsg, "Captured: <%s> (%zd), want   <%s> %zd\n", sout->buffer, strlen(sout->buffer), correct0, strlen(correct0));
+        fail_unless(0 < asprintf(&emsg, "Captured: <%s> (%zd), want   <%s> %zd\n",
+                         sout->buffer, strlen(sout->buffer),
+                                 correct0, strlen(correct0)));
         fail_unless(!strncmp(sout->buffer, correct0, strlen(correct0)), emsg);
         uncapture(sout);
         free(emsg);

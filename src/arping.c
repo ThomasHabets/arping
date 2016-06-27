@@ -15,7 +15,7 @@
  *
  */
 /*
- *  Copyright (C) 2000-2015 Thomas Habets <thomas@habets.se>
+ *  Copyright (C) 2000-2016 Thomas Habets <thomas@habets.se>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by

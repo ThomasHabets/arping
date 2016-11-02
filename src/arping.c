@@ -839,7 +839,7 @@ pingmac_send(uint16_t id, uint16_t seq)
         // Without this padding some systems (e.g. Raspberry Pi 3
         // wireless interface) failed. dmesg said:
         //   arping: packet size is too short (42 <= 50)
-        const char padding[16] = {0};
+        const uint8_t padding[16] = {0};
 
 	int c;
 
@@ -930,7 +930,7 @@ pingip_send()
         // Without this padding some systems (e.g. Raspberry Pi 3
         // wireless interface) failed. dmesg said:
         //   arping: packet size is too short (42 <= 50)
-        const char padding[16] = {0};
+        const uint8_t padding[16] = {0};
 
 	if (-1 == (arp = libnet_build_arp(ARPHRD_ETHER,
 					  ETHERTYPE_IP,
@@ -1592,7 +1592,7 @@ arping_main(int argc, char **argv)
         }
 
         if (((mode == PINGIP) && opt_T)
-            || (mode == PINGMAC) && (opt_B || dstmac_opt || opt_U)) {
+            || ((mode == PINGMAC) && (opt_B || dstmac_opt || opt_U))) {
                 fprintf(stderr, "arping: -T can only be used to ping MAC"
                         " and -BtU only to ping IPs");
                 exit(1);

@@ -12,3 +12,11 @@
 9. Upload to http://www.habets.pp.se/synscan/files/
 10. Update webpage.
 11. Send email to synscan-announce@googlegroups.com
+
+## Fuzzing
+
+```shell
+CC=/path/to/afl-gcc ./configure
+make
+/path/to/afl-fuzz -i fuzz/pingip/ -o fuzz/out/ ./src/fuzz_pingip
+```

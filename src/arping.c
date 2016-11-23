@@ -638,8 +638,9 @@ extended_usage()
 	       "    -U     Send unsolicited ARP.\n"
 	       "    -v     Verbose output. Use twice for more messages.\n"
                "    -V num 802.1Q tag to add. Defaults to no VLAN tag.\n"
-               "    -w     Time to wait between pings, in microseconds.\n"
-               "    -W     Same as -w, but in floating point seconds.\n");
+               "    -w sec Specify a timeout before ping exits regardless of how"
+               " many\npackets have been sent or received.\n"
+               "    -W sec Time to wait between pings.\n");
         printf("Report bugs to: thomas@habets.se\n"
                "Arping home page: <http://www.habets.pp.se/synscan/>\n"
                "Development repo: http://github.com/ThomasHabets/arping\n");
@@ -653,7 +654,7 @@ standard_usage()
 {
 	printf("ARPing %s, by Thomas Habets <thomas@habets.se>\n",
 	       version);
-        printf("usage: arping [ -0aAbdDeFpPqrRuUv ] [ -w <us> ] "
+        printf("usage: arping [ -0aAbdDeFpPqrRuUv ] [ -w <sec> ] "
                "[ -W <sec> ] "
                "[ -S <host/ip> ]\n"
                "              "
@@ -780,6 +781,30 @@ static double
 timespec2dbl(const struct timespec *tv)
 {
         return tv->tv_sec + (double)tv->tv_nsec / 1000000000;
+}
+
+/**
+ * return number of microseconds to wait for packets.
+ */
+static uint32_t
+wait_time(double deadline, uint32_t packetwait)
+{
+        struct timespec ts;
+
+        // If deadline not specified, then don't use it.
+        if (deadline < 0) {
+                return packetwait;
+        }
+
+        getclock(&ts);
+        const double max_wait = deadline - timespec2dbl(&ts);
+        if (max_wait < 0) {
+                return 0;
+        }
+        if (max_wait > packetwait / 1000000) {
+                return packetwait;
+        }
+        return max_wait * 1000000;
 }
 
 /**
@@ -1440,7 +1465,8 @@ arping_main(int argc, char **argv)
 	struct bpf_program bp;
 	pcap_t *pcap;
 	enum { NONE, PINGMAC, PINGIP } mode = NONE;
-	unsigned int packetwait = 1000000;
+	unsigned int packetwait = 1000000; // Default one second.
+        double deadline = -1;
         char bpf_filter[64];
         ebuf[0] = 0;
 
@@ -1574,7 +1600,7 @@ arping_main(int argc, char **argv)
                         }
                         break;
 		case 'w':
-			packetwait = (unsigned)atoi(optarg);
+                        deadline = atof(optarg);
 			break;
                 case 'W':
                         packetwait = (unsigned)(1000000.0 * atof(optarg));
@@ -1908,14 +1934,22 @@ arping_main(int argc, char **argv)
 	/*
 	 * let's roll
 	 */
+        if (deadline > 0) {
+                struct timespec ts;
+                getclock(&ts);
+                deadline += timespec2dbl(&ts);
+        }
 	if (mode == PINGIP) {
 		unsigned int c;
                 unsigned int r;
 		for (c = 0; c < maxcount && !time_to_die; c++) {
 			pingip_send();
                         r = numrecvd;
-			ping_recv(pcap,packetwait,
-				  (pcap_handler)pingip_recv);
+                        const uint32_t w = wait_time(deadline, packetwait);
+                        if (w == 0) {
+                                break;
+                        }
+                        ping_recv(pcap, w, (pcap_handler)pingip_recv);
 		}
 	} else { /* PINGMAC */
 		unsigned int c;
@@ -1923,8 +1957,11 @@ arping_main(int argc, char **argv)
 		for (c = 0; c < maxcount && !time_to_die; c++) {
 			pingmac_send(rand(), c);
                         r = numrecvd;
-			ping_recv(pcap,packetwait,
-				  (pcap_handler)pingmac_recv);
+                        const uint32_t w = wait_time(deadline, packetwait);
+                        if (w == 0) {
+                                break;
+                        }
+                        ping_recv(pcap, w,  (pcap_handler)pingmac_recv);
 		}
 	}
         if (display == DOT) {

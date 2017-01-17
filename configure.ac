@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(arping, 2.17, thomas@habets.se)
+AC_INIT(arping, 2.18, thomas@habets.se)
 AC_CANONICAL_SYSTEM
 AC_CONFIG_SRCDIR([src/arping.c])
 AM_INIT_AUTOMAKE

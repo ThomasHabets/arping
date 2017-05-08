@@ -1681,7 +1681,7 @@ arping_main(int argc, char **argv)
                                 "arping: clock_getres(CLOCK_MONOTONIC, ...): %s\n",
                                 strerror(errno));
                 } else {
-                        printf("arping: clock_getres() = %ld %ld\n",
+                        printf("arping: clock_getres() = %lds %ldns\n",
                                (long)ts.tv_sec, (long)ts.tv_nsec);
                 }
 #else
@@ -1725,7 +1725,7 @@ arping_main(int argc, char **argv)
                         do_libnet_init(ifname, 0);
 			parm = strdup(libnet_addr2name4(dstip,0));
 			if (!parm) {
-				fprintf(stderr, "arping: out of mem\n");
+				fprintf(stderr, "arping: out of memory\n");
 				exit(1);
 			}
 		}

@@ -1313,6 +1313,11 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
        fixup_timespec(&endtime);
 
        fd = pcap_get_selectable_fd(pcap);
+       if (fd == -1) {
+               fprintf(stderr, "arping: pcap_get_selectable_fd()=-1: %s\n",
+                       pcap_geterr(pcap));
+               exit(1);
+       }
        old_received = numrecvd;
 
        for (;!done;) {
@@ -1876,8 +1881,8 @@ arping_main(int argc, char **argv)
                         snprintf(bpf_filter, sizeof(bpf_filter), "arp");
                 }
                 if (-1 == pcap_compile(pcap, &bp, bpf_filter, 0, -1)) {
-                        fprintf(stderr, "arping: pcap_compile(%s): error\n",
-                                bpf_filter);
+                        fprintf(stderr, "arping: pcap_compile(%s): %s\n",
+                                bpf_filter, pcap_geterr(pcap));
 			exit(1);
 		}
 	} else { /* ping mac */
@@ -1889,13 +1894,14 @@ arping_main(int argc, char **argv)
                         snprintf(bpf_filter, sizeof(bpf_filter), "icmp");
                 }
                 if (-1 == pcap_compile(pcap, &bp, bpf_filter, 0,-1)) {
-                        fprintf(stderr, "arping: pcap_compile(%s): error\n",
-                                bpf_filter);
+                        fprintf(stderr, "arping: pcap_compile(%s): %s\n",
+                                bpf_filter, pcap_geterr(pcap));
 			exit(1);
 		}
 	}
 	if (-1 == pcap_setfilter(pcap, &bp)) {
-		fprintf(stderr, "arping: pcap_setfilter(): error\n");
+                fprintf(stderr, "arping: pcap_setfilter(): %s\n",
+                        pcap_geterr(pcap));
 		exit(1);
 	}
 

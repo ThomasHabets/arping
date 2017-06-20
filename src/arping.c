@@ -318,9 +318,13 @@ drop_privileges(const char* drop_group)
         gid_t gid = 0;
         if (!(pw = getpwnam(drop_user))) {
                 if (verbose) {
-                        // TODO: better error message.
-                        printf("arping: getpwnam(%s): %s\n",
-                               drop_user, strerror(errno));
+                        if (errno != 0) {
+                                printf("arping: getpwnam(%s): %s\n",
+                                       drop_user, strerror(errno));
+                        } else {
+                                printf("arping: getpwnam(%s): unknown user\n",
+                                       drop_user);
+                        }
                 }
                 return; // TODO: remove this 'return'.
         } else {

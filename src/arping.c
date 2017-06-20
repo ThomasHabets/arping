@@ -326,7 +326,6 @@ drop_privileges(const char* drop_group)
                                        drop_user);
                         }
                 }
-                return; // TODO: remove this 'return'.
         } else {
                 uid = pw->pw_uid;
                 gid = pw->pw_gid;

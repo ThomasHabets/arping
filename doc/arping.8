@@ -5,7 +5,7 @@
 arping \- sends arp and/or ip pings to a given host
 .PP 
 .SH "SYNOPSIS"
-\fBarping\fP [\-0aAbBdDeFhpqrRuUv] [\-S \fIhost/ip\fP] [\-T \fIhost/ip\fP] [\-s \fIMAC\fP]    [\-t \fIMAC\fP] [\-c \fIcount\fP] [\-i \fIinterface\fP] [ \-w \fIseconds\fP ] [ \-W \fIseconds\fP ] [ \-V \fIvlan\fP ] [ \-Q \fIpriority\fP ] <\fIhost\fP | \-B>
+\fBarping\fP [\-0aAbBdDeFhpqrRuUv] [\-S \fIhost/ip\fP] [\-T \fIhost/ip\fP] [\-s \fIMAC\fP]    [\-t \fIMAC\fP] [\-c \fIcount\fP] [\-i \fIinterface\fP] [ \-w \fIseconds\fP ] [ \-W \fIseconds\fP ] [ \-V \fIvlan\fP ] [ \-Q \fIpriority\fP ] [ \-g \fIgroup\fP ] <\fIhost\fP | \-B>
 .PP 
 \fBarping\fP \-\-help
 .PP 
@@ -72,6 +72,8 @@ Like \-a but beep when there is no reply\&.
 .IP "\-F"
 Don\(cq\&t try to be smart about the interface name\&. Even if this
 switch is not given, \-i disables this smartness\&.
+.IP "\-g \fIgroup\fP"
+setgid() to this group instead of the nobody group\&.
 .IP "\-h"
 Displays a help message and exits\&.
 .IP "\-i \fIinterface\fP"

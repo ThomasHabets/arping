@@ -15,7 +15,7 @@
  *
  */
 /*
- *  Copyright (C) 2000-2016 Thomas Habets <thomas@habets.se>
+ *  Copyright (C) 2000-2017 Thomas Habets <thomas@habets.se>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -308,7 +308,7 @@ drop_capabilities()
  * drop all privileges.
  */
 static void
-drop_privileges()
+drop_privileges(const char* drop_group)
 {
         // Need to get uid/gid of 'nobody' before chroot().
         const char* drop_user = "nobody";
@@ -318,13 +318,35 @@ drop_privileges()
         gid_t gid = 0;
         if (!(pw = getpwnam(drop_user))) {
                 if (verbose) {
+                        // TODO: better error message.
                         printf("arping: getpwnam(%s): %s\n",
                                drop_user, strerror(errno));
                 }
-                return;
+                return; // TODO: remove this 'return'.
         } else {
                 uid = pw->pw_uid;
                 gid = pw->pw_gid;
+        }
+
+        // If group is supplied, use that gid instead.
+        if (drop_group != NULL) {
+                struct group* gr;
+                errno = 0;
+                if (!(gr = getgrnam(drop_group))) {
+                        if (errno != 0) {
+                                fprintf(stderr, "arping: getgrnam(%s): %s\n",
+                                        drop_group, strerror(errno));
+                        } else {
+                                // If group was supplied, then not
+                                // existing is fatal error too.
+                                fprintf(stderr,
+                                        "arping: getgrnam(%s): unknown group\n",
+                                        drop_group);
+                        }
+                        exit(1);
+                } else {
+                        gid = gr->gr_gid;
+                }
         }
         drop_fs_root();
         drop_uid(uid, gid);
@@ -602,6 +624,8 @@ extended_usage()
                "    -e     Like -a but beep when there is no reply.\n"
 	       "    -F     Don't try to be smart about the interface name.  (even  if  this\n"
 	       "           switch is not given, -i overrides smartness)\n"
+               "    -g group\n"
+               "           setgid() to this group instead of the nobody group.\n"
 	       "    -h     Displays a help message and exits.\n"
 	       "    -i interface\n"
 	       "           Use the specified interface.\n"
@@ -661,7 +685,8 @@ standard_usage()
                "[ -T <host/ip ] "
                "[ -s <MAC> ] [ -t <MAC> ] [ -c <count> ]\n"
                "              "
-               "[ -C <count> ] [ -i <interface> ] [ -m <type> ]\n"
+               "[ -C <count> ] [ -i <interface> ] [ -m <type> ]"
+               " [ -g <group> ]\n"
                "              "
                "[ -V <vlan> ] [ -Q <priority> ] "
                "<host/ip/MAC | -B>\n");
@@ -1459,10 +1484,11 @@ arping_main(int argc, char **argv)
 	int dstip_given = 0;
         const char *srcmac_opt = NULL;
         const char *dstmac_opt = NULL;
-	const char *ifname = NULL;
+	const char *ifname = NULL;      // -i/-I
         int opt_B = 0;
         int opt_T = 0;
         int opt_U = 0;
+        const char* drop_group = NULL;  // -g
         const char *parm; // First argument, meaning the target IP.
 	int c;
 	unsigned int maxcount = -1;
@@ -1488,7 +1514,7 @@ arping_main(int argc, char **argv)
 	memcpy(dstmac, ethxmas, ETH_ALEN);
 
         while (EOF != (c = getopt(argc, argv,
-                                  "0aAbBC:c:dDeFhi:I:m:pPqQ:rRs:S:t:T:uUvV:w:W:"))) {
+                                  "0aAbBC:c:dDeFg:hi:I:m:pPqQ:rRs:S:t:T:uUvV:w:W:"))) {
 		switch(c) {
 		case '0':
 			srcip_opt = "0.0.0.0";
@@ -1527,6 +1553,9 @@ arping_main(int argc, char **argv)
 			break;
 		case 'h':
 			usage(0);
+                case 'g':
+                        drop_group = optarg;
+                        break;
 		case 'i':
 			if (strchr(optarg, ':')) {
 				fprintf(stderr, "arping: If you're trying to "
@@ -1848,7 +1877,7 @@ arping_main(int argc, char **argv)
                 fprintf(stderr, "arping: pcap_open_live(): %s\n", ebuf);
 		exit(1);
 	}
-        drop_privileges();
+        drop_privileges(drop_group);
 	if (pcap_setnonblock(pcap, 1, ebuf)) {
                 strip_newline(ebuf);
 		fprintf(stderr, "arping: pcap_set_nonblock(): %s\n", ebuf);

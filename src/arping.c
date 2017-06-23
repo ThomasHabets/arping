@@ -305,6 +305,49 @@ drop_capabilities()
 }
 
 /**
+ * Get GID of input (handle both name and number) or die.
+ */
+static gid_t
+must_get_group(const char* ident)
+{
+        // Special case empty string, because strtol.
+        int saved_errno;
+        if (*ident) {
+                // First try it as a name.
+                {
+                        struct group* gr;
+                        errno = 0;
+                        if (gr = getgrnam(ident)) {
+                                return gr->gr_gid;
+                        }
+                        saved_errno = errno;
+                }
+
+                // Not a name. Try it as an integer.
+                {
+                        char* endp = NULL;
+                        gid_t r = strtol(ident, &endp, 0);
+                        if (!*endp) {
+                                return r;
+                        }
+                }
+        }
+
+        if (saved_errno != 0) {
+                fprintf(stderr,
+                        "arping: %s not a number and getgrnam(%s): %s\n",
+                        ident, ident, strerror(saved_errno));
+        } else {
+                // If group was supplied, then not
+                // existing is fatal error too.
+                fprintf(stderr,
+                        "arping: %s is not a number or group\n",
+                        ident);
+        }
+        exit(1);
+}
+
+/**
  * drop all privileges.
  */
 static void
@@ -333,23 +376,7 @@ drop_privileges(const char* drop_group)
 
         // If group is supplied, use that gid instead.
         if (drop_group != NULL) {
-                struct group* gr;
-                errno = 0;
-                if (!(gr = getgrnam(drop_group))) {
-                        if (errno != 0) {
-                                fprintf(stderr, "arping: getgrnam(%s): %s\n",
-                                        drop_group, strerror(errno));
-                        } else {
-                                // If group was supplied, then not
-                                // existing is fatal error too.
-                                fprintf(stderr,
-                                        "arping: getgrnam(%s): unknown group\n",
-                                        drop_group);
-                        }
-                        exit(1);
-                } else {
-                        gid = gr->gr_gid;
-                }
+                gid = must_get_group(drop_group);
         }
         drop_fs_root();
         drop_uid(uid, gid);
@@ -1038,7 +1065,7 @@ pingip_send()
                        (long)lastpacketsent.tv_nsec);
 	}
 	if (-1 == libnet_write(libnet)) {
-		fprintf(stderr, "arping: libnet_write(): %s\n", 
+		fprintf(stderr, "arping: libnet_write(): %s\n",
 			libnet_geterror(libnet));
 		sigint(0);
 	}

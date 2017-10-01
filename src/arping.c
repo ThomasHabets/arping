@@ -595,13 +595,16 @@ static void
 getclock(struct timespec *ts)
 {
 #if HAVE_CLOCK_MONOTONIC
-        if (-1 == clock_gettime(CLOCK_MONOTONIC, ts)) {
-                fprintf(stderr,
-                        "arping: clock_gettime(): %s\n",
+        static int clock_gettime_failed = 0;
+        if (!clock_gettime_failed) {
+                if (0 == clock_gettime(CLOCK_MONOTONIC, ts)) {
+                        return;
+                }
+                fprintf(stderr, "arping: clock_gettime(): %s\n",
                         strerror(errno));
-                sigint(0);
+                clock_gettime_failed = 1; // Prevent duplicate error messages.
         }
-#else
+#endif
         struct timeval tv;
         if (-1 == gettimeofday(&tv, NULL)) {
                 fprintf(stderr, "arping: gettimeofday(): %s\n",
@@ -610,7 +613,6 @@ getclock(struct timespec *ts)
         }
         ts->tv_sec = tv.tv_sec;
         ts->tv_nsec = tv.tv_usec * 1000;
-#endif
 }
 
 /**

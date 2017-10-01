@@ -97,7 +97,8 @@ libnet_t*libnet_init(int a,const char* b,char* c){}
 int main(){return 0;}
 ],
   [ ac_cv_have_libnet_init_const="yes" ],
-  [ ac_cv_have_libnet_init_const="no" ])
+  [ ac_cv_have_libnet_init_const="no" ],
+  [ ac_cv_have_libnet_init_const="yes" ])
 ])
 if test x$ac_cv_have_libnet_init_const = xyes; then
    AC_DEFINE([HAVE_LIBNET_INIT_CONST], [1], [Libnet init takes const char device])
@@ -112,7 +113,8 @@ uint32_t libnet_name2addr4(libnet_t*a,const char* b,uint8_t c){}
 int main(){return 0;}
 ],
   [ ac_cv_have_libnet_name2addr4_const="yes" ],
-  [ ac_cv_have_libnet_name2addr4_const="no" ])
+  [ ac_cv_have_libnet_name2addr4_const="no" ],
+  [ ac_cv_have_libnet_name2addr4_const="yes" ])
 ])
 if test x$ac_cv_have_libnet_name2addr4_const = xyes; then
    AC_DEFINE([HAVE_LIBNET_NAME2ADDR4_CONST], [1], [Libnet name2addr4 takes const char* addr])
@@ -132,7 +134,8 @@ exit(!!clock_gettime(CLOCK_MONOTONIC, &ts));
 }
                 ],
                         [ ac_cv_have_clock_monotonic="yes" ],
-                        [ ac_cv_have_clock_monotonic="no" ]
+                        [ ac_cv_have_clock_monotonic="no" ],
+                        [ ac_cv_have_clock_monotonic="yes" ]
                           )
 ])
 AM_CONDITIONAL(HAVE_CLOCK_MONOTONIC, test x$ac_cv_have_clock_monotonic = xyes)

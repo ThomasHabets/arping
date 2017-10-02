@@ -90,15 +90,10 @@ fi
 
 AC_CACHE_CHECK([for libnet_init signature has const],
 		    ac_cv_have_libnet_init_const, [
-		    AC_TRY_RUN(
-		    [
-#include<libnet.h>
-libnet_t*libnet_init(int a,const char* b,char* c){}
-int main(){return 0;}
-],
+		    AC_TRY_LINK([#include<libnet.h>],
+[libnet_t*libnet_init(int a,const char* b,char* c);],
   [ ac_cv_have_libnet_init_const="yes" ],
-  [ ac_cv_have_libnet_init_const="no" ],
-  [ ac_cv_have_libnet_init_const="yes" ])
+  [ ac_cv_have_libnet_init_const="no" ])
 ])
 if test x$ac_cv_have_libnet_init_const = xyes; then
    AC_DEFINE([HAVE_LIBNET_INIT_CONST], [1], [Libnet init takes const char device])
@@ -106,15 +101,10 @@ fi
 
 AC_CACHE_CHECK([for libnet_name2addr4 signature has const],
 		    ac_cv_have_libnet_name2addr4_const, [
-		    AC_TRY_RUN(
-		    [
-#include<libnet.h>
-uint32_t libnet_name2addr4(libnet_t*a,const char* b,uint8_t c){}
-int main(){return 0;}
-],
+		    AC_TRY_LINK([#include<libnet.h>],
+[uint32_t libnet_name2addr4(libnet_t*a, const char* b,uint8_t c);],
   [ ac_cv_have_libnet_name2addr4_const="yes" ],
-  [ ac_cv_have_libnet_name2addr4_const="no" ],
-  [ ac_cv_have_libnet_name2addr4_const="yes" ])
+  [ ac_cv_have_libnet_name2addr4_const="no" ])
 ])
 if test x$ac_cv_have_libnet_name2addr4_const = xyes; then
    AC_DEFINE([HAVE_LIBNET_NAME2ADDR4_CONST], [1], [Libnet name2addr4 takes const char* addr])
@@ -122,22 +112,14 @@ fi
 
 
 # check for CLOCK_MONOTONIC
-AC_CACHE_CHECK([for CLOCK_MONOTONIC],
-                                  ac_cv_have_clock_monotonic, [
-                                  AC_TRY_RUN(
-                                        [
-#include <time.h>
-#include <sys/time.h>
-int main() {
-struct timespec ts;
-exit(!!clock_gettime(CLOCK_MONOTONIC, &ts));
-}
-                ],
-                        [ ac_cv_have_clock_monotonic="yes" ],
-                        [ ac_cv_have_clock_monotonic="no" ],
-                        [ ac_cv_have_clock_monotonic="yes" ]
-                          )
-])
+AC_CHECK_DECL([CLOCK_MONOTONIC],
+              [ ac_cv_have_clock_monotonic="yes" ],
+              [ ac_cv_have_clock_monotonic="no" ],
+              [
+                #include <time.h>
+                #include <sys/time.h>
+              ]
+)
 AM_CONDITIONAL(HAVE_CLOCK_MONOTONIC, test x$ac_cv_have_clock_monotonic = xyes)
 if test x$ac_cv_have_clock_monotonic = xyes; then
    AC_DEFINE([HAVE_CLOCK_MONOTONIC], [1], [Monotonic clock])

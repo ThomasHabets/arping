@@ -112,16 +112,14 @@ fi
 
 
 # check for CLOCK_MONOTONIC
-AC_CHECK_DECL([CLOCK_MONOTONIC],
-              [ ac_cv_have_clock_monotonic="yes" ],
-              [ ac_cv_have_clock_monotonic="no" ],
+AC_CHECK_DECL([CLOCK_MONOTONIC], [], [],
               [
                 #include <time.h>
                 #include <sys/time.h>
               ]
 )
-AM_CONDITIONAL(HAVE_CLOCK_MONOTONIC, test x$ac_cv_have_clock_monotonic = xyes)
-if test x$ac_cv_have_clock_monotonic = xyes; then
+AM_CONDITIONAL(HAVE_CLOCK_MONOTONIC, test x$ac_cv_have_decl_CLOCK_MONOTONIC = xyes)
+if test x$ac_cv_have_decl_CLOCK_MONOTONIC = xyes; then
    AC_DEFINE([HAVE_CLOCK_MONOTONIC], [1], [Monotonic clock])
 fi
 

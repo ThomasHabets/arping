@@ -570,7 +570,8 @@ do_libnet_init(const char *ifname, int recursive)
                         return;
                 }
                 fprintf(stderr, "arping: libnet_init(LIBNET_LINK, %s): %s\n",
-                        ifname ? ifname : "<null>", ebuf);
+                        ifname ? ifname : "<null>",
+                        *ebuf ? ebuf : "<no error message>");
                 if (getuid() && geteuid()) {
                         fprintf(stderr,
                                 "arping: you may need to run as root\n");

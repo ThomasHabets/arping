@@ -18,7 +18,7 @@ For debian, just: apt-get install libpcap-dev libnet1-dev libcap-dev
 
 Installing, short version
 -------------------------
-./configure
+./configure       # if "configure" doesn't exist, run "./bootstrap.sh"
 make              # the binary will be created as src/arping
 make install
 

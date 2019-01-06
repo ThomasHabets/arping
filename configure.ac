@@ -15,6 +15,12 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
+# Required to define __USE_MISC, which in turn typedefs uint, which
+# is used by libnet headers.
+# This "just works" until running GCC with -std=c99, where uint is
+# no longer defined by default.
+CPPFLAGS+=" -D_BSD_SOURCE=1"
+
 # Checks for libraries.
 AC_CHECK_LIB([m], [sqrt])
 AC_CHECK_LIB([socket], [socket])
@@ -34,6 +40,7 @@ arpa/inet.h \
 netinet/in.h \
 stdlib.h \
 sys/socket.h \
+getopt.h \
 time.h \
 grp.h \
 sys/time.h \
@@ -122,6 +129,16 @@ AM_CONDITIONAL(HAVE_CLOCK_MONOTONIC, test x$ac_cv_have_decl_CLOCK_MONOTONIC = xy
 if test x$ac_cv_have_decl_CLOCK_MONOTONIC = xyes; then
    AC_DEFINE([HAVE_CLOCK_MONOTONIC], [1], [Monotonic clock])
 fi
+
+AC_ARG_ENABLE(hardened, AS_HELP_STRING([--enable-hardened], [Enable security build options]),
+                        [
+                          CFLAGS+=" -pie -fPIE -fstack-protector-all --param ssp-buffer-size=1 -D_FORTIFY_SOURCE=2"
+                          LDFLAGS+=" -pie -fPIE -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack"
+                        ])
+AC_ARG_ENABLE(warnings, AS_HELP_STRING([--enable-warnings], [Enable build warnings]),
+                        [
+                          CFLAGS+=" -Wall -Wpedantic -Wextra -Wformat -Wstack-protector -Wformat-security -Werror=format-security"
+                        ])
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])

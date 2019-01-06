@@ -44,5 +44,5 @@ const char *arping_lookupdev_default(uint32_t srcip, uint32_t dstip,
 int arping_main(int argc, char **argv);
 
 
-void pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet);
+void pingip_recv(const char *unused, struct pcap_pkthdr *h, const char* const packet);
 void pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet);

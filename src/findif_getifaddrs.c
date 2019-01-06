@@ -39,6 +39,8 @@
 
 #include "arping.h"
 
+#define UNUSED(x) (void)(x)
+
 const char *
 arping_lookupdev(uint32_t srcip,
                  uint32_t dstip,
@@ -48,10 +50,10 @@ arping_lookupdev(uint32_t srcip,
         struct ifaddrs *cur;
         const char *ret = NULL;
         int match_count = 0;     /* Matching interfaces */
+        UNUSED(srcip);
 
         /* best match */
         in_addr_t best_mask = 0;
-        in_addr_t best_addr;
 
         /* Results */
         static char ifname[IFNAMSIZ];
@@ -92,7 +94,6 @@ arping_lookupdev(uint32_t srcip,
                 if (ntohl(mask) > ntohl(best_mask)) {
                         memset(ifname, 0, sizeof(ifname));
                         strncpy(ifname, cur->ifa_name, sizeof(ifname)-1);
-                        best_addr = addr;
                         best_mask = mask;
                 }
         }

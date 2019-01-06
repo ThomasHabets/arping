@@ -1,6 +1,7 @@
 #include<libnet.h>
 #include"config.h"
 
+#define UNUSED(x) (void)(x)
 int mock_libnet_null_ok = 1;
 int mock_libnet_lo_ok = 1;
 
@@ -19,6 +20,8 @@ libnet_destroy(libnet_t* l)
 libnet_t*
 libnet_init(int injection_type, LIBNET_INIT_CONST char *device, char *err_buf)
 {
+        UNUSED(injection_type);
+        UNUSED(err_buf);
         if (device == NULL) {
                 if (mock_libnet_null_ok) {
                         return malloc(1);

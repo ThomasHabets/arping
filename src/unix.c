@@ -26,12 +26,16 @@
 
 #include "arping.h"
 
+#define UNUSED(x) (void)(x)
+
 /**
  * Fall back on getting device name from pcap.
  */
 const char *
 arping_lookupdev_default(uint32_t srcip, uint32_t dstip, char *ebuf)
 {
+        UNUSED(srcip);
+        UNUSED(dstip);
         return pcap_lookupdev(ebuf);
 }
 

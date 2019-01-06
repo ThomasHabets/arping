@@ -45,6 +45,10 @@
 #include <unistd.h>
 #endif
 
+#if HAVE_GETOPT_H
+#include <getopt.h>
+#endif
+
 #if HAVE_STDINT_H
 #include <stdint.h>
 #endif
@@ -124,6 +128,8 @@
 #define CLOCK_MONOTONIC CLOCK_REALTIME
 #endif
 
+#define UNUSED(x) (void)(x)
+
 /**
  * OS-specific interface finding using routing table. See findif_*.c
  * ebuf must be called with a size of at least
@@ -179,7 +185,6 @@ static char lastreplymac[ETH_ALEN];  /* if last different from this then dup */
 unsigned int numsent = 0;                   /* packets sent */
 unsigned int numrecvd = 0;                  /* packets received */
 static unsigned int max_replies = UINT_MAX; /* exit after -C replies */
-static unsigned int numdots = 0;            /* dots that should be printed */
 static const char* timestamp_type = NULL;   /* Incoming packet measurement ts type (-m) */
 
 static double stats_min_time = -1;
@@ -199,6 +204,7 @@ static enum { NORMAL,      /* normal output */
 static const uint8_t ethnull[ETH_ALEN] = {0, 0, 0, 0, 0, 0};
 static const uint8_t ethxmas[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 static const char* ip_broadcast = "255.255.255.255";
+static const uint32_t ip_broadcast_num = (uint32_t)-1;
 
 int verbose = 0;  /* Increase with -v */
 
@@ -311,13 +317,13 @@ static gid_t
 must_get_group(const char* ident)
 {
         // Special case empty string, because strtol.
-        int saved_errno;
+        int saved_errno = 0;
         if (*ident) {
                 // First try it as a name.
                 {
                         struct group* gr;
                         errno = 0;
-                        if (gr = getgrnam(ident)) {
+                        if ((gr = getgrnam(ident))) {
                                 return gr->gr_gid;
                         }
                         saved_errno = errno;
@@ -586,6 +592,7 @@ do_libnet_init(const char *ifname, int recursive)
 void
 sigint(int i)
 {
+        UNUSED(i);
 	time_to_die = 1;
 }
 
@@ -1082,14 +1089,14 @@ pingip_send()
  * \param packet  packet data
  */
 void
-pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
+pingip_recv(const char *unused, struct pcap_pkthdr *h, const char * const packet)
 {
         const unsigned char *pkt_srcmac;
         const struct libnet_802_1q_hdr *veth;
 	struct libnet_802_3_hdr *heth;
 	struct libnet_arp_hdr *harp;
         struct timespec arrival;
-	int c;
+        UNUSED(unused);
 
         if (verbose > 2) {
 		printf("arping: received response for IP ping\n");
@@ -1231,7 +1238,7 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
  * \param packet  packet data
  */
 void
-pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
+pingmac_recv(const char* unused, struct pcap_pkthdr *h, uint8_t *packet)
 {
         const unsigned char *pkt_dstmac;
         const unsigned char *pkt_srcmac;
@@ -1240,7 +1247,7 @@ pingmac_recv(const char *unused, struct pcap_pkthdr *h, uint8_t *packet)
 	struct libnet_ipv4_hdr *hip;
 	struct libnet_icmpv4_hdr *hicmp;
         struct timespec arrival;
-	int c;
+        UNUSED(unused);
 
 	if(verbose>2) {
 		printf("arping: received response for mac ping\n");
@@ -1359,7 +1366,7 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
        struct timespec endtime;
        char done = 0;
        int fd;
-       int old_received;
+       unsigned int old_received;
 
        if (verbose > 3) {
                printf("arping: receiving packets...\n");
@@ -1524,7 +1531,7 @@ arping_main(int argc, char **argv)
         const char* drop_group = NULL;  // -g
         const char *parm; // First argument, meaning the target IP.
 	int c;
-	unsigned int maxcount = -1;
+	int maxcount = -1;
 	int dont_use_arping_lookupdev=0;
 	struct bpf_program bp;
 	pcap_t *pcap;
@@ -1979,7 +1986,7 @@ arping_main(int argc, char **argv)
 		memcpy(srcmac, cp, ETH_ALEN);
 	}
         if (srcip_opt == NULL) {
-		if (-1 == (srcip = libnet_get_ipaddr4(libnet))) {
+		if (ip_broadcast_num == (srcip = libnet_get_ipaddr4(libnet))) {
 			fprintf(stderr,
                                 "arping: Unable to get the IPv4 address of "
                                 "interface %s:\narping: %s"
@@ -2013,11 +2020,9 @@ arping_main(int argc, char **argv)
                 deadline += timespec2dbl(&ts);
         }
 	if (mode == PINGIP) {
-		unsigned int c;
-                unsigned int r;
-		for (c = 0; c < maxcount && !time_to_die; c++) {
+		int c;
+		for (c = 0; (maxcount < 0 || c < maxcount) && !time_to_die; c++) {
 			pingip_send();
-                        r = numrecvd;
                         const uint32_t w = wait_time(deadline, packetwait);
                         if (w == 0) {
                                 break;
@@ -2025,11 +2030,9 @@ arping_main(int argc, char **argv)
                         ping_recv(pcap, w, (pcap_handler)pingip_recv);
 		}
 	} else { /* PINGMAC */
-		unsigned int c;
-                unsigned int r;
-		for (c = 0; c < maxcount && !time_to_die; c++) {
+		int c;
+		for (c = 0; (maxcount < 0 || c < maxcount) && !time_to_die; c++) {
 			pingmac_send(rand(), c);
-                        r = numrecvd;
                         const uint32_t w = wait_time(deadline, packetwait);
                         if (w == 0) {
                                 break;

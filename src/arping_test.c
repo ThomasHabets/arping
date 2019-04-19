@@ -1,6 +1,6 @@
 /* arping/src/arping_test.c
  *
- *  Copyright (C) 2015 Thomas Habets <thomas@habets.se>
+ *  Copyright (C) 2015-2019 Thomas Habets <thomas@habets.se>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#include"config.h"
 #define _GNU_SOURCE
 #include<assert.h>
 #include<errno.h>
@@ -30,6 +31,10 @@
 #include<pcap.h>
 
 #include"arping.h"
+
+#ifndef ETH_ALEN
+#define ETH_ALEN 6
+#endif
 
 extern libnet_t* libnet;
 extern int mock_libnet_lo_ok;
@@ -387,6 +392,8 @@ MYTEST(pingip_uninteresting_packet)
 MYTEST(pingip_interesting_packet)
 {
         struct pcap_pkthdr pkthdr;
+        extern uint8_t srcmac[ETH_ALEN];
+        memcpy(srcmac, "\x11\x22\x33\x44\x55\x66", ETH_ALEN);
         uint8_t packet[] = {
                 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, // dst
                 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, // src

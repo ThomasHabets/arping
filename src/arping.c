@@ -15,7 +15,7 @@
  *
  */
 /*
- *  Copyright (C) 2000-2017 Thomas Habets <thomas@habets.se>
+ *  Copyright (C) 2000-2019 Thomas Habets <thomas@habets.se>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -166,7 +166,7 @@ uint32_t dstip;
 static uint8_t dstmac[ETH_ALEN];
 
 uint32_t srcip;                   /* autodetected, override with -S/-b/-0 */
-static uint8_t srcmac[ETH_ALEN];  /* autodetected, override with -s */
+uint8_t srcmac[ETH_ALEN];         /* autodetected, override with -s */
 
 static int16_t vlan_tag = -1; /* 802.1Q tag to add to packets. -V */
 static int16_t vlan_prio = -1; /* 802.1p prio to use with 802.1Q. -Q */
@@ -177,6 +177,7 @@ static int alsototal = 0;            /* print sent as well as received. -u */
 static int addr_must_be_same = 0;    /* -A */
 static int unsolicited = 0;          /* -U */
 static int send_reply = 0;           /* Send reply instead of request. -P */
+static int promisc = 0;              /* Use promisc mode. -p */
 
 static int finddup = 0;              /* finddup mode. -d */
 static int dupfound = 0;             /* set to 1 if dup found */
@@ -1164,6 +1165,33 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, const char * const packet
                 printf("arping: ... sent by acceptable host\n");
         }
 
+        // Special case: If we're not in promisc mode we could still
+        // get packets where DST mac is not us, if they're *sent* from
+        // the local host. This is an edge case but in general falls under "is promisc?".
+        //
+        // It may cause confusion because `-p` now means not just
+        // enable promisc mode (disable filter on card / in kernel),
+        // but also allow packets to any destination (disable filter
+        // in `arping`).
+        {
+                const uint8_t* p = (u_char*)harp
+                        + sizeof(struct libnet_arp_hdr)
+                        + ETH_ALEN
+                        + IP_ALEN;
+                char buf[128];
+                if (!promisc && memcmp(p, srcmac, ETH_ALEN)) {
+                        format_mac(p, buf, sizeof buf);
+                        if (verbose > 3) {
+                                printf("arping: ... but sent from %s\n", buf);
+                        }
+                        return;
+                }
+        }
+        if (verbose > 3) {
+                printf("arping: ... destination is the source we used\n");
+        }
+
+
         // Actually the IPv4 address we asked for.
         uint32_t ip;
         memcpy(&ip, (char*)harp + harp->ar_hln + LIBNET_ARP_H, 4);
@@ -1515,7 +1543,6 @@ arping_main(int argc, char **argv)
 {
 	char ebuf[LIBNET_ERRBUF_SIZE + PCAP_ERRBUF_SIZE];
 	char *cp;
-	int promisc = 0;
         const char *srcip_opt = NULL;
         const char *dstip_opt = NULL;
         // `dstip_given` can be set even when there's no arg past flags on the

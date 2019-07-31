@@ -394,7 +394,7 @@ drop_privileges(const char* drop_group)
 #ifdef HAVE_UNVEIL
         if (unveil("/", "")) {
                 fprintf(stderr,
-                        "arping: failed to unveil(/, r): %s\n",
+                        "arping: failed to unveil(/, <>): %s\n",
                         strerror(errno));
                 exit(1);
         }

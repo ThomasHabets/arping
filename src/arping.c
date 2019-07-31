@@ -392,9 +392,9 @@ drop_privileges(const char* drop_group)
         drop_uid(uid, gid);
         drop_capabilities();
 #ifdef HAVE_UNVEIL
-        if (unveil("/non-existent-file", "r")) {
+        if (unveil("/", "")) {
                 fprintf(stderr,
-                        "arping: failed to unveil(/non-existent-file, r): %s\n",
+                        "arping: failed to unveil(/, r): %s\n",
                         strerror(errno));
                 exit(1);
         }

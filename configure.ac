@@ -19,7 +19,7 @@ AC_PROG_MAKE_SET
 # is used by libnet headers.
 # This "just works" until running GCC with -std=c99, where uint is
 # no longer defined by default.
-CPPFLAGS+=" -D_DEFAULT_SOURCE=1"
+CPPFLAGS="$CPPFLAGS -D_DEFAULT_SOURCE=1"
 
 # Checks for libraries.
 AC_CHECK_LIB([m], [sqrt])

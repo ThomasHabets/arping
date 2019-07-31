@@ -977,7 +977,7 @@ pingmac_send(uint16_t id, uint16_t seq)
 						   0, /* checksum */
 						   id, /* id */
 						   seq, /* seq */
-						   padding, /* payload */
+						   (uint8_t*)padding, /* payload */
 						   sizeof padding, /* payload len */
 						   libnet,
 						   icmp))) {
@@ -1070,7 +1070,7 @@ pingip_send()
 					  (uint8_t*)&srcip,
 					  unsolicited ? (uint8_t*)ethxmas : (uint8_t*)ethnull,
 					  (uint8_t*)&dstip,
-					  padding,
+					  (uint8_t*)padding,
 					  sizeof padding,
 					  libnet,
 					  arp))) {

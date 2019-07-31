@@ -356,6 +356,9 @@ must_get_group(const char* ident)
 
 /**
  * drop all privileges.
+ *
+ * To be called as early as possible. IOW: immediately after opening
+ * raw socket.
  */
 static void
 drop_privileges(const char* drop_group)
@@ -388,6 +391,41 @@ drop_privileges(const char* drop_group)
         drop_fs_root();
         drop_uid(uid, gid);
         drop_capabilities();
+#ifdef HAVE_UNVEIL
+        if (unveil("/non-existent-file", "r")) {
+                fprintf(stderr,
+                        "arping: failed to unveil(/non-existent-file, r): %s\n",
+                        strerror(errno));
+                exit(1);
+        }
+        if (unveil(NULL, NULL)) {
+                fprintf(stderr, "arping: failed to unveil(NULL, NULL): %s\n",
+                       strerror(errno));
+                exit(1);
+        }
+        if (verbose > 1) {
+                printf("arping: Successfully unveiled\n");
+        }
+#endif
+}
+
+/**
+ * drop even more privileges, where possible.
+ *
+ * After all setup is done and main loop is about to start.
+ */
+static void
+drop_more_privileges()
+{
+#ifdef HAVE_PLEDGE
+        if (pledge("stdio tty", "")) {
+                fprintf(stderr, "arping: failed to pledge(stdio, <empty>): %s\n",
+                       strerror(errno));
+                exit(1);
+        } else if (verbose > 1) {
+                printf("arping: Successfully pledged\n");
+        }
+#endif
 }
 
 
@@ -2033,6 +2071,7 @@ arping_main(int argc, char **argv)
                        format_mac(srcmac, buf, sizeof(buf)));
 	}
 
+        drop_more_privileges();
 
 	if (display == NORMAL) {
 		printf("ARPING %s\n", parm);

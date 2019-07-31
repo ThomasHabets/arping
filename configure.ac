@@ -74,7 +74,8 @@ AC_FUNC_SELECT_ARGTYPES
 AC_FUNC_SETVBUF_REVERSED
 AC_TYPE_SIGNAL
 AC_CHECK_FUNCS([gettimeofday memset select strchr strdup strerror strstr \
-getifaddrs cap_init pcap_create pcap_list_tstamp_types pcap_set_immediate_mode])
+getifaddrs cap_init pcap_create pcap_list_tstamp_types pcap_set_immediate_mode \
+pledge unveil])
 
 if test x$ac_cv_func_getifaddrs = xyes; then
     AC_LIBOBJ([findif_getifaddrs])

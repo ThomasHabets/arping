@@ -43,15 +43,15 @@ I try to test arping on these platforms before any release:
 * Latest Debian stable x86 and amd64
 * Linux (Debian or Ubuntu) on arm
 * Latest OpenBSD x86 or amd64
-* FreeBSD x86
-* Solaris 10 sparc
 
-I don't have these systems up and runnig 24/7, but I try to get them tested
-every now and then:
-* MacOS X
-* Debian alpha
-* OpenBSD sparc64 (last test: 2009-10-02)
+Systems that it should still work on, but I don't personally regularly test:
+* Debian Alpha
+* FreeBSD
 * IRIX 6.5 mips (last test 2009-09-27)
+* MacOS X
+* NetBSD
+* OpenBSD sparc64 (last test: 2009-10-02)
+* Solaris
 
 Mailing list
 ------------

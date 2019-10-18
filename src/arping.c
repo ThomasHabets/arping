@@ -1658,6 +1658,7 @@ arping_main(int argc, char **argv)
 			break;
 		case 'h':
 			usage(0);
+                        exit(0); // Needless but shuts up compiler warnings.
                 case 'g':
                         drop_group = optarg;
                         break;
@@ -1671,7 +1672,9 @@ arping_main(int argc, char **argv)
 					"purpose)\n");
 				exit(1);
 			}
-		case 'I': /* FALL THROUGH */
+			ifname = optarg;
+                        break;
+		case 'I':
 			ifname = optarg;
 			break;
                 case 'm':

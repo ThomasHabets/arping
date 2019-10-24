@@ -1,5 +1,17 @@
 # Hacking on Arping
 
+## Coding style
+
+* C99 to retain portability for the widest range of platforms
+* Approximately [Linux kernel coding style][1], except:
+  * Line break before function name, in function definitions.
+  * Curly braces are mandatory.
+  * Place `*` next to the type, not the name. E.g. `char* p`
+
+Don't make style-only changes, but fix the style on the line you're touching anyway.
+
+[1]: https://github.com/torvalds/linux/blob/master/Documentation/process/coding-style.rst
+
 ## Make release
 1. Up version in configure.ac. Commit.
 2. Run `./extra/mktarball HEAD`

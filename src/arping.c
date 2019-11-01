@@ -1866,7 +1866,7 @@ arping_main(int argc, char **argv)
 	 * Handle dstip_given instead of ip address after parms (-B really)
 	 */
 	if (mode == NONE) {
-		if (optind + 1 == argc) {
+		if (parm) {
 			mode = is_mac_addr(parm)?PINGMAC:PINGIP;
 		} else if (dstip_given) {
 			mode = PINGIP;

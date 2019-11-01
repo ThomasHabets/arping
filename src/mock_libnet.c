@@ -24,7 +24,7 @@ libnet_init(int injection_type, LIBNET_INIT_CONST char *device, char *err_buf)
         UNUSED(err_buf);
         if (device == NULL) {
                 if (mock_libnet_null_ok) {
-                        return malloc(1);
+                        return malloc(sizeof(libnet_t));
                 }
                 return NULL;
         }

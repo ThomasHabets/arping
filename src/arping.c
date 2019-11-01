@@ -2107,7 +2107,7 @@ arping_main(int argc, char **argv)
 	} else { /* PINGMAC */
 		int c;
 		for (c = 0; (maxcount < 0 || c < maxcount) && !time_to_die; c++) {
-			pingmac_send(rand(), c);
+			pingmac_send(random(), c);
                         const uint32_t w = wait_time(deadline, packetwait);
                         if (w == 0) {
                                 break;

@@ -911,7 +911,7 @@ wait_time(double deadline, uint32_t packetwait)
         if (max_wait < 0) {
                 return 0;
         }
-        if (max_wait > packetwait / 1000000) {
+        if (max_wait > (double)(packetwait / 1000000)) {
                 return packetwait;
         }
         return max_wait * 1000000;

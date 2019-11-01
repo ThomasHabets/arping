@@ -245,6 +245,12 @@ drop_fs_root()
                 }
                 return;
         }
+        if (chdir("/")) {
+                if (verbose) {
+                        printf("arping: chdir(/): %s\n", strerror(errno));
+                }
+                return;
+        }
         if (verbose > 1) {
                 printf("arping: Successfully chrooted to %s\n", pw->pw_dir);
         }

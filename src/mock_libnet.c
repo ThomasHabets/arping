@@ -32,10 +32,10 @@ libnet_init(int injection_type, LIBNET_INIT_CONST char *device, char *err_buf)
                 return NULL;
         }
         if (!strcmp(device, "good")) {
-                return malloc(1);
+                return malloc(sizeof(libnet_t));
         }
         if (mock_libnet_lo_ok && !strcmp(device, "lo")) {
-                return malloc(1);
+                return malloc(sizeof(libnet_t));
         }
         return NULL;
 }

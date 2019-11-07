@@ -1,6 +1,7 @@
 # arping/src/Makefile.am
 
 include $(top_srcdir)/Makefile.am.common
+CFLAGS+= $(EXTRA_CFLAGS)
 
 sbin_PROGRAMS = arping
 noinst_PROGRAMS = fuzz_pingip

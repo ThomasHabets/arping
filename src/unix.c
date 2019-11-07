@@ -23,6 +23,14 @@
 #include <signal.h>
 #include <string.h>
 
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
 #include <pcap.h>
 
 #include "arping.h"
@@ -46,12 +54,16 @@ arping_lookupdev_default(uint32_t srcip, uint32_t dstip, char *ebuf)
         pcap_if_t *t;
         char* ifname = NULL;
         for (t = ifs; !ifname && t; t = t->next) {
+#ifdef PCAP_IF_LOOPBACK
                 if (t->flags & PCAP_IF_LOOPBACK) {
                         continue;
                 }
+#endif
+#ifdef PCAP_IF_UP
                 if (!(t->flags & PCAP_IF_UP)) {
                         continue;
                 }
+#endif
 
                 // This code is only called when using -F, which is "don't try
                 // to be smart". If we wanted to be smart we would have used

@@ -33,6 +33,8 @@
 
 #include "arping.h"
 
+#error "This code should never be chosen. If you just want to use it then uncomment this error line"
+
 /**
  * WARNING: non-reentrant
  */

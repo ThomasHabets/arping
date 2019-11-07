@@ -21,6 +21,7 @@
 #endif
 
 #include <signal.h>
+#include <string.h>
 
 #include <pcap.h>
 
@@ -34,9 +35,55 @@
 const char *
 arping_lookupdev_default(uint32_t srcip, uint32_t dstip, char *ebuf)
 {
+#ifdef HAVE_PCAP_FINDALLDEVS
+        UNUSED(srcip);
+        pcap_if_t *ifs = NULL;
+        int rc = pcap_findalldevs(&ifs, ebuf);
+        if (rc) {
+                return NULL;
+        }
+
+        pcap_if_t *t;
+        char* ifname = NULL;
+        for (t = ifs; !ifname && t; t = t->next) {
+                if (t->flags & PCAP_IF_LOOPBACK) {
+                        continue;
+                }
+                if (!(t->flags & PCAP_IF_UP)) {
+                        continue;
+                }
+
+                // This code is only called when using -F, which is "don't try
+                // to be smart". If we wanted to be smart we would have used
+                // findif_*.c.
+                if (1) {
+                        ifname = strdup(t->name); // Memory leak.
+                        break;
+                }
+
+                // UNREACHABLE
+                pcap_addr_t *a;
+                for (a = t->addresses; !ifname && a; a = a->next) {
+                        if (a->addr->sa_family != AF_INET) {
+                                continue;
+                        }
+                        const struct sockaddr_in* sa = (struct sockaddr_in*)a->addr;
+                        const struct sockaddr_in* smask = (struct sockaddr_in*)a->netmask;
+                        const uint32_t addr = sa->sin_addr.s_addr;
+                        const uint32_t mask = smask->sin_addr.s_addr;
+                        if ((addr & mask) != (dstip & mask)) {
+                                // Not optimal: memory leak.
+                                ifname = strdup(t->name);
+                        }
+                }
+        }
+        pcap_freealldevs(ifs);
+        return ifname;
+#else
         UNUSED(srcip);
         UNUSED(dstip);
         return pcap_lookupdev(ebuf);
+#endif
 }
 
 /**

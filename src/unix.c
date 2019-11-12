@@ -20,6 +20,7 @@
 #include "config.h"
 #endif
 
+#include <errno.h>
 #include <signal.h>
 #include <string.h>
 
@@ -104,7 +105,10 @@ arping_lookupdev_default(uint32_t srcip, uint32_t dstip, char *ebuf)
 void
 do_signal_init()
 {
-        signal(SIGINT, sigint);
+        if (SIG_ERR == signal(SIGINT, sigint)) {
+                fprintf(stderr, "arping: failed to set SIGINT handler: %s\n",
+                        strerror(errno));
+        }
 }
 /* ---- Emacs Variables ----
  * Local Variables:

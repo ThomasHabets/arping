@@ -122,20 +122,12 @@ A: -T <IP/host> allows you to restrict the arping to a limited subnet, which
 ---
 Q: ./configure says I need libnet and/or libpcap
 
-A: Arping depends on libnet 1.1.x and libpcap, get libnet at:
-   http://packetfactory.openwall.net/projects/libnet/
-   and libpcap from http://www.tcpdump.org.
+A: Arping depends on libnet 1.1 or newer, and libpcap. Get libnet from
+   https://github.com/libnet/libnet and libpcap from http://www.tcpdump.org.
    Or more likely they were both included in your Linux distribution.
 
-   Lately www.packetfactory.net seems to be down, so you can get the original
-   tarball from the Debian archives:
-   http://ftp.debian.org/debian/pool/main/libn/libnet/libnet_1.1.4.orig.tar.gz
-   If that exact file doesn't exist there probably is one with a higher
-   version number.
-
-   Or github.com:
-   http://github.com/sam-github/libnet
-   http://github.com/ThomasHabets/libnet
+   The original libnet site
+   was http://packetfactory.openwall.net/projects/libnet/, but is not updated.
 ---
 Q: I get bus error on my non-x86 box
 

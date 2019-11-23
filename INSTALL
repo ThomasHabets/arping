@@ -4,8 +4,8 @@ This is the short version. For more info see the README.
 
 Dependencies
 ------------
-libnet 1.1.x
-  https://github.com/sam-github/libnet
+libnet 1.1 or newer
+  https://github.com/libnet/libnet
     or
   http://ftp.debian.org/debian/pool/main/libn/libnet/libnet_1.1.2.1.orig.tar.gz
   Note: Libnet 1.1.5 or later needed for Linux capability support.
@@ -29,9 +29,9 @@ to add stuff to the configure line, like:
 
 Installing, longer version
 --------------------------
-Note that arping 2.x requires libnet 1.1.x to work. It will NOT work with
-libnet 1.0.x. Arping 1.x works with libnet 1.0.x, but it's not included in the
-same package anymore.
+Note that arping 2.x requires libnet 1.1 or newer to work. It will NOT
+work with libnet 1.0.x. Arping 1.x works with libnet 1.0.x, but it's
+not included in the same package anymore.
 
 Standard autotools:   ./configure && make && make install
 

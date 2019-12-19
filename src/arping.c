@@ -1347,11 +1347,19 @@ pingmac_recv(const char* unused, struct pcap_pkthdr *h, uint8_t *packet)
                 return;
         }
 
+        if (verbose > 3) {
+                printf("arping: ... right dst mac\n");
+        }
+
         // Source MAC must match, if set.
         if (memcmp(dstmac, ethxmas, ETH_ALEN)) {
                 if (memcmp(pkt_srcmac, dstmac, ETH_ALEN)) {
                         return;
                 }
+        }
+
+        if (verbose > 3) {
+                printf("arping: ... right src mac\n");
         }
 
         // IPv4 Address must be me (maybe).
@@ -1363,9 +1371,35 @@ pingmac_recv(const char* unused, struct pcap_pkthdr *h, uint8_t *packet)
                 }
         }
 
-        // Must be ICMP echo reply.
+        if (verbose > 3) {
+                printf("arping: ... src IP acceptable\n");
+        }
+
+        // Must be ICMP echo reply type.
         if (htons(hicmp->icmp_type) != ICMP_ECHOREPLY) {
                 return;
+        }
+
+        if (verbose > 3) {
+                printf("arping: ... is echo reply type\n");
+        }
+
+        // Must be ICMP echo reply code 0.
+        if (htons(hicmp->icmp_code) != 0) {
+                return;
+        }
+
+        if (verbose > 3) {
+                printf("arping: ... is echo reply code\n");
+        }
+
+        const char* payload = (char*)hicmp + LIBNET_ICMPV4_ECHO_H;
+        const ssize_t payload_size = h->len - (payload - (char*)packet);
+        if (payload_size < 0) {
+                return;
+        }
+        if (verbose > 3) {
+                printf("arping: ... payload size: %d\n", payload_size);
         }
 
         update_stats(timespec2dbl(&arrival) - timespec2dbl(&lastpacketsent));

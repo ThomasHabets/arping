@@ -993,7 +993,8 @@ pingmac_send(uint16_t id, uint16_t seq)
 	}
 
 	if (-1==(ipv4 = libnet_build_ipv4(LIBNET_IPV4_H
-					  + LIBNET_ICMPV4_ECHO_H + 0,
+                                          + LIBNET_ICMPV4_ECHO_H
+                                          + sizeof padding,
 					  0, /* ToS */
 					  id, /* id */
 					  0, /* frag */

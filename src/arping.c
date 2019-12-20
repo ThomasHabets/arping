@@ -233,6 +233,26 @@ xgetrandom(void *buf, const size_t buflen, const unsigned int flags)
 #endif
 }
 
+static long int
+xrandom() {
+        const int maxtry = 10;
+        for (int c = 0; c < maxtry; c++) {
+                long int ret;
+                const ssize_t rc = xgetrandom(&ret, sizeof(ret), 0);
+                if (rc == -1) {
+                        fprintf(stderr, "arping: failed to get random bytes: %s\n", strerror(errno));
+                        continue;
+                }
+                if (sizeof(ret) != rc) {
+                        fprintf(stderr, "arping: got too few random bytes %d, want %d\n", rc, sizeof(ret));
+                        continue;
+                }
+                return ret;
+        }
+        fprintf(stderr, "arping: failed to get random bytes after %d tries\n", maxtry);
+        exit(1);
+}
+
 /**
  * If possible, chroot.
  *
@@ -2213,7 +2233,7 @@ arping_main(int argc, char **argv)
 	} else { /* PINGMAC */
 		int c;
 		for (c = 0; (maxcount < 0 || c < maxcount) && !time_to_die; c++) {
-			pingmac_send(random(), c);
+			pingmac_send(xrandom(), c);
                         const uint32_t w = wait_time(deadline, packetwait);
                         if (w == 0) {
                                 break;

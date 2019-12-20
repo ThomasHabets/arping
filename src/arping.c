@@ -73,6 +73,10 @@
 #include <sys/param.h>
 #endif
 
+#if HAVE_SYS_RANDOM_H
+#include <sys/random.h>
+#endif
+
 #if HAVE_GRP_H
 #include <grp.h>
 #endif
@@ -165,6 +169,9 @@ uint32_t dstip;
  */
 static uint8_t dstmac[ETH_ALEN];
 
+static char* payload_suffix = NULL;
+static ssize_t payload_suffix_size = -1;
+
 uint32_t srcip;                   /* autodetected, override with -S/-b/-0 */
 uint8_t srcmac[ETH_ALEN];         /* autodetected, override with -s */
 
@@ -211,6 +218,20 @@ int verbose = 0;  /* Increase with -v */
 
 /* Doesn't really need to be volatile, but doesn't hurt. */
 static volatile sig_atomic_t time_to_die = 0;
+
+static ssize_t
+xgetrandom(void *buf, const size_t buflen, const unsigned int flags)
+{
+#ifdef HAVE_GETRANDOM
+        return getrandom(buf, buflen, flags);
+#else
+        char* p = buf;
+        for (int n = 0; n < buflen; n++) {
+                p[n] = random() & 0xff;
+        }
+        return buflen;
+#endif
+}
 
 /**
  * If possible, chroot.
@@ -958,8 +979,6 @@ static char *ts2str(const struct timespec *tv, const struct timespec *tv2,
 	return buf;
 }
 
-
-
 /** Send directed IPv4 ICMP echo request.
  *
  * \param id      IP id
@@ -974,7 +993,16 @@ pingmac_send(uint16_t id, uint16_t seq)
         // Without this padding some systems (e.g. Raspberry Pi 3
         // wireless interface) failed. dmesg said:
         //   arping: packet size is too short (42 <= 50)
-        const uint8_t padding[16] = {0};
+        const size_t padding_size = sizeof(struct timespec) + payload_suffix_size;
+        uint8_t padding[padding_size];
+        memset(padding, 0, padding_size);
+        {
+                struct timespec ts;
+                getclock(&ts);
+                memcpy(padding, &ts, sizeof(struct timespec));
+                memcpy(&padding[sizeof(struct timespec)],
+                       payload_suffix, payload_suffix_size);
+        }
 
 	int c;
 
@@ -1398,8 +1426,19 @@ pingmac_recv(const char* unused, struct pcap_pkthdr *h, uint8_t *packet)
         if (payload_size < 0) {
                 return;
         }
+        if (payload_size < sizeof(struct timespec) + payload_suffix_size) {
+                return;
+        }
         if (verbose > 3) {
-                printf("arping: ... payload size: %d\n", payload_size);
+                printf("arping: ... correct payload size (%d)\n",
+                       payload_size);
+        }
+        if (memcmp(&payload[sizeof(struct timespec)],
+                    payload_suffix, payload_suffix_size)) {
+                    return;
+        }
+        if (verbose > 3) {
+                printf("arping: ... correct payload suffix\n");
         }
 
         update_stats(timespec2dbl(&arrival) - timespec2dbl(&lastpacketsent));
@@ -1646,6 +1685,7 @@ arping_main(int argc, char **argv)
         double deadline = -1;
         char bpf_filter[64];
         ebuf[0] = 0;
+        srandom(time(NULL));
 
         for (c = 1; c < argc; c++) {
                 if (!strcmp(argv[c], "--help")) {
@@ -1798,6 +1838,37 @@ arping_main(int argc, char **argv)
                 fprintf(stderr, "arping: Too many args on command line."
                         " Expected at most one.\n");
                 exit(1);
+        }
+
+        // Generate random payload suffix for MAC pings, to be able to
+        // differentiate from unrelated ping replies.
+        if (payload_suffix_size < 0) {
+                payload_suffix_size = 4;
+                payload_suffix = malloc(payload_suffix_size);
+                if (payload_suffix) {
+                        const ssize_t rc = xgetrandom(payload_suffix, payload_suffix_size, 0);
+                        if (rc == -1) {
+                                fprintf(stderr,
+                                        "arping: failed to get %d random bytes: %s\n",
+                                        payload_suffix_size,
+                                        strerror(errno));
+                                free(payload_suffix);
+                                payload_suffix = NULL;
+                        } else if (payload_suffix_size != rc) {
+                                fprintf(stderr,
+                                        "arping: only got %d out of %d bytes for random suffix\n",
+                                        rc, payload_suffix_size);
+                        }
+                } else {
+                        fprintf(stderr, "arping: failed to allocate %d bytes for payload suffix.\n",
+                                payload_suffix_size);
+                }
+
+                if (!payload_suffix) {
+                        fprintf(stderr, "arping:  Using constant suffix.\n");
+                        payload_suffix = "arping";
+                        payload_suffix_size = strlen(payload_suffix);
+                }
         }
 
         if (((mode == PINGIP) && opt_T)

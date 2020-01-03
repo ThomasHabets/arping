@@ -244,7 +244,7 @@ xrandom() {
                         continue;
                 }
                 if (sizeof(ret) != rc) {
-                        fprintf(stderr, "arping: got too few random bytes %d, want %d\n", rc, sizeof(ret));
+                        fprintf(stderr, "arping: got too few random bytes %zd, want %zd\n", rc, sizeof(ret));
                         continue;
                 }
                 return ret;
@@ -1450,7 +1450,7 @@ pingmac_recv(const char* unused, struct pcap_pkthdr *h, uint8_t *packet)
                 return;
         }
         if (verbose > 3) {
-                printf("arping: ... correct payload size (%d)\n",
+                printf("arping: ... correct payload size (%zd)\n",
                        payload_size);
         }
         if (memcmp(&payload[sizeof(struct timespec)],
@@ -1869,18 +1869,18 @@ arping_main(int argc, char **argv)
                         const ssize_t rc = xgetrandom(payload_suffix, payload_suffix_size, 0);
                         if (rc == -1) {
                                 fprintf(stderr,
-                                        "arping: failed to get %d random bytes: %s\n",
+                                        "arping: failed to get %zd random bytes: %s\n",
                                         payload_suffix_size,
                                         strerror(errno));
                                 free(payload_suffix);
                                 payload_suffix = NULL;
                         } else if (payload_suffix_size != rc) {
                                 fprintf(stderr,
-                                        "arping: only got %d out of %d bytes for random suffix\n",
+                                        "arping: only got %zd out of %zd bytes for random suffix\n",
                                         rc, payload_suffix_size);
                         }
                 } else {
-                        fprintf(stderr, "arping: failed to allocate %d bytes for payload suffix.\n",
+                        fprintf(stderr, "arping: failed to allocate %zd bytes for payload suffix.\n",
                                 payload_suffix_size);
                 }
 

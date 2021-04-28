@@ -1663,16 +1663,39 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
        }
 }
 
+static libnet_t*
+make_temp_libnet()
+{
+	char ebuf[LIBNET_ERRBUF_SIZE];
+        libnet_t* l = libnet_init(LIBNET_LINK, "lo", ebuf);
+        if (!l) {
+                fprintf(stderr, "arping: libnet_init(LIBNET_LINK, lo): %s\n", ebuf);
+                exit(EXIT_FAILURE);
+        }
+        return l;
+}
+
 // return 1 on success.
 static int
-xresolve(libnet_t* l, const char *name, int r, uint32_t *addr)
+xresolve(const char *name, int r, uint32_t *addr)
 {
         if (!strcmp(ip_broadcast, name)) {
                 *addr = 0xffffffff;
                 return 1;
         }
+        libnet_t* l = make_temp_libnet();
         *addr = libnet_name2addr4(l, (char*)name, r);
+        libnet_destroy(l);
         return *addr != 0xffffffff;
+}
+
+static uint32_t
+xget_ipaddr4()
+{
+        libnet_t* l = make_temp_libnet();
+        const uint32_t ret = libnet_get_ipaddr4(l);
+        libnet_destroy(l);
+        return ret;
 }
 
 /**
@@ -1922,8 +1945,7 @@ arping_main(int argc, char **argv)
         }
 
         if (srcip_opt != NULL) {
-                do_libnet_init(ifname, 0);
-                if (!xresolve(libnet, srcip_opt, LIBNET_RESOLVE, &srcip)) {
+                if (!xresolve(srcip_opt, LIBNET_RESOLVE, &srcip)) {
                         fprintf(stderr, "arping: Can't resolve %s, or "
                                 "%s is broadcast. If it is, use -b"
                                 " instead of -S\n", srcip_opt,srcip_opt);
@@ -1932,8 +1954,7 @@ arping_main(int argc, char **argv)
         }
 
         if (dstip_opt) {
-                do_libnet_init(ifname, 0);
-                if (!xresolve(libnet, dstip_opt, LIBNET_RESOLVE, &dstip)) {
+                if (!xresolve(dstip_opt, LIBNET_RESOLVE, &dstip)) {
                         fprintf(stderr,"arping: Can't resolve %s, or "
                                 "%s is broadcast. If it is, use -B "
                                 "instead of -T\n",dstip_opt,dstip_opt);
@@ -1982,8 +2003,7 @@ arping_main(int argc, char **argv)
         /* default to own IP address when doing -d */
         if (finddup && !parm) {
                 dstip_given = 1;
-                do_libnet_init(ifname, 0);
-                dstip = libnet_get_ipaddr4(libnet);
+                dstip = xget_ipaddr4();
                 if (verbose) {
                         printf("defaulting to checking dup for %s\n",
                                libnet_addr2name4(dstip, 0));
@@ -1998,7 +2018,6 @@ arping_main(int argc, char **argv)
 			mode = is_mac_addr(parm)?PINGMAC:PINGIP;
 		} else if (dstip_given) {
 			mode = PINGIP;
-                        do_libnet_init(ifname, 0);
 			parm = strdup(libnet_addr2name4(dstip,0));
 			if (!parm) {
 				fprintf(stderr, "arping: out of memory\n");
@@ -2019,11 +2038,6 @@ arping_main(int argc, char **argv)
 	}
 
 	/*
-	 * libnet init (may be done already for resolving)
-	 */
-        do_libnet_init(ifname, 0);
-
-	/*
 	 * Make sure dstip and parm like eachother
 	 */
 	if (mode == PINGIP && (!dstip_given)) {
@@ -2033,7 +2047,7 @@ arping_main(int argc, char **argv)
 				"\n");
 			exit(1);
 		}
-                if (!xresolve(libnet, parm, LIBNET_RESOLVE, &dstip)) {
+                if (!xresolve(parm, LIBNET_RESOLVE, &dstip)) {
 			fprintf(stderr, "arping: Can't resolve %s\n", parm);
 			exit(1);
 		}
@@ -2106,8 +2120,8 @@ arping_main(int argc, char **argv)
 	}
 
 	/*
-	 * Init libnet again, because we now know the interface name.
-	 * We should know it by know at least
+	 * Init libnet, because we now know the interface name.
+	 * We should know it by know at least.
 	 */
         do_libnet_init(ifname, 0);
 

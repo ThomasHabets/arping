@@ -71,30 +71,56 @@ arping_lookupdev(uint32_t srcip,
         for (cur = ifa; cur; cur = cur->ifa_next) {
                 in_addr_t addr, mask;
 
+                if (verbose > 1) {
+                        printf("arping: > considering %s\n", cur->ifa_name);
+                }
+
                 if (!(cur->ifa_flags & IFF_UP)) {
+                        if (verbose > 2) {
+                                printf("arping: >> no: Interface is not up\n");
+                        }
                         continue;
                 }
                 if (!cur->ifa_addr
                     || !cur->ifa_netmask
                     || !cur->ifa_name) {
+                        if (verbose > 2) {
+                                printf("arping: >> no: Fields missing\n");
+                        }
                         continue;
                 }
                 if (cur->ifa_addr->sa_family != AF_INET) {
+                        if (verbose > 2) {
+                                printf("arping: >> no: Address not IPv4\n");
+                        }
                         continue;
                 }
                 if (cur->ifa_flags & (IFF_LOOPBACK|IFF_POINTOPOINT)) {
+                        if (verbose > 2) {
+                                printf("arping: >> no: Wrong type\n");
+                        }
                         continue;
                 }
                 addr =((struct sockaddr_in*)cur->ifa_addr)->sin_addr.s_addr;
                 mask =((struct sockaddr_in*)cur->ifa_netmask)->sin_addr.s_addr;
                 if ((addr & mask) != (dstip & mask)) {
+                        if (verbose > 2) {
+                                printf("arping: >> no: Unmatching dst\n");
+                        }
                         continue;
                 }
                 match_count++;
                 if (ntohl(mask) > ntohl(best_mask)) {
+                        if (verbose > 2) {
+                                printf("arping: >> yes: Best candidate\n");
+                        }
                         memset(ifname, 0, sizeof(ifname));
                         strncpy(ifname, cur->ifa_name, sizeof(ifname)-1);
                         best_mask = mask;
+                } else {
+                        if (verbose > 2) {
+                                printf("arping: >> no: Not best match\n");
+                        }
                 }
         }
         if (match_count) {

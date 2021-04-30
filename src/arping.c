@@ -629,6 +629,8 @@ strip_newline(char* s) {
  * If this function retries with different parameter it will preserve
  * the original error message and print that.
  * Call with recursive=0.
+ *
+ * This function may recurse to try more interfaces.
  */
 void
 do_libnet_init(const char *ifname, int recursive)
@@ -659,6 +661,14 @@ do_libnet_init(const char *ifname, int recursive)
                                 return;
                         }
                 } else if (recursive) {
+                        switch (recursive) {
+                        case 1:
+                                do_libnet_init("lo0", recursive+1);
+                                if (libnet != NULL) {
+                                        return;
+                                }
+                                break;
+                        }
                         /* Continue original execution to get that
                          * error message. */
                         return;
@@ -1667,7 +1677,7 @@ static libnet_t*
 make_temp_libnet()
 {
 	char ebuf[LIBNET_ERRBUF_SIZE];
-        libnet_t* l = libnet_init(LIBNET_LINK, "lo", ebuf);
+        libnet_t* l = libnet_init(LIBNET_LINK, NULL, ebuf);
         if (!l) {
                 fprintf(stderr, "arping: libnet_init(LIBNET_LINK, lo): %s\n", ebuf);
                 exit(EXIT_FAILURE);

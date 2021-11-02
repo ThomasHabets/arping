@@ -6,7 +6,7 @@ arping/README
 
  http://www.habets.pp.se/synscan/
  http://github.com/ThomasHabets/arping
- git clone git://github.com/ThomasHabets/arping.git
+ git clone https://github.com/ThomasHabets/arping.git
 
 Introduction
 ------------

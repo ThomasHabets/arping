@@ -54,7 +54,7 @@ ping_recv_win32(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
        while (!done && !time_to_die) {
 	       struct pcap_pkthdr *pkt_header;
 	       u_char *pkt_data;
-	       if (pcap_next_ex(pcap, &pkt_header, &pkt_data) == 1) {
+	       if (pcap_next_ex(pcap, &pkt_header, &pkt_data) > 0) {
 		       func(pcap, pkt_header, pkt_data);
 	       }
                getclock(&tv);

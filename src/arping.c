@@ -1125,7 +1125,7 @@ pingip_send()
                                           send_reply ? ARPOP_REPLY : ARPOP_REQUEST,
 					  srcmac,
 					  (uint8_t*)&srcip,
-					  unsolicited ? (uint8_t*)ethxmas : (uint8_t*)ethnull,
+					  unsolicited ? (uint8_t*)ethxmas : (send_reply ? dstmac : (uint8_t*)ethnull)
 					  (uint8_t*)&dstip,
 					  (uint8_t*)padding,
 					  sizeof padding,

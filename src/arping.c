@@ -626,17 +626,48 @@ strip_newline(char* s) {
 
 /**
  * Init libnet with specified ifname. Destroy if already inited.
- * If this function retries with different parameter it will preserve
- * the original error message and print that.
+ *
+ * Libnet usually needs init before we have searched for the real
+ * interface. In that case, first we just give a NULL pointer as the
+ * interface. But libnet sometimes fails to find an interface (no idea
+ * why), so then we try to use "lo" and "lo0" explicitly.
+ *
+ * If even loopback fails, then it'll preserve the original error
+ * message.
+ *
  * Call with recursive=0.
  */
 void
-do_libnet_init(const char *ifname, int recursive)
+do_libnet_init(const char *inifname, int recursive)
 {
+        const char* ifname = inifname;
+        int last = 0;
+        switch (recursive) {
+        case 0:
+                break;
+        case 1:
+                ifname = "lo"; // E.g. Linux.
+                break;
+        case 2:
+                ifname = "lo0"; // E.g. OpenBSD.
+                break;
+        default:
+                last = 1;
+                break;
+        }
+
+        // If we're given an interface name then always use that.
+        // No need to be recursive about it.
+        if (inifname != NULL && recursive == 0) {
+                ifname = inifname;
+                last = 1;
+        }
+
 	char ebuf[LIBNET_ERRBUF_SIZE];
         ebuf[0] = 0;
 	if (verbose > 1) {
-                printf("arping: libnet_init(%s)\n", ifname ? ifname : "<null>");
+                printf("arping: trying libnet_init(LIBNET_LINK, %s)\n",
+                       ifname ? ifname : "<null>");
 	}
 	if (libnet) {
 		/* Probably going to switch interface from temp to real. */
@@ -644,28 +675,31 @@ do_libnet_init(const char *ifname, int recursive)
 		libnet = 0;
 	}
 
-        /* Try libnet_init() even though we aren't root. We may have
+        /* Try libnet_init() even though we maybe aren't root. We may have
          * a capability or something. */
 	if (!(libnet = libnet_init(LIBNET_LINK,
 				   (char*)ifname,
 				   ebuf))) {
                 strip_newline(ebuf);
-                if (!ifname) {
-                        /* Sometimes libnet guesses an interface that it then
-                         * can't use. Work around that by attempting to
-                         * use "lo". */
-                        do_libnet_init("lo", 1);
+                if (verbose) {
+                        fprintf(stderr,
+                                "arping: libnet_init(LIBNET_LINK, %s): %s\n",
+                                ifname ? ifname : "<null>",
+                                *ebuf ? ebuf : "<no error message>");
+                }
+                if (!last) {
+                        do_libnet_init(ifname, recursive+1);
                         if (libnet != NULL) {
                                 return;
                         }
-                } else if (recursive) {
-                        /* Continue original execution to get that
-                         * error message. */
-                        return;
                 }
-                fprintf(stderr, "arping: libnet_init(LIBNET_LINK, %s): %s\n",
-                        ifname ? ifname : "<null>",
-                        *ebuf ? ebuf : "<no error message>");
+                if (!verbose) {
+                        // Prevent double-print when verbose.
+                        fprintf(stderr,
+                                "arping: libnet_init(LIBNET_LINK, %s): %s\n",
+                                ifname ? ifname : "<null>",
+                                *ebuf ? ebuf : "<no error message>");
+                }
                 if (getuid() && geteuid()) {
                         fprintf(stderr,
                                 "arping: you may need to run as root\n");

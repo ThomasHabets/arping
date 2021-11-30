@@ -109,6 +109,13 @@
 
 #if HAVE_SYS_CAPABILITY_H
 #include <sys/capability.h>
+#else
+// It seems that some environments have a libc with cap_init, but do not have
+// the header files. Without the header files we won't have the cap_t struct, so
+// it won't actually work.
+//
+// TODO: Probably this logic should be in configure.ac instead.
+#undef HAVE_CAP_INIT
 #endif
 
 #if HAVE_NET_BPF_H

@@ -123,6 +123,11 @@
 #endif
 #include <pcap.h>
 
+#if defined(HAVE_SECCOMP_H) && defined(HAVE_LIBSECCOMP)
+#define USE_SECCOMP 1
+#include <seccomp.h>
+#endif
+
 #include "arping.h"
 
 #ifndef ETH_ALEN
@@ -198,6 +203,9 @@ static int promisc = 0;              /* Use promisc mode. -p */
 static int finddup = 0;              /* finddup mode. -d */
 static int dupfound = 0;             /* set to 1 if dup found */
 static char lastreplymac[ETH_ALEN];  /* if last different from this then dup */
+
+/* -z to turn on, -Z to turn off. Default is compile time option */
+static int use_seccomp = DEFAULT_SECCOMP;
 
 unsigned int numsent = 0;                   /* packets sent */
 unsigned int numrecvd = 0;                  /* packets received */
@@ -465,13 +473,73 @@ drop_privileges(const char* drop_group)
 #endif
 }
 
+#ifdef USE_SECCOMP
+static void seccomp_allow(scmp_filter_ctx ctx, const char* name)
+{
+        if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, seccomp_syscall_resolve_name(name), 0)) {
+                perror("seccomp_rule_add_exact()");
+                exit(1);
+        }
+}
+
+static void drop_seccomp(int libnet_fd)
+{
+        //scmp_filter_ctx ctx = seccomp_init(SCMP_ACT_ERRNO(13));
+        scmp_filter_ctx ctx = seccomp_init(SCMP_ACT_KILL);
+        if (!ctx) {
+                perror("seccomp_init()");
+                exit(1);
+        }
+
+        //
+        // Whitelist.
+        //
+
+        // Write to stdout and stderr.
+        if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(fstat), 1, SCMP_A0(SCMP_CMP_EQ, STDOUT_FILENO))) {
+                perror("seccomp_rule_add(fstat stdout)");
+                exit(1);
+        }
+        if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(write), 1, SCMP_A0(SCMP_CMP_EQ, STDOUT_FILENO))) {
+                perror("seccomp_rule_add(write stdout)");
+                exit(1);
+        }
+        if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(write), 1, SCMP_A0(SCMP_CMP_EQ, STDERR_FILENO))) {
+                perror("seccomp_rule_add(write stderr)");
+                exit(1);
+        }
+
+        // Libnet.
+        if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1, SCMP_A0(SCMP_CMP_EQ, libnet_fd))) {
+                perror("seccomp_rule_add(ioctl libnet)");
+                exit(1);
+        }
+        if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sendto), 1, SCMP_A0(SCMP_CMP_EQ, libnet_fd))) {
+                perror("seccomp_rule_add(sendto libnet)");
+                exit(1);
+        }
+
+        // Other.
+        seccomp_allow(ctx, "select");
+        seccomp_allow(ctx, "exit_group");
+        seccomp_allow(ctx, "rt_sigreturn");
+
+        // Load.
+        if (seccomp_load(ctx)) {
+                perror("seccomp_load()");
+                exit(1);
+        }
+        seccomp_release(ctx);
+}
+#endif
+
 /**
  * drop even more privileges, where possible.
  *
  * After all setup is done and main loop is about to start.
  */
 static void
-drop_more_privileges()
+drop_more_privileges(int libnet_fd)
 {
 #ifdef HAVE_PLEDGE
         if (pledge("stdio tty", "")) {
@@ -482,8 +550,12 @@ drop_more_privileges()
                 printf("arping: Successfully pledged\n");
         }
 #endif
+#ifdef USE_SECCOMP
+        if (use_seccomp) {
+                drop_seccomp(libnet_fd);
+        }
+#endif
 }
-
 
 /**
  * Do pcap_open_live(), except by using the pcap_create() interface
@@ -833,7 +905,11 @@ extended_usage()
                "    -V num 802.1Q tag to add. Defaults to no VLAN tag.\n"
                "    -w sec Specify a timeout before ping exits regardless of how"
                " many\npackets have been sent or received.\n"
-               "    -W sec Time to wait between pings.\n");
+               "    -W sec Time to wait between pings.\n"
+               "    -z     Enable seccomp%s\n"
+               "    -Z     Disable seccomp%s\n",
+               DEFAULT_SECCOMP ? " (default)" : "",
+               DEFAULT_SECCOMP ? "" : " (default)");
         printf("Report bugs to: thomas@habets.se\n"
                "Arping home page: <http://www.habets.pp.se/synscan/>\n"
                "Development repo: http://github.com/ThomasHabets/arping\n");
@@ -847,7 +923,7 @@ standard_usage()
 {
 	printf("ARPing %s, by Thomas Habets <thomas@habets.se>\n",
 	       version);
-        printf("usage: arping [ -0aAbdDeFpPqrRuUv ] [ -w <sec> ] "
+        printf("usage: arping [ -0aAbdDeFpPqrRuUvzZ ] [ -w <sec> ] "
                "[ -W <sec> ] "
                "[ -S <host/ip> ]\n"
                "              "
@@ -1682,7 +1758,6 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 			       break;
 		       }
 	       }
-
 	       if (trydispatch) {
 		       int ret;
                        if (0 > (ret = pcap_dispatch(pcap, -1,
@@ -1763,7 +1838,7 @@ arping_main(int argc, char **argv)
 	memcpy(dstmac, ethxmas, ETH_ALEN);
 
         while (EOF != (c = getopt(argc, argv,
-                                  "0aAbBC:c:dDeFg:hi:I:m:pPqQ:rRs:S:t:T:uUvV:w:W:"))) {
+                                  "0aAbBC:c:dDeFg:hi:I:m:pPqQ:rRs:S:t:T:uUvV:w:W:zZ"))) {
 		switch(c) {
 		case '0':
 			srcip_opt = "0.0.0.0";
@@ -1890,6 +1965,12 @@ arping_main(int argc, char **argv)
 			break;
                 case 'W':
                         packetwait = (unsigned)(1000000.0 * atof(optarg));
+                        break;
+                case 'z':
+                        use_seccomp = 1;
+                        break;
+                case 'Z':
+                        use_seccomp = 0;
                         break;
 		default:
 			usage(1);
@@ -2063,6 +2144,9 @@ arping_main(int argc, char **argv)
 	 * libnet init (may be done already for resolving)
 	 */
         do_libnet_init(ifname, 0);
+        if (verbose > 1) {
+                printf("arping: libnet_getfd(): %d\n", libnet_getfd(libnet));
+        }
 
 	/*
 	 * Make sure dstip and parm like eachother
@@ -2249,7 +2333,7 @@ arping_main(int argc, char **argv)
                        format_mac(srcmac, buf, sizeof(buf)));
 	}
 
-        drop_more_privileges();
+        drop_more_privileges(libnet_getfd(libnet));
 
 	if (display == NORMAL) {
 		printf("ARPING %s\n", parm);

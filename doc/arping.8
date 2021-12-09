@@ -109,12 +109,12 @@ Set target MAC address to use when pinging IP address\&.
 .IP "\-T \fIIP\fP"
 Use \-T as target address when pinging MACs that won\(cq\&t
 respond to a broadcast ping but perhaps to a directed broadcast\&.
-.IP 
+.PP 
 \fIExample\fP:
 .nf
 .sp
 To check the address of MAC\-A, use knowledge of MAC\-B and IP\-B\&.
-.IP 
+.PP 
 $ arping \-S <IP\-B> \-s <MAC\-B> \-p <MAC\-A>
 .IP "\-u"
 Show index=received/sent instead of just index=received when
@@ -123,7 +123,7 @@ pinging MACs\&.
 Send unsolicited ARP\&. This sets the destination MAC address in
 the ARP frame to the broadcast address\&. Unsolicited ARP is used
 to update the neighbours\(cq\& ARP caches\&.
-.IP 
+.PP 
 \fIExample\fP:
 .nf
 .sp
@@ -136,7 +136,10 @@ VLAN tag to set\&. Defaults to no VLAN tag\&.
 Specify a timeout before ping exits regardless of how many packets have been sent or received\&.
 .IP "\-W \fIsec\fP"
 Time to wait between pings\&.
-
+.IP "\-z"
+Enable seccomp (default seccomp state depends on compile options)
+.IP "\-Z"
+Disable seccomp (default seccomp state depends on compile options)
 .PP 
 .SH "EXAMPLES"
 .nf

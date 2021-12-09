@@ -36,7 +36,6 @@ manpagedescription()
 
 manpageoptions()
 
-startdit()
     dit(--help) Show extended help. Not quite as extensive as this manpage,
         but more than -h.
     dit(-0) Use this option to ping with source IP address 0.0.0.0. Use this
@@ -104,7 +103,8 @@ mancommand(.sp)
     dit(-V em(vlan)) VLAN tag to set. Defaults to no VLAN tag.
     dit(-w em(sec)) Specify a timeout before ping exits regardless of how many packets have been sent or received.
     dit(-W em(sec)) Time to wait between pings.
-enddit()
+    dit(-z) Enable seccomp (default seccomp state depends on compile options)
+    dit(-Z) Disable seccomp (default seccomp state depends on compile options)
 
 
 manpagesection(EXAMPLES)

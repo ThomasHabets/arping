@@ -26,6 +26,7 @@ AC_CHECK_LIB([m], [sqrt])
 AC_CHECK_LIB([socket], [socket])
 AC_CHECK_LIB([nsl], [gethostbyname])
 AC_CHECK_LIB([cap], [cap_init])
+AC_CHECK_LIB([seccomp], [seccomp_init])
 AC_CHECK_LIB([rt], [clock_gettime])
 AC_CHECK_LIB([net], [libnet_name_resolve],
       [AC_MSG_ERROR([libnet 1.0.x found. Arping 2.x requires libnet 1.1 or newer])])
@@ -33,14 +34,20 @@ AC_CHECK_LIB([net], [libnet_init], ,[AC_MSG_ERROR([libnet 1.1.x not found])])
 AC_CHECK_LIB([pcap], [pcap_open_live], ,[AC_MSG_ERROR([libpcap not found])])
 AC_SEARCH_LIBS([clock_gettime], [rt])
 
+AC_ARG_ENABLE([seccomp], [Enable seccomp priv drops by default (-z to turn on, -Z for off)], [
+   AC_DEFINE([DEFAULT_SECCOMP], [1], [Enable seccomp by default])
+], [
+   AC_DEFINE([DEFAULT_SECCOMP], [0], [Disable seccomp by default])
+])
 # Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS([\
 arpa/inet.h \
+getopt.h \
 netinet/in.h \
+seccomp.h \
 stdlib.h \
 sys/socket.h \
-getopt.h \
 time.h \
 grp.h \
 sys/time.h \

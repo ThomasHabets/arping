@@ -905,8 +905,8 @@ extended_usage()
 	       "    -U     Send unsolicited ARP.\n"
 	       "    -v     Verbose output. Use twice for more messages.\n"
                "    -V num 802.1Q tag to add. Defaults to no VLAN tag.\n"
-               "    -w sec Specify a timeout before ping exits regardless of how"
-               " many\npackets have been sent or received.\n"
+               "    -w sec Specify a timeout before ping exits regardless of how many\n"
+               "           packets have been sent or received.\n"
                "    -W sec Time to wait between pings.\n"
 #if USE_SECCOMP
                "    -z     Enable seccomp%s\n"

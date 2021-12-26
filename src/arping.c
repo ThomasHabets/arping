@@ -126,6 +126,8 @@
 #if defined(HAVE_SECCOMP_H) && defined(HAVE_LIBSECCOMP)
 #define USE_SECCOMP 1
 #include <seccomp.h>
+#else
+#define USE_SECCOMP 0
 #endif
 
 #include "arping.h"
@@ -473,7 +475,7 @@ drop_privileges(const char* drop_group)
 #endif
 }
 
-#ifdef USE_SECCOMP
+#if USE_SECCOMP
 static void seccomp_allow(scmp_filter_ctx ctx, const char* name)
 {
         if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, seccomp_syscall_resolve_name(name), 0)) {
@@ -550,7 +552,7 @@ drop_more_privileges(int libnet_fd)
                 printf("arping: Successfully pledged\n");
         }
 #endif
-#ifdef USE_SECCOMP
+#if USE_SECCOMP
         if (use_seccomp) {
                 drop_seccomp(libnet_fd);
         }
@@ -906,10 +908,13 @@ extended_usage()
                "    -w sec Specify a timeout before ping exits regardless of how"
                " many\npackets have been sent or received.\n"
                "    -W sec Time to wait between pings.\n"
+#if USE_SECCOMP
                "    -z     Enable seccomp%s\n"
                "    -Z     Disable seccomp%s\n",
                DEFAULT_SECCOMP ? " (default)" : "",
-               DEFAULT_SECCOMP ? "" : " (default)");
+               DEFAULT_SECCOMP ? "" : " (default)"
+#endif
+               );
         printf("Report bugs to: thomas@habets.se\n"
                "Arping home page: <http://www.habets.pp.se/synscan/>\n"
                "Development repo: http://github.com/ThomasHabets/arping\n");
@@ -923,7 +928,7 @@ standard_usage()
 {
 	printf("ARPing %s, by Thomas Habets <thomas@habets.se>\n",
 	       version);
-        printf("usage: arping [ -0aAbdDeFpPqrRuUvzZ ] [ -w <sec> ] "
+        printf("usage: arping [ -0aAbdDeFpPqrRuUv%s ] [ -w <sec> ] "
                "[ -W <sec> ] "
                "[ -S <host/ip> ]\n"
                "              "
@@ -934,7 +939,7 @@ standard_usage()
                " [ -g <group> ]\n"
                "              "
                "[ -V <vlan> ] [ -Q <priority> ] "
-               "<host/ip/MAC | -B>\n");
+               "<host/ip/MAC | -B>\n", USE_SECCOMP ? "zZ" : "");
 }
 
 /**

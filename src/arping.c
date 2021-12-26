@@ -532,6 +532,9 @@ static void drop_seccomp(int libnet_fd)
                 exit(1);
         }
         seccomp_release(ctx);
+        if (verbose > 1) {
+                printf("arping: Successfully applied seccomp policy\n");
+        }
 }
 #endif
 

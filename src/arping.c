@@ -962,6 +962,16 @@ usage(int ret)
 }
 
 /**
+ *
+ */
+static void
+print_library_versions()
+{
+        fprintf(stderr, "arping: %s\n", pcap_lib_version());
+        fprintf(stderr, "arping: %s\n", libnet_version());
+}
+
+/**
  * Check to see if it looks somewhat like a MAC address.
  *
  * It was unclear from msdn.microsoft.com if their scanf() supported
@@ -2010,6 +2020,10 @@ arping_main(int argc, char **argv)
                 fprintf(stderr, "arping: Too many args on command line."
                         " Expected at most one.\n");
                 exit(1);
+        }
+
+        if (verbose > 2) {
+                print_library_versions();
         }
 
         // Generate random payload suffix for MAC pings, to be able to

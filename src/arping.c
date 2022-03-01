@@ -15,7 +15,7 @@
  *
  */
 /*
- *  Copyright (C) 2000-2019 Thomas Habets <thomas@habets.se>
+ *  Copyright (C) 2000-2022 Thomas Habets <thomas@habets.se>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1326,28 +1326,39 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, const char * const packet
         getclock(&arrival);
 
 	if (vlan_tag >= 0) {
+                if (h->caplen < LIBNET_802_1Q_H + LIBNET_ARP_H + 2*(ETH_ALEN + 4)) {
+                        return;
+                }
 		veth = (void*)packet;
 		harp = (void*)((char*)veth + LIBNET_802_1Q_H);
 		pkt_srcmac = veth->vlan_shost;
 	} else {
-                // Short packet.
                 if (h->caplen < LIBNET_ETH_H + LIBNET_ARP_H + 2*(ETH_ALEN + 4)) {
                         return;
                 }
-
 		heth = (void*)packet;
 		harp = (void*)((char*)heth + LIBNET_ETH_H);
 		pkt_srcmac = heth->_802_3_shost;
-                // Wrong length of hardware address.
-                if (harp->ar_hln != ETH_ALEN) {
-                        return;
-                }
+        }
+        if (verbose > 3) {
+                printf("arping: ... good length\n");
+        }
 
-                // Wrong length of protocol address.
-                if (harp->ar_pln != 4) {
-                        return;
-                }
-	}
+        // Wrong length of hardware address.
+        if (harp->ar_hln != ETH_ALEN) {
+                return;
+        }
+        if (verbose > 3) {
+                printf("arping: ... L2 addr len is correct\n");
+        }
+
+        // Wrong length of protocol address.
+        if (harp->ar_pln != 4) {
+                return;
+        }
+        if (verbose > 3) {
+                printf("arping: ... L3 addr len is correct\n");
+        }
 
         // ARP reply.
         if (htons(harp->ar_op) != ARPOP_REPLY) {
@@ -1504,17 +1515,26 @@ pingmac_recv(const char* unused, struct pcap_pkthdr *h, uint8_t *packet)
         getclock(&arrival);
 
         if (vlan_tag >= 0) {
+                if (h->caplen < LIBNET_ETH_H + LIBNET_IPV4_H + LIBNET_ICMPV4_H) {
+                        return;
+                }
                 veth = (void*)packet;
                 hip = (void*)((char*)veth + LIBNET_802_1Q_H);
                 hicmp = (void*)((char*)hip + LIBNET_IPV4_H);
                 pkt_srcmac = veth->vlan_shost;
                 pkt_dstmac = veth->vlan_dhost;
         } else {
+                if (h->caplen < LIBNET_ETH_H + LIBNET_ARP_H + LIBNET_ICMPV4_H) {
+                        return;
+                }
                 heth = (void*)packet;
                 hip = (void*)((char*)heth + LIBNET_ETH_H);
                 hicmp = (void*)((char*)hip + LIBNET_IPV4_H);
                 pkt_srcmac = heth->_802_3_shost;
                 pkt_dstmac = heth->_802_3_dhost;
+        }
+        if (verbose > 3) {
+                printf("arping: ... good length\n");
         }
 
         // Dest MAC must be me.

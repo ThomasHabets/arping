@@ -1355,6 +1355,12 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, const char * const packet
         }
 
         if (veth) {
+                if (veth->vlan_tpi != htons(0x8100)) {
+                        return;
+                }
+                if (verbose > 3) {
+                        printf("arping: ... is dot1q\n");
+                }
                 if ((veth->vlan_priority_c_vid & 0xfff) == vlan_tag) {
                         return;
                 }
@@ -1362,6 +1368,9 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, const char * const packet
                         printf("arping: ... right VLAN\n");
                 }
         }
+
+        // Not checking ethertype because in theory this could be used for
+        // Ethernet II.
 
         // Wrong length of hardware address.
         if (harp->ar_hln != ETH_ALEN) {
@@ -1557,6 +1566,12 @@ pingmac_recv(const char* unused, struct pcap_pkthdr *h, uint8_t *packet)
         }
 
         if (veth) {
+                if (veth->vlan_tpi != htons(0x8100)) {
+                        return;
+                }
+                if (verbose > 3) {
+                        printf("arping: ... is dot1q\n");
+                }
                 if ((veth->vlan_priority_c_vid & 0xfff) == vlan_tag) {
                         return;
                 }
@@ -1564,6 +1579,9 @@ pingmac_recv(const char* unused, struct pcap_pkthdr *h, uint8_t *packet)
                         printf("arping: ... right VLAN\n");
                 }
         }
+
+        // Not checking ethertype because in theory this could be used for
+        // Ethernet II.
 
         // Dest MAC must be me.
         if (memcmp(pkt_dstmac, srcmac, ETH_ALEN)) {

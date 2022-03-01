@@ -1323,7 +1323,7 @@ void
 pingip_recv(const char *unused, struct pcap_pkthdr *h, const char * const packet)
 {
         const unsigned char *pkt_srcmac;
-        const struct libnet_802_1q_hdr *veth;
+        const struct libnet_802_1q_hdr *veth = NULL;
 	struct libnet_802_3_hdr *heth;
 	struct libnet_arp_hdr *harp;
         struct timespec arrival;
@@ -1352,6 +1352,15 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, const char * const packet
         }
         if (verbose > 3) {
                 printf("arping: ... good length\n");
+        }
+
+        if (veth) {
+                if ((veth->vlan_priority_c_vid & 0xfff) == vlan_tag) {
+                        return;
+                }
+                if (verbose > 3) {
+                        printf("arping: ... right VLAN\n");
+                }
         }
 
         // Wrong length of hardware address.
@@ -1511,7 +1520,7 @@ pingmac_recv(const char* unused, struct pcap_pkthdr *h, uint8_t *packet)
 {
         const unsigned char *pkt_dstmac;
         const unsigned char *pkt_srcmac;
-        const struct libnet_802_1q_hdr *veth;
+        const struct libnet_802_1q_hdr *veth = NULL;
 	struct libnet_802_3_hdr *heth;
 	struct libnet_ipv4_hdr *hip;
 	struct libnet_icmpv4_hdr *hicmp;
@@ -1545,6 +1554,15 @@ pingmac_recv(const char* unused, struct pcap_pkthdr *h, uint8_t *packet)
         }
         if (verbose > 3) {
                 printf("arping: ... good length\n");
+        }
+
+        if (veth) {
+                if ((veth->vlan_priority_c_vid & 0xfff) == vlan_tag) {
+                        return;
+                }
+                if (verbose > 3) {
+                        printf("arping: ... right VLAN\n");
+                }
         }
 
         // Dest MAC must be me.

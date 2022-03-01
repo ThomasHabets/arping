@@ -563,6 +563,38 @@ drop_more_privileges(int libnet_fd)
 }
 
 /**
+ * Check for buggy libpcap version
+ * https://github.com/the-tcpdump-group/libpcap/issues/461
+ *
+ * This list is not authoritative.
+ *
+ * If it's over matching wrong the only impact *should* be that too many packets
+ * come through the BPF filter.
+ *
+ * If it's under-matching then replies with dot1p nonzero will not be seen.
+ */
+static int
+bug_pcap_vlan()
+{
+        const char* bad[] = {
+                // Broken in 1.7.0.
+                "libpcap version 1.7",
+                "libpcap version 1.8",
+                "libpcap version 1.9.0",
+                // Fixed in 1.9.1.
+                // Fixed in 1.10 and up.
+                NULL,
+        };
+        const char* v = pcap_lib_version();
+        for (const char** t = bad; *t; t++) {
+                if (!strncmp(v, *t, strlen(*t))) {
+                        return 1;
+                }
+        }
+        return 0;
+}
+
+/**
  * Do pcap_open_live(), except by using the pcap_create() interface
  * introduced in 2008 (libpcap 0.4) where available.
  * This is so that we can set some options, which can't be set with
@@ -968,6 +1000,9 @@ static void
 print_library_versions()
 {
         fprintf(stderr, "arping: %s\n", pcap_lib_version());
+        if (bug_pcap_vlan()) {
+                fprintf(stderr, "arping: bug: https://github.com/the-tcpdump-group/libpcap/issues/461\n");
+        }
         fprintf(stderr, "arping: %s\n", libnet_version());
 }
 
@@ -2346,9 +2381,14 @@ arping_main(int argc, char **argv)
 	}
 #endif
 
+        if (vlan_tag >= 0 && bug_pcap_vlan() && verbose) {
+                fprintf(stderr,
+                        "arping: Working around bug in libpcap 1.7-1.9.0.\n");
+        }
+
 	if (mode == PINGIP) {
 		/* FIXME: better filter with addresses? */
-                if (vlan_tag >= 0) {
+                if (vlan_tag >= 0 && !bug_pcap_vlan()) {
                         snprintf(bpf_filter, sizeof(bpf_filter),
                                  "vlan %u and arp", vlan_tag);
                 } else {
@@ -2361,7 +2401,7 @@ arping_main(int argc, char **argv)
 		}
 	} else { /* ping mac */
 		/* FIXME: better filter with addresses? */
-                if (vlan_tag >= 0) {
+                if (vlan_tag >= 0 && !bug_pcap_vlan()) {
                         snprintf(bpf_filter, sizeof(bpf_filter),
                                  "vlan %u and icmp", vlan_tag);
                 } else {

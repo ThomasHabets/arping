@@ -479,8 +479,10 @@ drop_privileges(const char* drop_group)
 static void seccomp_allow(scmp_filter_ctx ctx, const char* name)
 {
         if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, seccomp_syscall_resolve_name(name), 0)) {
-                perror("seccomp_rule_add_exact()");
-                exit(1);
+                if (verbose) {
+                        fprintf(stderr, "arping: seccomp_rule_add_exact(%s): %s",
+                                name, strerror(errno));
+                }
         }
 }
 
@@ -524,6 +526,7 @@ static void drop_seccomp(int libnet_fd)
         // Other.
         seccomp_allow(ctx, "select");
         seccomp_allow(ctx, "pselect6");
+        seccomp_allow(ctx, "newfstatat");
         seccomp_allow(ctx, "exit_group");
         seccomp_allow(ctx, "rt_sigreturn");
 

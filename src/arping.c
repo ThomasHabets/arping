@@ -523,6 +523,7 @@ static void drop_seccomp(int libnet_fd)
 
         // Other.
         seccomp_allow(ctx, "select");
+        seccomp_allow(ctx, "pselect6");
         seccomp_allow(ctx, "exit_group");
         seccomp_allow(ctx, "rt_sigreturn");
 

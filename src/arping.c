@@ -2518,11 +2518,42 @@ arping_main(int argc, char **argv)
                 printf("\n");
 	}
 
+        if (fflush(stdout)) {
+                fprintf(stderr, "arping: Failed to write to stdout: %s\n",
+                        strerror(errno));
+                return EXIT_FAILURE;
+        }
+
+        if (ferror(stdout)) {
+                fprintf(stderr, "arping: Write failure to stdout: %s\n",
+                        strerror(errno));
+                return EXIT_FAILURE;
+        }
+
+        if (fflush(stderr)) {
+                // Likely this will go nowhere. But we can't write to
+                // stdout in case it's being machine parsed.
+                //
+                // At least it should show up in strace.
+                fprintf(stderr, "arping: Failed to write to stderr: %s\n",
+                        strerror(errno));
+                return EXIT_FAILURE;
+        }
+
+        if (ferror(stderr)) {
+                // Same here. Likely will go nowhere.
+                fprintf(stderr, "arping: Write failure to stderr: %s\n",
+                        strerror(errno));
+                return EXIT_FAILURE;
+        }
+
+        // We could close stdout/stdin too, but that'll interfere with
+        // unit testing.
+
         if (finddup) {
                 return dupfound;
-        } else {
-                return !numrecvd;
         }
+        return !numrecvd;
 }
 /* ---- Emacs Variables ----
  * Local Variables:

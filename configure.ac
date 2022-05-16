@@ -35,7 +35,7 @@ AC_CHECK_LIB([pcap], [pcap_open_live], ,[AC_MSG_ERROR([libpcap not found])])
 AC_SEARCH_LIBS([clock_gettime], [rt])
 
 AC_ARG_ENABLE([seccomp], [Enable seccomp priv drops by default (-z to turn on, -Z for off)], [
-   if test "$ac_cv_lib_seccomp_seccomp_init" = "no"; then
+   if test x"$enableval" != x"no" && test "$ac_cv_lib_seccomp_seccomp_init" = "no"; then
       AC_MSG_ERROR([--enable-seccomp given but seccomp libraries not present])
    fi
    AC_DEFINE([DEFAULT_SECCOMP], [1], [Enable seccomp by default])

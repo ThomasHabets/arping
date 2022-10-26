@@ -2131,7 +2131,7 @@ arping_main(int argc, char **argv)
 			vlan_tag = must_parse_int(optarg, "VLAN (-V)");
                         if (vlan_tag < 0 || vlan_tag > 4095) {
                                 fprintf(stderr,
-                                        "arping: vlan tag must 0-4095. Is %d\n",
+                                        "arping: vlan tag must be 0-4095. Is %d\n",
                                         vlan_tag);
                                 exit(1);
                         }

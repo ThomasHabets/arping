@@ -132,6 +132,7 @@
 #endif
 
 #include "arping.h"
+#include "cast.h"
 
 #ifndef ETH_ALEN
 #define ETH_ALEN 6
@@ -290,7 +291,14 @@ must_parse_int(const char* in, const char* what)
                         what, in);
                 exit(1);
         }
-        return ret;  // TODO: range check.
+        return cast_long_int(ret, "%s %s", what, in);
+}
+
+static int16_t
+must_parse_int16(const char* in, const char* what)
+{
+        const int out = must_parse_int(in, what);
+        return cast_int_int16(out, "%s %s", what, in);
 }
 
 /*
@@ -312,8 +320,10 @@ must_parse_uint(const char* in, const char* what)
         char *endp = NULL;
         errno = 0;
 #if HAVE_STRTOLL
+#define CASTER cast_longlong_uint
         const long long ret = strtoll(in, &endp, 0);
 #else
+#define CASTER cast_long_uint
         const long ret = strtol(in, &endp, 0);
 #endif
         if (errno) {
@@ -332,7 +342,44 @@ must_parse_uint(const char* in, const char* what)
                         "arping: %s: <%s> is negative\n", what, in);
                 exit(1);
         }
-        return ret;  // TODO: range check.
+        return CASTER(ret, "%s %s", what, in);
+#undef CASTER
+}
+
+static unsigned long
+parse_ulong(const char* in, const char* what, char* ebuf, size_t ebuflen)
+{
+        if (!*in) {
+                snprintf(ebuf, ebuflen, "arping: %s: value was empty\n", what);
+                exit(1);
+        }
+        char *endp = NULL;
+        errno = 0;
+#if HAVE_STRTOLL
+#define CASTER cast_longlong_ulonglong
+        const long long ret = strtoll(in, &endp, 0);
+#else
+#define CASTER cast_long_ulong
+        const long ret = strtol(in, &endp, 0);
+#endif
+        if (errno) {
+                snprintf(ebuf, ebuflen, "arping: %s: parsing <%s> as integer: %s\n",
+                        what, in, strerror(errno));
+                exit(1);
+        }
+        if (*endp) {
+                snprintf(ebuf, ebuflen,
+                        "arping: %s: failed parsing <%s> as integer\n",
+                        what, in);
+                exit(1);
+        }
+        if (ret < 0) {
+                snprintf(ebuf, ebuflen,
+                        "arping: %s: <%s> is negative\n", what, in);
+                exit(1);
+        }
+        return CASTER(ret, "%s %s", what, in);
+#undef CASTER
 }
 
 static ssize_t
@@ -495,10 +542,10 @@ must_get_group(const char* ident)
 
                 // Not a name. Try it as an integer.
                 {
-                        char* endp = NULL;
-                        gid_t r = strtol(ident, &endp, 0);
-                        if (!*endp) {
-                                return r;
+                        char ebuf[1024] = {0};
+                        const unsigned long v = parse_ulong(ident, "gid", ebuf, sizeof(ebuf));
+                        if (!ebuf[0]) {
+                                return cast_ulong_gid(v, NULL);
                         }
                 }
         }
@@ -611,11 +658,11 @@ static void drop_seccomp(int libnet_fd)
         }
 
         // Libnet.
-        if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1, SCMP_A0(SCMP_CMP_EQ, libnet_fd))) {
+        if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1, SCMP_A0(SCMP_CMP_EQ, cast_int_uint(libnet_fd, NULL)))) {
                 perror("seccomp_rule_add(ioctl libnet)");
                 exit(1);
         }
-        if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sendto), 1, SCMP_A0(SCMP_CMP_EQ, libnet_fd))) {
+        if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sendto), 1, SCMP_A0(SCMP_CMP_EQ, cast_int_uint(libnet_fd, NULL)))) {
                 perror("seccomp_rule_add(sendto libnet)");
                 exit(1);
         }
@@ -1304,7 +1351,7 @@ pingmac_send(uint16_t id, uint16_t seq)
 						   id, /* id */
 						   seq, /* seq */
 						   (uint8_t*)padding, /* payload */
-						   sizeof padding, /* payload len */
+						   cast_size_uint32(padding_size, NULL), /* payload len */
 						   libnet,
 						   icmp))) {
 		fprintf(stderr, "libnet_build_icmpv4_echo(): %s\n",
@@ -1314,7 +1361,7 @@ pingmac_send(uint16_t id, uint16_t seq)
 
 	if (-1==(ipv4 = libnet_build_ipv4(LIBNET_IPV4_H
                                           + LIBNET_ICMPV4_ECHO_H
-                                          + sizeof padding,
+                                          + cast_size_uint16(padding_size, NULL),
 					  0, /* ToS */
 					  id, /* id */
 					  0, /* frag */
@@ -1335,9 +1382,9 @@ pingmac_send(uint16_t id, uint16_t seq)
                 eth = libnet_build_802_1q(dstmac,
                                           srcmac,
                                           ETHERTYPE_VLAN,
-                                          vlan_prio,
+                                          cast_int16_uint8(vlan_prio, NULL),
                                           0, // cfi
-                                          vlan_tag,
+                                          cast_int16_uint16(vlan_tag, NULL),
                                           ETHERTYPE_IP,
                                           NULL, // payload
                                           0, // payload length
@@ -1410,9 +1457,9 @@ pingip_send()
                 eth = libnet_build_802_1q(dstmac,
                                           srcmac,
                                           ETHERTYPE_VLAN,
-                                          vlan_prio,
+                                          cast_int16_uint8(vlan_prio, NULL),
                                           0, // cfi
-                                          vlan_tag,
+                                          cast_int16_uint16(vlan_tag, NULL),
                                           ETHERTYPE_ARP,
                                           NULL, // payload
                                           0, // payload size
@@ -1772,10 +1819,11 @@ pingmac_recv(const char* unused, struct pcap_pkthdr *h, uint8_t *packet)
         }
 
         const char* payload = (char*)hicmp + LIBNET_ICMPV4_ECHO_H;
-        const ssize_t payload_size = h->len - (payload - (char*)packet);
-        if (payload_size < 0) {
+        const size_t tmp = cast_ssize_size(payload - (char*)packet, NULL);
+        if (h->len < tmp) {
                 return;
         }
+        const size_t payload_size = h->len - tmp;
         if (payload_size < sizeof(struct timespec) + payload_suffix_size) {
                 return;
         }
@@ -1784,7 +1832,7 @@ pingmac_recv(const char* unused, struct pcap_pkthdr *h, uint8_t *packet)
                        payload_size);
         }
         if (memcmp(&payload[sizeof(struct timespec)],
-                    payload_suffix, payload_suffix_size)) {
+                   payload_suffix, payload_suffix_size)) {
                     return;
         }
         if (verbose > 3) {
@@ -1992,7 +2040,7 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 
 // return 1 on success.
 static int
-xresolve(libnet_t* l, const char *name, int r, uint32_t *addr)
+xresolve(libnet_t* l, const char *name, uint8_t r, uint32_t *addr)
 {
         if (!strcmp(ip_broadcast, name)) {
                 *addr = 0xffffffff;
@@ -2130,7 +2178,7 @@ arping_main(int argc, char **argv)
 			display = QUIET;
 			break;
                 case 'Q':
-                        vlan_prio = must_parse_int(optarg, "802.1p prio (-Q)");
+                        vlan_prio = must_parse_int16(optarg, "802.1p prio (-Q)");
                         if (vlan_prio < 0 || vlan_prio > 7) {
                                 fprintf(stderr,
                                         "arping: 802.1p priority must be 0-7. It's %d\n",
@@ -2173,7 +2221,7 @@ arping_main(int argc, char **argv)
 			verbose++;
 			break;
 		case 'V':
-			vlan_tag = must_parse_int(optarg, "VLAN (-V)");
+			vlan_tag = must_parse_int16(optarg, "VLAN (-V)");
                         if (vlan_tag < 0 || vlan_tag > 4095) {
                                 fprintf(stderr,
                                         "arping: vlan tag must be 0-4095. Is %d\n",
@@ -2235,15 +2283,23 @@ arping_main(int argc, char **argv)
                 exit(1);
         }
 
-        strncpy(payload_suffix, "arping", payload_suffix_size);
+        // Create some default content.
+        {
+                const char* def = "arping/";
+                for (size_t c = 0; c < payload_suffix_size; c++) {
+                        payload_suffix[c] = def[c % strlen(def)];
+                }
+        }
+
+        // Randomize should be even better.
         const ssize_t rc = xgetrandom(payload_suffix, payload_suffix_size, 0);
-        if (rc == -1) {
+        if (rc < -1) {
                 fprintf(stderr,
                         "arping: failed to get %zu random bytes: %s\n",
                         payload_suffix_size,
                         strerror(errno));
                 free(payload_suffix);
-        } else if (payload_suffix_size != rc) {
+        } else if (payload_suffix_size != cast_ssize_size(rc, NULL)) {
                 fprintf(stderr,
                         "arping: only got %zd out of %zu bytes for random suffix\n",
                         rc, payload_suffix_size);
@@ -2601,7 +2657,8 @@ arping_main(int argc, char **argv)
 	} else { /* PINGMAC */
 		int c;
 		for (c = 0; (maxcount < 0 || c < maxcount) && !time_to_die; c++) {
-			pingmac_send(xrandom(), c);
+                        pingmac_send(cast_int_uint16(xrandom() & 0xffff, NULL),
+                                     cast_int_uint16(c & 0xffff, NULL));
                         const uint32_t w = wait_time(deadline, packetwait);
                         if (w == 0) {
                                 break;
@@ -2610,12 +2667,12 @@ arping_main(int argc, char **argv)
 		}
 	}
         if (display == DOT) {
-                const float succ = 100.0 - 100.0 * (float)(numrecvd)/(float)numsent;
+                const double succ = 100.0 - 100.0 * (double)(numrecvd)/(double)numsent;
                 printf("\t%3.0f%% packet loss (%d extra)\n",
                        (succ < 0.0) ? 0.0 : succ,
                        (succ < 0.0) ? (numrecvd - numsent) : 0);
         } else if (display == NORMAL) {
-                const float succ = 100.0 - 100.0 * (float)(numrecvd)/(float)numsent;
+                const double succ = 100.0 - 100.0 * (double)(numrecvd)/(double)numsent;
                 printf("\n--- %s statistics ---\n"
                        "%d packets transmitted, "
                        "%d packets received, "

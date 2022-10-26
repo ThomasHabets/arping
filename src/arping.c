@@ -150,6 +150,10 @@
 
 #define UNUSED(x) (void)(x)
 
+#ifndef PCAP_NETMASK_UNKNOWN
+#define PCAP_NETMASK_UNKNOWN 0xffffffff
+#endif
+
 /**
  * OS-specific interface finding using routing table. See findif_*.c
  * ebuf must be called with a size of at least
@@ -2478,7 +2482,8 @@ arping_main(int argc, char **argv)
                 } else {
                         snprintf(bpf_filter, sizeof(bpf_filter), "arp");
                 }
-                if (-1 == pcap_compile(pcap, &bp, bpf_filter, 0, -1)) {
+                if (-1 == pcap_compile(pcap, &bp, bpf_filter, 0,
+                                       PCAP_NETMASK_UNKNOWN)) {
                         fprintf(stderr, "arping: pcap_compile(%s): %s\n",
                                 bpf_filter, pcap_geterr(pcap));
 			exit(1);
@@ -2491,7 +2496,8 @@ arping_main(int argc, char **argv)
                 } else {
                         snprintf(bpf_filter, sizeof(bpf_filter), "icmp");
                 }
-                if (-1 == pcap_compile(pcap, &bp, bpf_filter, 0,-1)) {
+                if (-1 == pcap_compile(pcap, &bp, bpf_filter, 0,
+                                       PCAP_NETMASK_UNKNOWN)) {
                         fprintf(stderr, "arping: pcap_compile(%s): %s\n",
                                 bpf_filter, pcap_geterr(pcap));
 			exit(1);

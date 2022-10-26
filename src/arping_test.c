@@ -248,7 +248,7 @@ START_TEST(pingip_uninteresting_packet)
 
         // Completely broken packet.
         packet = calloc(1, 1500);
-        sout = capture(1);
+        sout = capture(STDOUT_FILENO);
         pingip_recv(NULL, &pkthdr, packet);
         stop_capture(sout);
         fail_unless(strlen(sout->buffer) == 0);
@@ -260,7 +260,7 @@ START_TEST(pingip_uninteresting_packet)
         packet = mkpacket(&pkthdr);
         harp = (void*)((char*)packet + LIBNET_ETH_H);
         harp->ar_pro = 0;
-        sout = capture(1);
+        sout = capture(STDOUT_FILENO);
         pingip_recv(NULL, &pkthdr, packet);
         stop_capture(sout);
         fail_unless(prev_numrecvd == numrecvd);
@@ -272,7 +272,7 @@ START_TEST(pingip_uninteresting_packet)
         packet = mkpacket(&pkthdr);
         harp = (void*)((char*)packet + LIBNET_ETH_H);
         harp->ar_hrd = 0;
-        sout = capture(1);
+        sout = capture(STDOUT_FILENO);
         pingip_recv(NULL, &pkthdr, packet);
         stop_capture(sout);
         fail_unless(prev_numrecvd == numrecvd);
@@ -286,7 +286,7 @@ START_TEST(pingip_uninteresting_packet)
                 packet = mkpacket(&pkthdr);
                 harp = (void*)((char*)packet + LIBNET_ETH_H);
                 memcpy((char*)harp + harp->ar_hln + LIBNET_ARP_H, &wrongip, 4);
-                sout = capture(1);
+                sout = capture(STDOUT_FILENO);
                 pingip_recv(NULL, &pkthdr, packet);
                 stop_capture(sout);
                 fail_unless(prev_numrecvd == numrecvd);
@@ -298,7 +298,7 @@ START_TEST(pingip_uninteresting_packet)
         // Short packet.
         packet = mkpacket(&pkthdr);
         pkthdr.caplen = pkthdr.len = 41;
-        sout = capture(1);
+        sout = capture(STDOUT_FILENO);
         pingip_recv(NULL, &pkthdr, packet);
         stop_capture(sout);
         fail_unless(prev_numrecvd == numrecvd);
@@ -309,7 +309,7 @@ START_TEST(pingip_uninteresting_packet)
         // Short captured packet.
         packet = mkpacket(&pkthdr);
         pkthdr.caplen = 41;
-        sout = capture(1);
+        sout = capture(STDOUT_FILENO);
         pingip_recv(NULL, &pkthdr, packet);
         stop_capture(sout);
         fail_unless(prev_numrecvd == numrecvd);
@@ -343,7 +343,7 @@ START_TEST(pingip_uninteresting_packet)
         };
                 pkthdr.len = 60;
                 pkthdr.caplen = 60;
-                sout = capture(1);
+                sout = capture(STDOUT_FILENO);
                 pingip_recv(NULL, &pkthdr, packet);
                 stop_capture(sout);
                 fail_unless(strlen(sout->buffer) == 0, sout->buffer);
@@ -354,7 +354,7 @@ START_TEST(pingip_uninteresting_packet)
         // Wrong length of protocol address.
         packet = mkpacket(&pkthdr);
         ((struct libnet_arp_hdr*)((char*)packet + LIBNET_ETH_H))->ar_pln = 6;
-        sout = capture(1);
+        sout = capture(STDOUT_FILENO);
         pingip_recv(NULL, &pkthdr, packet);
         stop_capture(sout);
         fail_unless(prev_numrecvd == numrecvd);
@@ -404,7 +404,7 @@ START_TEST(pingip_interesting_packet)
         const char* correct0 =
                         "60 bytes from 77:88:99:aa:bb:cc (18.52.86.120): "
                         "index=0 time=";
-        sout = capture(1);
+        sout = capture(STDOUT_FILENO);
         pingip_recv(NULL, &pkthdr, packet);
         stop_capture(sout);
 

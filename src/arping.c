@@ -242,6 +242,8 @@ int verbose = 0;  /* Increase with -v */
 /* Doesn't really need to be volatile, but doesn't hurt. */
 static volatile sig_atomic_t time_to_die = 0;
 
+#include "src/cast.c"
+
 static float
 must_parse_float(const char* in, const char* what)
 {
@@ -495,7 +497,7 @@ must_get_group(const char* ident)
                 // Not a name. Try it as an integer.
                 {
                         char* endp = NULL;
-                        gid_t r = strtol(ident, &endp, 0);
+                        gid_t r = (gid_t)strtoul(ident, &endp, 0);
                         if (!*endp) {
                                 return r;
                         }
@@ -610,11 +612,11 @@ static void drop_seccomp(int libnet_fd)
         }
 
         // Libnet.
-        if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1, SCMP_A0(SCMP_CMP_EQ, libnet_fd))) {
+        if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1, SCMP_A0(SCMP_CMP_EQ, cast_int_uint(libnet_fd, NULL)))) {
                 perror("seccomp_rule_add(ioctl libnet)");
                 exit(1);
         }
-        if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sendto), 1, SCMP_A0(SCMP_CMP_EQ, libnet_fd))) {
+        if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sendto), 1, SCMP_A0(SCMP_CMP_EQ, cast_int_uint(libnet_fd, NULL)))) {
                 perror("seccomp_rule_add(sendto libnet)");
                 exit(1);
         }
@@ -1227,7 +1229,7 @@ wait_time(double deadline, uint32_t packetwait)
         if (max_wait > packetwait / 1000000.0) {
                 return packetwait;
         }
-        return max_wait * 1000000;
+        return (uint32_t)(max_wait * 1000000.0);
 }
 
 /**
@@ -1285,7 +1287,7 @@ pingmac_send(uint16_t id, uint16_t seq)
         // Without this padding some systems (e.g. Raspberry Pi 3
         // wireless interface) failed. dmesg said:
         //   arping: packet size is too short (42 <= 50)
-        const size_t padding_size = sizeof(struct timespec) + payload_suffix_size;
+        const size_t padding_size = sizeof(struct timespec) + cast_ssize_size(payload_suffix_size, NULL);
         uint8_t padding[padding_size];
         memset(padding, 0, padding_size);
         {
@@ -1293,7 +1295,7 @@ pingmac_send(uint16_t id, uint16_t seq)
                 getclock(&ts);
                 memcpy(padding, &ts, sizeof(struct timespec));
                 memcpy(&padding[sizeof(struct timespec)],
-                       payload_suffix, payload_suffix_size);
+                       payload_suffix, cast_ssize_size(payload_suffix_size, NULL));
         }
 
 	int c;
@@ -1304,7 +1306,7 @@ pingmac_send(uint16_t id, uint16_t seq)
 						   id, /* id */
 						   seq, /* seq */
 						   (uint8_t*)padding, /* payload */
-						   sizeof padding, /* payload len */
+						   cast_size_uint32(sizeof padding, NULL), /* payload len */
 						   libnet,
 						   icmp))) {
 		fprintf(stderr, "libnet_build_icmpv4_echo(): %s\n",
@@ -1314,7 +1316,7 @@ pingmac_send(uint16_t id, uint16_t seq)
 
 	if (-1==(ipv4 = libnet_build_ipv4(LIBNET_IPV4_H
                                           + LIBNET_ICMPV4_ECHO_H
-                                          + sizeof padding,
+                                          + cast_size_uint16(sizeof padding, NULL),
 					  0, /* ToS */
 					  id, /* id */
 					  0, /* frag */
@@ -1335,9 +1337,9 @@ pingmac_send(uint16_t id, uint16_t seq)
                 eth = libnet_build_802_1q(dstmac,
                                           srcmac,
                                           ETHERTYPE_VLAN,
-                                          vlan_prio,
+                                          cast_int16_uint8(vlan_prio, NULL),
                                           0, // cfi
-                                          vlan_tag,
+                                          cast_int16_uint16(vlan_tag, NULL),
                                           ETHERTYPE_IP,
                                           NULL, // payload
                                           0, // payload length
@@ -1410,9 +1412,9 @@ pingip_send()
                 eth = libnet_build_802_1q(dstmac,
                                           srcmac,
                                           ETHERTYPE_VLAN,
-                                          vlan_prio,
+                                          cast_int16_uint8(vlan_prio, NULL),
                                           0, // cfi
-                                          vlan_tag,
+                                          cast_int16_uint16(vlan_tag, NULL),
                                           ETHERTYPE_ARP,
                                           NULL, // payload
                                           0, // payload size
@@ -1770,11 +1772,12 @@ pingmac_recv(const char* unused, struct pcap_pkthdr *h, uint8_t *packet)
         }
 
         const char* payload = (char*)hicmp + LIBNET_ICMPV4_ECHO_H;
-        const ssize_t payload_size = h->len - (payload - (char*)packet);
-        if (payload_size < 0) {
+        const size_t tmp = cast_ssize_size(payload - (char*)packet, NULL);
+        if (h->len < tmp) {
                 return;
         }
-        if (payload_size < sizeof(struct timespec) + payload_suffix_size) {
+        const size_t payload_size = h->len - tmp;
+        if (payload_size < sizeof(struct timespec) + cast_ssize_size(payload_suffix_size, NULL)) {
                 return;
         }
         if (verbose > 3) {
@@ -1782,7 +1785,7 @@ pingmac_recv(const char* unused, struct pcap_pkthdr *h, uint8_t *packet)
                        payload_size);
         }
         if (memcmp(&payload[sizeof(struct timespec)],
-                    payload_suffix, payload_suffix_size)) {
+                   payload_suffix, cast_ssize_size(payload_suffix_size, NULL))) {
                     return;
         }
         if (verbose > 3) {
@@ -1990,7 +1993,7 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 
 // return 1 on success.
 static int
-xresolve(libnet_t* l, const char *name, int r, uint32_t *addr)
+xresolve(libnet_t* l, const char *name, uint8_t r, uint32_t *addr)
 {
         if (!strcmp(ip_broadcast, name)) {
                 *addr = 0xffffffff;
@@ -2596,7 +2599,8 @@ arping_main(int argc, char **argv)
 	} else { /* PINGMAC */
 		int c;
 		for (c = 0; (maxcount < 0 || c < maxcount) && !time_to_die; c++) {
-			pingmac_send(xrandom(), c);
+                        pingmac_send(cast_int_uint16(xrandom() & 0xffff, NULL),
+                                     cast_int_uint16(c & 0xffff, NULL));
                         const uint32_t w = wait_time(deadline, packetwait);
                         if (w == 0) {
                                 break;
@@ -2605,12 +2609,12 @@ arping_main(int argc, char **argv)
 		}
 	}
         if (display == DOT) {
-                const float succ = 100.0 - 100.0 * (float)(numrecvd)/(float)numsent;
+                const double succ = 100.0 - 100.0 * (double)(numrecvd)/(double)numsent;
                 printf("\t%3.0f%% packet loss (%d extra)\n",
                        (succ < 0.0) ? 0.0 : succ,
                        (succ < 0.0) ? (numrecvd - numsent) : 0);
         } else if (display == NORMAL) {
-                const float succ = 100.0 - 100.0 * (float)(numrecvd)/(float)numsent;
+                const double succ = 100.0 - 100.0 * (double)(numrecvd)/(double)numsent;
                 printf("\n--- %s statistics ---\n"
                        "%d packets transmitted, "
                        "%d packets received, "

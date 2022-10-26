@@ -238,6 +238,30 @@ int verbose = 0;  /* Increase with -v */
 /* Doesn't really need to be volatile, but doesn't hurt. */
 static volatile sig_atomic_t time_to_die = 0;
 
+static int
+must_parse_int(const char* in, const char* what)
+{
+        if (!*in) {
+                fprintf(stderr, "arping: %s: value was empty\n", what);
+                exit(1);
+        }
+        char *endp = NULL;
+        errno = 0;
+        const long ret = strtol(in, &endp, 0);
+        if (errno) {
+                fprintf(stderr, "arping: %s: parsing <%s> as integer: %s\n",
+                        what, in, strerror(errno));
+                exit(1);
+        }
+        if (*endp) {
+                fprintf(stderr,
+                        "arping: %s: failed parsing <%s> as integer\n",
+                        what, in);
+                exit(1);
+        }
+        return ret;  // TODO: range check.
+}
+
 static ssize_t
 xgetrandom(void *buf, const size_t buflen, const unsigned int flags)
 {
@@ -1971,10 +1995,23 @@ arping_main(int argc, char **argv)
                         opt_B = 1;
 			break;
 		case 'c':
-			maxcount = atoi(optarg);
+                        maxcount = must_parse_int(optarg, "count (-c)");
+                        if (maxcount < 0) {
+                                fprintf(stderr,
+                                        "arping: count (-c) must be >0. Got %d\n",
+                                        maxcount);
+                                exit(1);
+                        }
 			break;
                 case 'C':
-                        max_replies = atoi(optarg);
+                        max_replies = must_parse_int(optarg,
+                                                     "max replies (-C)");
+                        if (max_replies < 0) {
+                                fprintf(stderr,
+                                        "arping: max replies (-C) must be >0. Got %d\n",
+                                        max_replies);
+                                exit(1);
+                        }
                         break;
 		case 'd':
 			finddup = 1;
@@ -2022,7 +2059,7 @@ arping_main(int argc, char **argv)
 			display = QUIET;
 			break;
                 case 'Q':
-                        vlan_prio = atoi(optarg);
+                        vlan_prio = must_parse_int(optarg, "802.1p prio (-Q)");
                         if (vlan_prio < 0 || vlan_prio > 7) {
                                 fprintf(stderr,
                                         "arping: 802.1p priority must be 0-7. It's %d\n",
@@ -2065,7 +2102,7 @@ arping_main(int argc, char **argv)
 			verbose++;
 			break;
 		case 'V':
-			vlan_tag = atoi(optarg);
+			vlan_tag = must_parse_int(optarg, "VLAN (-V)");
                         if (vlan_tag < 0 || vlan_tag > 4095) {
                                 fprintf(stderr,
                                         "arping: vlan tag must 0-4095. Is %d\n",

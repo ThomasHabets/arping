@@ -492,6 +492,52 @@ START_TEST(get_mac_addr_fail)
         }
 } END_TEST
 
+START_TEST(badarg_maxcount_neg)
+{
+        char* args[] = {
+                "arping",
+                "-c", "-1",
+                "dummy",
+                NULL
+        };
+        arping_main(sizeof(args)/sizeof(char*)-1, args);
+}
+
+START_TEST(badarg_maxcount_nan)
+{
+        char* args[] = {
+                "arping",
+                "-c", "number",
+                "dummy",
+                NULL
+        };
+        arping_main(sizeof(args)/sizeof(char*)-1, args);
+}
+
+START_TEST(arg_maxcount_good)
+{
+        char* args[] = {
+                "arping",
+                "-c", "1",
+                "-h", // To exit cleanly.
+                "dummy",
+                NULL
+        };
+        arping_main(sizeof(args)/sizeof(char*)-1, args);
+}
+
+START_TEST(arg_maxcount_hex)
+{
+        char* args[] = {
+                "arping",
+                "-c", "0xa",
+                "-h", // To exit cleanly.
+                "dummy",
+                NULL
+        };
+        arping_main(sizeof(args)/sizeof(char*)-1, args);
+}
+
 START_TEST(libnet_init_bad_nolo)
 {
         // It'll only try lo if named interface fails.
@@ -547,13 +593,16 @@ arping_suite(void)
         SIGH_LIBCHECK(get_mac_addr_success);
         SIGH_LIBCHECK(get_mac_addr_fail);
         SIGH_LIBCHECK(libnet_init_good);
-
+        SIGH_LIBCHECK(arg_maxcount_good);
+        SIGH_LIBCHECK(arg_maxcount_hex);
 
 #define SIGH_LIBCHECK_EXIT(tn)          \
         tc_core = tcase_create(#tn);   \
         tcase_add_exit_test(tc_core, tn, 1);      \
         suite_add_tcase(s, tc_core);
 
+        SIGH_LIBCHECK_EXIT(badarg_maxcount_neg);
+        SIGH_LIBCHECK_EXIT(badarg_maxcount_nan);
         SIGH_LIBCHECK_EXIT(libnet_init_bad_nolo);
         SIGH_LIBCHECK_EXIT(libnet_init_null_nolo_nonull);
 

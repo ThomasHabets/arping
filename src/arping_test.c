@@ -497,6 +497,7 @@ START_TEST(badarg_maxcount_neg)
         char* args[] = {
                 "arping",
                 "-c", "-1",
+                "-h", // To exit cleanly.
                 "dummy",
                 NULL
         };
@@ -508,6 +509,19 @@ START_TEST(badarg_maxcount_nan)
         char* args[] = {
                 "arping",
                 "-c", "number",
+                "-h", // To exit cleanly.
+                "dummy",
+                NULL
+        };
+        arping_main(sizeof(args)/sizeof(char*)-1, args);
+}
+
+START_TEST(badarg_maxcount_range)
+{
+        char* args[] = {
+                "arping",
+                "-c", "100000000000000000000000000000",
+                "-h", // To exit cleanly.
                 "dummy",
                 NULL
         };
@@ -531,6 +545,54 @@ START_TEST(arg_maxcount_hex)
         char* args[] = {
                 "arping",
                 "-c", "0xa",
+                "-h", // To exit cleanly.
+                "dummy",
+                NULL
+        };
+        arping_main(sizeof(args)/sizeof(char*)-1, args);
+}
+
+START_TEST(badarg_packetwait_neg)
+{
+        char* args[] = {
+                "arping",
+                "-W", "-1",
+                "-h", // To exit cleanly.
+                "dummy",
+                NULL
+        };
+        arping_main(sizeof(args)/sizeof(char*)-1, args);
+}
+
+START_TEST(badarg_packetwait_nan)
+{
+        char* args[] = {
+                "arping",
+                "-W", "huteosu",
+                "-h", // To exit cleanly.
+                "dummy",
+                NULL
+        };
+        arping_main(sizeof(args)/sizeof(char*)-1, args);
+}
+
+START_TEST(badarg_packetwait_range)
+{
+        char* args[] = {
+                "arping",
+                "-W", "10000000000000000000000000000000000000000",
+                "-h", // To exit cleanly.
+                "dummy",
+                NULL
+        };
+        arping_main(sizeof(args)/sizeof(char*)-1, args);
+}
+
+START_TEST(arg_packetwait_good)
+{
+        char* args[] = {
+                "arping",
+                "-W", "1.2",
                 "-h", // To exit cleanly.
                 "dummy",
                 NULL
@@ -595,6 +657,7 @@ arping_suite(void)
         SIGH_LIBCHECK(libnet_init_good);
         SIGH_LIBCHECK(arg_maxcount_good);
         SIGH_LIBCHECK(arg_maxcount_hex);
+        SIGH_LIBCHECK(arg_packetwait_good);
 
 #define SIGH_LIBCHECK_EXIT(tn)          \
         tc_core = tcase_create(#tn);   \
@@ -603,6 +666,10 @@ arping_suite(void)
 
         SIGH_LIBCHECK_EXIT(badarg_maxcount_neg);
         SIGH_LIBCHECK_EXIT(badarg_maxcount_nan);
+        SIGH_LIBCHECK_EXIT(badarg_maxcount_range);
+        SIGH_LIBCHECK_EXIT(badarg_packetwait_neg);
+        SIGH_LIBCHECK_EXIT(badarg_packetwait_nan);
+        SIGH_LIBCHECK_EXIT(badarg_packetwait_range);
         SIGH_LIBCHECK_EXIT(libnet_init_bad_nolo);
         SIGH_LIBCHECK_EXIT(libnet_init_null_nolo_nonull);
 

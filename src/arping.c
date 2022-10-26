@@ -238,6 +238,32 @@ int verbose = 0;  /* Increase with -v */
 /* Doesn't really need to be volatile, but doesn't hurt. */
 static volatile sig_atomic_t time_to_die = 0;
 
+static float
+must_parse_float(const char* in, const char* what)
+{
+        if (!*in) {
+                fprintf(stderr, "arping: %s: value was empty\n", what);
+                exit(1);
+        }
+        char *endp = NULL;
+        errno = 0;
+        // Maybe need to use strtod() instead? It's in C89, whereas
+        // looks like strtof() is in POSIX.1-2001, POSIX.1-2008, C99.
+        const float ret = strtof(in, &endp);
+        if (errno) {
+                fprintf(stderr, "arping: %s: parsing <%s> as float: %s\n",
+                        what, in, strerror(errno));
+                exit(1);
+        }
+        if (*endp) {
+                fprintf(stderr,
+                        "arping: %s: failed parsing <%s> as float\n",
+                        what, in);
+                exit(1);
+        }
+        return ret;
+}
+
 static int
 must_parse_int(const char* in, const char* what)
 {
@@ -2111,11 +2137,28 @@ arping_main(int argc, char **argv)
                         }
                         break;
 		case 'w':
-                        deadline = atof(optarg);
+                        deadline = must_parse_float(optarg, "deadline (-w)");
+                        if (deadline < 0) {
+                                fprintf(stderr,
+                                        "arping: deadline (-w) must be >=0. Is %f\n",
+                                        deadline);
+                                exit(1);
+                        }
 			break;
-                case 'W':
-                        packetwait = (unsigned)(1000000.0 * atof(optarg));
+                case 'W': {
+                        const float val = must_parse_float(optarg,
+                                                           "packetwait (-W)");
+                        // TODO: range check into unsigned.
+                        // Also turns out zero doesn't work.
+                        packetwait = (unsigned)(1000000.0 * val);
+                        if (val < 0) {
+                                fprintf(stderr,
+                                        "arping: packetwait (-W) must be >=0. Is %f\n",
+                                        val);
+                                exit(1);
+                        }
                         break;
+                }
                 case 'z':
                         use_seccomp = 1;
                         break;

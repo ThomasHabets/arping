@@ -1990,7 +1990,7 @@ arping_main(int argc, char **argv)
         double deadline = -1;
         char bpf_filter[64];
         ebuf[0] = 0;
-        srandom(time(NULL));
+        srandom((unsigned)time(NULL));
 
         for (c = 1; c < argc; c++) {
                 if (!strcmp(argv[c], "--help")) {

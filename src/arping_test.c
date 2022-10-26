@@ -416,12 +416,12 @@ START_TEST(pingip_interesting_packet)
         uncapture(sout);
         free(emsg);
 
-        fail_unless(numrecvd == prev_numrecvd + 1,
-                    "numrecvd not incremented");
+        // Check numrecvd incremented.
+        ck_assert_int_eq(numrecvd, prev_numrecvd + 1);
 
         pingip_recv(NULL, &pkthdr, packet);
-        fail_unless(numrecvd == prev_numrecvd + 2,
-                    "numrecvd not incremented second time");
+        // Check that numrecvd is incremented second time.
+        ck_assert_int_eq(numrecvd,prev_numrecvd + 2);
 } END_TEST
 
 START_TEST(strip_newline_test)

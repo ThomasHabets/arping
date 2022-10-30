@@ -131,6 +131,7 @@
 #endif
 
 #include "arping.h"
+#include "cast.h"
 
 #ifndef ETH_ALEN
 #define ETH_ALEN 6
@@ -241,8 +242,6 @@ int verbose = 0;  /* Increase with -v */
 
 /* Doesn't really need to be volatile, but doesn't hurt. */
 static volatile sig_atomic_t time_to_die = 0;
-
-#include "src/cast.c"
 
 static float
 must_parse_float(const char* in, const char* what)

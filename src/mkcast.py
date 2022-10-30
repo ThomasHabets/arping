@@ -110,8 +110,8 @@ cast_assert(int must, const char* fmt, ...)
             'src_name':name_map[src],
             'dst_name':name_map[dst],
         }
-        assert is_unsigned(src) or is_signed(src)
-        assert is_unsigned(dst) or is_signed(dst)
+        assert is_unsigned(src) ^ is_signed(src)
+        assert is_unsigned(dst) ^ is_signed(dst)
         from_signed = is_signed(src)
         s2u = is_signed(src) and is_unsigned(dst)
         u2s = is_unsigned(src) and is_signed(dst)

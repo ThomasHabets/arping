@@ -292,6 +292,48 @@ must_parse_int(const char* in, const char* what)
         return ret;  // TODO: range check.
 }
 
+/*
+ * It's not actually possible to parse unsigned numbers in C.
+ * The best this function can do is parse as a long, then reject
+ * negative numbers. If sizeof(int) == sizeof(long) then that cuts
+ * off half of all possible values.
+ *
+ * More ranting here:
+ * https://blog.habets.se/2022/10/No-way-to-parse-integers-in-C.html
+ */
+static unsigned int
+must_parse_uint(const char* in, const char* what)
+{
+        if (!*in) {
+                fprintf(stderr, "arping: %s: value was empty\n", what);
+                exit(1);
+        }
+        char *endp = NULL;
+        errno = 0;
+#if HAVE_STRTOLL
+        const long long ret = strtoll(in, &endp, 0);
+#else
+        const long ret = strtol(in, &endp, 0);
+#endif
+        if (errno) {
+                fprintf(stderr, "arping: %s: parsing <%s> as integer: %s\n",
+                        what, in, strerror(errno));
+                exit(1);
+        }
+        if (*endp) {
+                fprintf(stderr,
+                        "arping: %s: failed parsing <%s> as integer\n",
+                        what, in);
+                exit(1);
+        }
+        if (ret < 0) {
+                fprintf(stderr,
+                        "arping: %s: <%s> is negative\n", what, in);
+                exit(1);
+        }
+        return ret;  // TODO: range check.
+}
+
 static ssize_t
 xgetrandom(void *buf, const size_t buflen, const unsigned int flags)
 {
@@ -2034,14 +2076,8 @@ arping_main(int argc, char **argv)
                         }
 			break;
                 case 'C':
-                        max_replies = must_parse_int(optarg,
-                                                     "max replies (-C)");
-                        if (max_replies < 0) {
-                                fprintf(stderr,
-                                        "arping: max replies (-C) must be >0. Got %d\n",
-                                        max_replies);
-                                exit(1);
-                        }
+                        max_replies = must_parse_uint(optarg,
+                                                      "max replies (-C)");
                         break;
 		case 'd':
 			finddup = 1;

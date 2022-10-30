@@ -190,7 +190,7 @@ uint32_t dstip;
 static uint8_t dstmac[ETH_ALEN];
 
 static char* payload_suffix = NULL;
-static ssize_t payload_suffix_size = -1;
+static size_t payload_suffix_size = 4;
 
 uint32_t srcip;                   /* autodetected, override with -S/-b/-0 */
 uint8_t srcmac[ETH_ALEN];         /* autodetected, override with -s */
@@ -2187,33 +2187,25 @@ arping_main(int argc, char **argv)
 
         // Generate random payload suffix for MAC pings, to be able to
         // differentiate from unrelated ping replies.
-        if (payload_suffix_size < 0) {
-                payload_suffix_size = 4;
-                payload_suffix = malloc(payload_suffix_size);
-                if (payload_suffix) {
-                        const ssize_t rc = xgetrandom(payload_suffix, payload_suffix_size, 0);
-                        if (rc == -1) {
-                                fprintf(stderr,
-                                        "arping: failed to get %zd random bytes: %s\n",
-                                        payload_suffix_size,
-                                        strerror(errno));
-                                free(payload_suffix);
-                                payload_suffix = NULL;
-                        } else if (payload_suffix_size != rc) {
-                                fprintf(stderr,
-                                        "arping: only got %zd out of %zd bytes for random suffix\n",
-                                        rc, payload_suffix_size);
-                        }
-                } else {
-                        fprintf(stderr, "arping: failed to allocate %zd bytes for payload suffix.\n",
-                                payload_suffix_size);
-                }
+        payload_suffix = malloc(payload_suffix_size);
+        if (!payload_suffix) {
+                fprintf(stderr, "arping: failed to allocate %zu bytes for payload suffix.\n",
+                        payload_suffix_size);
+                exit(1);
+        }
 
-                if (!payload_suffix) {
-                        fprintf(stderr, "arping:  Using constant suffix.\n");
-                        payload_suffix = "arping";
-                        payload_suffix_size = strlen(payload_suffix);
-                }
+        strncpy(payload_suffix, "arping", payload_suffix_size);
+        const ssize_t rc = xgetrandom(payload_suffix, payload_suffix_size, 0);
+        if (rc == -1) {
+                fprintf(stderr,
+                        "arping: failed to get %zu random bytes: %s\n",
+                        payload_suffix_size,
+                        strerror(errno));
+                free(payload_suffix);
+        } else if (payload_suffix_size != rc) {
+                fprintf(stderr,
+                        "arping: only got %zd out of %zu bytes for random suffix\n",
+                        rc, payload_suffix_size);
         }
 
         if (((mode == PINGIP) && opt_T)

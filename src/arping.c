@@ -291,7 +291,7 @@ must_parse_int(const char* in, const char* what)
                         what, in);
                 exit(1);
         }
-        return ret;  // TODO: range check.
+        return cast_long_int(ret, "%s %s", what, in);
 }
 
 /*

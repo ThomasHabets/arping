@@ -23,16 +23,21 @@ max_map = {
     'uint16_t': 65535,
 }
 
-unsigned = set([
-    'uint8_t',
-    'uint16_t',
-    'uint32_t',
-    'size_t',
-    'gid_t',
-    'uid_t',
-    'unsigned long',
-    'unsigned int',
-])
+def is_unsigned(t):
+    if t[0] == 'u':
+        return True
+    if t in ('size_t', 'gid_t', 'uid_t'):
+        return True
+    return False
+
+def is_signed(t):
+    if t.startswith('int'):
+        return True
+    if t.startswith('long'):
+        return True
+    if t in ('ssize_t'):
+        return True
+    return False
 
 print("""
 static void
@@ -63,6 +68,7 @@ for src, dst in [
         ('int16_t', 'uint8_t'),
         ('int', 'unsigned int'),
         ('int', 'uint16_t'),
+        ('long', 'int'),
 ]:
     keys = {
         'src': src,
@@ -70,10 +76,11 @@ for src, dst in [
         'src_name':name_map[src],
         'dst_name':name_map[dst],
     }
-    
-    from_signed = not src in unsigned
-    s2u = not src in unsigned and dst in unsigned
-    u2s = src in unsigned and not dst in unsigned
+    assert is_unsigned(src) or is_signed(src)
+    assert is_unsigned(dst) or is_signed(dst)
+    from_signed = is_signed(src)
+    s2u = is_signed(src) and is_unsigned(dst)
+    u2s = is_unsigned(src) and is_signed(dst)
 
     if from_signed:
         keys['errstr'] = '"cast_{src_name}_{dst_name}(%"PRIdMAX"): %s", (intmax_t)from'.format(**keys)
@@ -100,8 +107,9 @@ cast_{src_name}_{dst_name}({src} from, const char* fmt, ...)
         fprintf(stderr, "arping: ");
         if (fmt) {{
           vfprintf(stderr, fmt, ap);
+          fprintf(stderr, ": value won't fit in {dst}");
         }} else {{
-          fprintf(stderr, {errstr}, "roundtrip failed\\n");
+          fprintf(stderr, {errstr}, "value won't fit in {dst}\\n");
         }}
         fprintf(stderr, "\\n");
         exit(1);

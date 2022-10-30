@@ -49,17 +49,17 @@ main()
                                 fprintf(stderr, "read(): %s\n", strerror(errno));
                                 return 1;
                         }
-                        size -= n;
+                        size -= (size_t)n;
                         p += n;
                 }
-                packet_size = p - packet;
+                packet_size = (size_t)(p - packet);
         }
 
         struct pcap_pkthdr pkthdr;
         pkthdr.ts.tv_sec = time(NULL);
         pkthdr.ts.tv_usec = 0;
-        pkthdr.len = packet_size;
-        pkthdr.caplen = packet_size;
+        pkthdr.len = (uint32_t)packet_size;
+        pkthdr.caplen = (uint32_t)packet_size;
 
         dstip = htonl(0x12345678);
         pingip_recv(NULL, &pkthdr, packet);

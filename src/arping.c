@@ -1203,7 +1203,7 @@ update_stats(double sample)
 static double
 timespec2dbl(const struct timespec *tv)
 {
-        return tv->tv_sec + (double)tv->tv_nsec / 1000000000;
+        return (double)tv->tv_sec + (double)tv->tv_nsec / 1000000000;
 }
 
 /**

@@ -293,6 +293,13 @@ must_parse_int(const char* in, const char* what)
         return cast_long_int(ret, "%s %s", what, in);
 }
 
+static int16_t
+must_parse_int16(const char* in, const char* what)
+{
+        const int out = must_parse_int(in, what);
+        return cast_int_int16(out, "%s %s", what, in);
+}
+
 /*
  * It's not actually possible to parse unsigned numbers in C.
  * The best this function can do is parse as a long, then reject
@@ -312,8 +319,10 @@ must_parse_uint(const char* in, const char* what)
         char *endp = NULL;
         errno = 0;
 #if HAVE_STRTOLL
+#define CASTER cast_longlong_uint
         const long long ret = strtoll(in, &endp, 0);
 #else
+#define CASTER cast_long_uint
         const long ret = strtol(in, &endp, 0);
 #endif
         if (errno) {
@@ -332,7 +341,44 @@ must_parse_uint(const char* in, const char* what)
                         "arping: %s: <%s> is negative\n", what, in);
                 exit(1);
         }
-        return ret;  // TODO: range check.
+        return CASTER(ret, "%s %s", what, in);
+#undef CASTER
+}
+
+static unsigned long
+parse_ulong(const char* in, const char* what, char* ebuf, size_t ebuflen)
+{
+        if (!*in) {
+                snprintf(ebuf, ebuflen, "arping: %s: value was empty\n", what);
+                exit(1);
+        }
+        char *endp = NULL;
+        errno = 0;
+#if HAVE_STRTOLL
+#define CASTER cast_longlong_ulonglong
+        const long long ret = strtoll(in, &endp, 0);
+#else
+#define CASTER cast_long_ulong
+        const long ret = strtol(in, &endp, 0);
+#endif
+        if (errno) {
+                snprintf(ebuf, ebuflen, "arping: %s: parsing <%s> as integer: %s\n",
+                        what, in, strerror(errno));
+                exit(1);
+        }
+        if (*endp) {
+                snprintf(ebuf, ebuflen,
+                        "arping: %s: failed parsing <%s> as integer\n",
+                        what, in);
+                exit(1);
+        }
+        if (ret < 0) {
+                snprintf(ebuf, ebuflen,
+                        "arping: %s: <%s> is negative\n", what, in);
+                exit(1);
+        }
+        return CASTER(ret, "%s %s", what, in);
+#undef CASTER
 }
 
 static ssize_t
@@ -495,10 +541,10 @@ must_get_group(const char* ident)
 
                 // Not a name. Try it as an integer.
                 {
-                        char* endp = NULL;
-                        gid_t r = (gid_t)strtoul(ident, &endp, 0);
-                        if (!*endp) {
-                                return r;
+                        char ebuf[1024] = {0};
+                        const unsigned long v = parse_ulong(ident, "gid", ebuf, sizeof(ebuf));
+                        if (!ebuf[0]) {
+                                return cast_ulong_gid(v, NULL);
                         }
                 }
         }
@@ -1286,7 +1332,7 @@ pingmac_send(uint16_t id, uint16_t seq)
         // Without this padding some systems (e.g. Raspberry Pi 3
         // wireless interface) failed. dmesg said:
         //   arping: packet size is too short (42 <= 50)
-        const size_t padding_size = sizeof(struct timespec) + cast_ssize_size(payload_suffix_size, NULL);
+        const size_t padding_size = sizeof(struct timespec) + payload_suffix_size;
         uint8_t padding[padding_size];
         memset(padding, 0, padding_size);
         {
@@ -1294,7 +1340,7 @@ pingmac_send(uint16_t id, uint16_t seq)
                 getclock(&ts);
                 memcpy(padding, &ts, sizeof(struct timespec));
                 memcpy(&padding[sizeof(struct timespec)],
-                       payload_suffix, cast_ssize_size(payload_suffix_size, NULL));
+                       payload_suffix, payload_suffix_size);
         }
 
 	int c;
@@ -1776,7 +1822,7 @@ pingmac_recv(const char* unused, struct pcap_pkthdr *h, uint8_t *packet)
                 return;
         }
         const size_t payload_size = h->len - tmp;
-        if (payload_size < sizeof(struct timespec) + cast_ssize_size(payload_suffix_size, NULL)) {
+        if (payload_size < sizeof(struct timespec) + payload_suffix_size) {
                 return;
         }
         if (verbose > 3) {
@@ -1784,7 +1830,7 @@ pingmac_recv(const char* unused, struct pcap_pkthdr *h, uint8_t *packet)
                        payload_size);
         }
         if (memcmp(&payload[sizeof(struct timespec)],
-                   payload_suffix, cast_ssize_size(payload_suffix_size, NULL))) {
+                   payload_suffix, payload_suffix_size)) {
                     return;
         }
         if (verbose > 3) {
@@ -2127,7 +2173,7 @@ arping_main(int argc, char **argv)
 			display = QUIET;
 			break;
                 case 'Q':
-                        vlan_prio = must_parse_int(optarg, "802.1p prio (-Q)");
+                        vlan_prio = must_parse_int16(optarg, "802.1p prio (-Q)");
                         if (vlan_prio < 0 || vlan_prio > 7) {
                                 fprintf(stderr,
                                         "arping: 802.1p priority must be 0-7. It's %d\n",
@@ -2170,7 +2216,7 @@ arping_main(int argc, char **argv)
 			verbose++;
 			break;
 		case 'V':
-			vlan_tag = must_parse_int(optarg, "VLAN (-V)");
+			vlan_tag = must_parse_int16(optarg, "VLAN (-V)");
                         if (vlan_tag < 0 || vlan_tag > 4095) {
                                 fprintf(stderr,
                                         "arping: vlan tag must be 0-4095. Is %d\n",
@@ -2232,15 +2278,23 @@ arping_main(int argc, char **argv)
                 exit(1);
         }
 
-        strncpy(payload_suffix, "arping", payload_suffix_size);
+        // Create some default content.
+        {
+                const char* def = "arping/";
+                for (size_t c = 0; c < payload_suffix_size; c++) {
+                        payload_suffix[c] = def[c % strlen(def)];
+                }
+        }
+
+        // Randomize should be even better.
         const ssize_t rc = xgetrandom(payload_suffix, payload_suffix_size, 0);
-        if (rc == -1) {
+        if (rc < -1) {
                 fprintf(stderr,
                         "arping: failed to get %zu random bytes: %s\n",
                         payload_suffix_size,
                         strerror(errno));
                 free(payload_suffix);
-        } else if (payload_suffix_size != rc) {
+        } else if (payload_suffix_size != cast_ssize_size(rc, NULL)) {
                 fprintf(stderr,
                         "arping: only got %zd out of %zu bytes for random suffix\n",
                         rc, payload_suffix_size);

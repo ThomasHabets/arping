@@ -153,7 +153,7 @@ AC_ARG_ENABLE(hardened, AS_HELP_STRING([--enable-hardened], [Enable security bui
                         ])
 AC_ARG_ENABLE(warnings, AS_HELP_STRING([--enable-warnings], [Enable build warnings]),
                         [
-                          CFLAGS+=" -Wall -Wpedantic -Wextra -Wformat -Wstack-protector -Wformat-security -Werror=format-security"
+                          CFLAGS+=" -Wall -Wpedantic -Wextra -Wformat -Wstack-protector -Wformat-security -Werror=format-security -Wconversion"
                         ])
 
 AC_CONFIG_FILES([Makefile])

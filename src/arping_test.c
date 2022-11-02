@@ -199,9 +199,9 @@ mkpacket(struct pcap_pkthdr* pkthdr)
 }
 
 static void
-dump_packet(uint8_t* packet, int len)
+dump_packet(uint8_t* packet, uint32_t len)
 {
-        int c;
+        uint32_t c;
         for (c = 0; c < len; c++) {
                 fprintf(stderr, "0x%.2x, ", (int)packet[c]);
                 if (!((c+1) % 10)) {
@@ -240,16 +240,15 @@ START_TEST(pingip_uninteresting_packet)
 {
         struct pcap_pkthdr pkthdr;
         uint8_t* packet;
-        struct libnet_802_3_hdr* heth;
         struct libnet_arp_hdr* harp;
 
-        int prev_numrecvd = numrecvd;
+        unsigned int prev_numrecvd = numrecvd;
         struct captured_output* sout;
 
         // Completely broken packet.
         packet = calloc(1, 1500);
         sout = capture(STDOUT_FILENO);
-        pingip_recv(NULL, &pkthdr, packet);
+        pingip_recv(NULL, &pkthdr, (char*)packet);
         stop_capture(sout);
         fail_unless(strlen(sout->buffer) == 0);
         fail_unless(prev_numrecvd == numrecvd);
@@ -261,7 +260,7 @@ START_TEST(pingip_uninteresting_packet)
         harp = (void*)((char*)packet + LIBNET_ETH_H);
         harp->ar_pro = 0;
         sout = capture(STDOUT_FILENO);
-        pingip_recv(NULL, &pkthdr, packet);
+        pingip_recv(NULL, &pkthdr, (char*)packet);
         stop_capture(sout);
         fail_unless(prev_numrecvd == numrecvd);
         fail_unless(strlen(sout->buffer) == 0);
@@ -273,7 +272,7 @@ START_TEST(pingip_uninteresting_packet)
         harp = (void*)((char*)packet + LIBNET_ETH_H);
         harp->ar_hrd = 0;
         sout = capture(STDOUT_FILENO);
-        pingip_recv(NULL, &pkthdr, packet);
+        pingip_recv(NULL, &pkthdr, (char*)packet);
         stop_capture(sout);
         fail_unless(prev_numrecvd == numrecvd);
         fail_unless(strlen(sout->buffer) == 0);
@@ -287,7 +286,7 @@ START_TEST(pingip_uninteresting_packet)
                 harp = (void*)((char*)packet + LIBNET_ETH_H);
                 memcpy((char*)harp + harp->ar_hln + LIBNET_ARP_H, &wrongip, 4);
                 sout = capture(STDOUT_FILENO);
-                pingip_recv(NULL, &pkthdr, packet);
+                pingip_recv(NULL, &pkthdr, (char*)packet);
                 stop_capture(sout);
                 fail_unless(prev_numrecvd == numrecvd);
                 fail_unless(strlen(sout->buffer) == 0);
@@ -299,7 +298,7 @@ START_TEST(pingip_uninteresting_packet)
         packet = mkpacket(&pkthdr);
         pkthdr.caplen = pkthdr.len = 41;
         sout = capture(STDOUT_FILENO);
-        pingip_recv(NULL, &pkthdr, packet);
+        pingip_recv(NULL, &pkthdr, (char*)packet);
         stop_capture(sout);
         fail_unless(prev_numrecvd == numrecvd);
         fail_unless(strlen(sout->buffer) == 0);
@@ -310,7 +309,7 @@ START_TEST(pingip_uninteresting_packet)
         packet = mkpacket(&pkthdr);
         pkthdr.caplen = 41;
         sout = capture(STDOUT_FILENO);
-        pingip_recv(NULL, &pkthdr, packet);
+        pingip_recv(NULL, &pkthdr, (char*)packet);
         stop_capture(sout);
         fail_unless(prev_numrecvd == numrecvd);
         fail_unless(strlen(sout->buffer) == 0);
@@ -344,7 +343,7 @@ START_TEST(pingip_uninteresting_packet)
                 pkthdr.len = 60;
                 pkthdr.caplen = 60;
                 sout = capture(STDOUT_FILENO);
-                pingip_recv(NULL, &pkthdr, packet);
+                pingip_recv(NULL, &pkthdr, (char*)packet);
                 stop_capture(sout);
                 fail_unless(strlen(sout->buffer) == 0, sout->buffer);
                 fail_unless(prev_numrecvd == numrecvd);
@@ -355,7 +354,7 @@ START_TEST(pingip_uninteresting_packet)
         packet = mkpacket(&pkthdr);
         ((struct libnet_arp_hdr*)((char*)packet + LIBNET_ETH_H))->ar_pln = 6;
         sout = capture(STDOUT_FILENO);
-        pingip_recv(NULL, &pkthdr, packet);
+        pingip_recv(NULL, &pkthdr, (char*)packet);
         stop_capture(sout);
         fail_unless(prev_numrecvd == numrecvd);
         fail_unless(strlen(sout->buffer) == 0);
@@ -389,7 +388,7 @@ START_TEST(pingip_interesting_packet)
                 0x6f, 0xa8, 0x58, 0x63,
         };
         numrecvd = 0;
-        int prev_numrecvd = numrecvd;
+        unsigned int prev_numrecvd = numrecvd;
 
         dstip = htonl(0x12345678);
 
@@ -405,7 +404,7 @@ START_TEST(pingip_interesting_packet)
                         "60 bytes from 77:88:99:aa:bb:cc (18.52.86.120): "
                         "index=0 time=";
         sout = capture(STDOUT_FILENO);
-        pingip_recv(NULL, &pkthdr, packet);
+        pingip_recv(NULL, &pkthdr, (char*)packet);
         stop_capture(sout);
 
         char* emsg = NULL;
@@ -419,7 +418,7 @@ START_TEST(pingip_interesting_packet)
         // Check numrecvd incremented.
         ck_assert_int_eq(numrecvd, prev_numrecvd + 1);
 
-        pingip_recv(NULL, &pkthdr, packet);
+        pingip_recv(NULL, &pkthdr, (char*)packet);
         // Check that numrecvd is incremented second time.
         ck_assert_int_eq(numrecvd,prev_numrecvd + 2);
 } END_TEST
@@ -634,7 +633,6 @@ END_TEST
 static Suite*
 arping_suite(void)
 {
-        int c;
         Suite* s = suite_create("Arping");
 
 

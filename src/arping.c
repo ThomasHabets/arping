@@ -705,8 +705,7 @@ bug_pcap_vlan()
  * FIXME: Use pcap_set_buffer_size()?
  */
 static pcap_t*
-try_pcap_open_live(const char *device, int snaplen,
-                   int promisc, int to_ms, char *errbuf)
+try_pcap_open_live(const char *device, int snaplen, int to_ms, char *errbuf)
 {
 #ifdef HAVE_PCAP_CREATE
         pcap_t* pcap;
@@ -790,7 +789,7 @@ err:
         }
         return NULL;
 #else
-        return pcap_open_live(device, snaplen, promisc, to_ms, errbuf);
+        return pcap_open_live(device, snaplen, to_ms, errbuf);
 #endif
 }
 
@@ -805,28 +804,27 @@ err:
  * fails to open /dev/net, because it's a directory.
  */
 static pcap_t*
-do_pcap_open_live(const char *device, int snaplen,
-                  int promisc, int to_ms, char *errbuf)
+do_pcap_open_live(const char *device, int snaplen, int to_ms, char *errbuf)
 {
         pcap_t* ret;
         char buf[PATH_MAX];
 
-        if ((ret = try_pcap_open_live(device, snaplen, promisc, to_ms, errbuf))) {
+        if ((ret = try_pcap_open_live(device, snaplen, to_ms, errbuf))) {
                 return ret;
         }
 
         snprintf(buf, sizeof(buf), "/dev/%s", device);
-        if ((ret = try_pcap_open_live(buf, snaplen, promisc, to_ms, errbuf))) {
+        if ((ret = try_pcap_open_live(buf, snaplen, to_ms, errbuf))) {
                 return ret;
         }
 
         snprintf(buf, sizeof(buf), "/dev/net/%s", device);
-        if ((ret = try_pcap_open_live(buf, snaplen, promisc, to_ms, errbuf))) {
+        if ((ret = try_pcap_open_live(buf, snaplen, to_ms, errbuf))) {
                 return ret;
         }
 
         /* Call original again to reset the error message. */
-        return try_pcap_open_live(device, snaplen, promisc, to_ms, errbuf);
+        return try_pcap_open_live(device, snaplen, to_ms, errbuf);
 }
 
 /**
@@ -2025,7 +2023,6 @@ arping_main(int argc, char **argv)
         int opt_U = 0;
         const char* drop_group = NULL;  // -g
         const char *parm; // First argument, meaning the target IP.
-	int c;
 	int maxcount = -1;
 	int dont_use_arping_lookupdev=0;
 	struct bpf_program bp;
@@ -2037,11 +2034,14 @@ arping_main(int argc, char **argv)
         ebuf[0] = 0;
         srandom((unsigned)time(NULL));
 
-        for (c = 1; c < argc; c++) {
-                if (!strcmp(argv[c], "--help")) {
-                        standard_usage();
-                        extended_usage();
-                        exit(0);
+        {
+                int c;
+                for (c = 1; c < argc; c++) {
+                        if (!strcmp(argv[c], "--help")) {
+                                standard_usage();
+                                extended_usage();
+                                exit(0);
+                        }
                 }
         }
 
@@ -2471,7 +2471,7 @@ arping_main(int argc, char **argv)
 	/*
 	 * pcap init
 	 */
-        if (!(pcap = do_pcap_open_live(ifname, 100, promisc, 10, ebuf))) {
+        if (!(pcap = do_pcap_open_live(ifname, 100, 10, ebuf))) {
                 strip_newline(ebuf);
                 fprintf(stderr, "arping: pcap_open_live(): %s\n", ebuf);
 		exit(1);

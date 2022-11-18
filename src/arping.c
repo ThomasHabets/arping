@@ -2021,6 +2021,7 @@ arping_main(int argc, char **argv)
         int opt_B = 0;
         int opt_T = 0;
         int opt_U = 0;
+        int c;
         const char* drop_group = NULL;  // -g
         const char *parm; // First argument, meaning the target IP.
 	int maxcount = -1;

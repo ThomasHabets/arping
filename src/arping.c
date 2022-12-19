@@ -35,6 +35,7 @@
 #include "config.h"
 #endif
 
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1297,8 +1298,6 @@ pingmac_send(uint16_t id, uint16_t seq)
                        payload_suffix, payload_suffix_size);
         }
 
-	int c;
-
 	if (-1 == (icmp = libnet_build_icmpv4_echo(ICMP_ECHO, /* type */
 						   0, /* code */
 						   0, /* checksum */
@@ -1366,7 +1365,7 @@ pingmac_send(uint16_t id, uint16_t seq)
                        (long)lastpacketsent.tv_sec,
                        (long)lastpacketsent.tv_nsec);
 	}
-	if (-1 == (c = libnet_write(libnet))) {
+        if (-1 == libnet_write(libnet)) {
 		fprintf(stderr, "arping: libnet_write(): %s\n",
 			libnet_geterror(libnet));
 		sigint(0);
@@ -1464,6 +1463,7 @@ pingip_recv(const char *unused, struct pcap_pkthdr *h, const char * const packet
 	struct libnet_arp_hdr *harp;
         struct timespec arrival;
         UNUSED(unused);
+        assert(packet);
 
         if (verbose > 2) {
 		printf("arping: received response for IP ping\n");
@@ -1671,6 +1671,7 @@ pingmac_recv(const char* unused, struct pcap_pkthdr *h, uint8_t *packet)
 	struct libnet_icmpv4_hdr *hicmp;
         struct timespec arrival;
         UNUSED(unused);
+        assert(packet);
 
 	if(verbose>2) {
 		printf("arping: received response for mac ping\n");

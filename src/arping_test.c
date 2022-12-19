@@ -232,6 +232,7 @@ START_TEST(test_mkpacket)
                 dump_packet(packet, pkthdr.caplen);
         }
         fail_unless(!memcmp(packet, correct_packet, pkthdr.caplen));
+        free(packet);
 } END_TEST
 
 
@@ -437,7 +438,7 @@ START_TEST(strip_newline_test)
         int c;
         for (c = 0; tests[c][0]; c++){
                 char buf[128];
-                strcpy(buf, tests[c][0]);
+                snprintf(buf, sizeof(buf), "%s", tests[c][0]);
                 strip_newline(buf);
                 fail_unless(!strcmp(buf, tests[c][1]));
         }

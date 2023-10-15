@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
 
 set -e
-exec make check
+make
+make check
+exec make distcheck

@@ -14,7 +14,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Dependencies
-      run:  sudo apt-get install -y libnet1-dev libpcap-dev libcap-dev automake autoconf libseccomp-dev check
+    - name: Required dependencies
+      run:  sudo apt-get install -y libnet1-dev libpcap-dev automake autoconf check
     - name: bootstrap
       run: ./bootstrap.sh
     - name: configure
@@ -24,4 +25,16 @@ jobs:
     - name: make check
       run: make check
     - name: make distcheck
+      run: make distcheck
+    - name: Install optional dependencies
+      run:  sudo apt-get install -y libcap-dev libseccomp-dev
+    - name: clean
+      run: make distclean
+    - name: configure with optional deps
+      run: ./configure
+    - name: make with optional deps
+      run: make
+    - name: make check with optional deps
+      run: make check
+    - name: make distcheck with optional deps
       run: make distcheck

@@ -1,0 +1,27 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ "arping-2.x" ]
+  pull_request:
+    branches: [ "arping-2.x" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Dependencies
+      run:  sudo apt-get install -y libnet1-dev libpcap-dev libcap-dev automake autoconf libseccomp-dev
+    - name: bootstrap
+      run: ./bootstrap.sh
+    - name: configure
+      run: ./configure
+    - name: make
+      run: make
+    - name: make check
+      run: make check
+    - name: make distcheck
+      run: make distcheck

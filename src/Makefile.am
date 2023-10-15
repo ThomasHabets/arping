@@ -3,7 +3,7 @@
 include $(top_srcdir)/Makefile.am.common
 CFLAGS+= $(EXTRA_CFLAGS)
 
-include_HEADERS=arping.h cast.h
+include_HEADERS=arping.h
 
 sbin_PROGRAMS = arping
 noinst_PROGRAMS = fuzz_pingip

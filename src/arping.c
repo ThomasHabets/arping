@@ -2252,7 +2252,7 @@ arping_main(int argc, char **argv)
         if (((mode == PINGIP) && opt_T)
             || ((mode == PINGMAC) && (opt_B || dstmac_opt || opt_U))) {
                 fprintf(stderr, "arping: -T can only be used to ping MAC"
-                        " and -BtU only to ping IPs");
+                        " and -BtU only to ping IPs\n");
                 exit(1);
         }
         if (opt_T && opt_B) {

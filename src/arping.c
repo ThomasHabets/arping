@@ -694,6 +694,7 @@ static void drop_seccomp(int libnet_fd)
 static void
 drop_more_privileges(int libnet_fd)
 {
+        UNUSED(libnet_fd);
 #ifdef HAVE_PLEDGE
         if (pledge("stdio tty", "")) {
                 fprintf(stderr, "arping: failed to pledge(stdio, <empty>): %s\n",

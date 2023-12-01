@@ -388,11 +388,12 @@ xgetrandom(void *buf, const size_t buflen, const unsigned int flags)
 #ifdef HAVE_GETRANDOM
         return getrandom(buf, buflen, flags);
 #else
-        char* p = buf;
-        for (int n = 0; n < buflen; n++) {
-                p[n] = random() & 0xff;
+        UNUSED(flags);
+        uint8_t* p = buf;
+        for (size_t n = 0; n < buflen; n++) {
+                p[n] = cast_long_uint8(random() & 0xff, NULL);
         }
-        return buflen;
+        return cast_size_ssize(buflen, NULL);
 #endif
 }
 

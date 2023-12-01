@@ -19,6 +19,7 @@ uint8_t cast_int16_uint8(int16_t from, const char* fmt, ...);
 unsigned int cast_int_uint(int from, const char* fmt, ...);
 uint16_t cast_int_uint16(int from, const char* fmt, ...);
 int cast_long_int(long from, const char* fmt, ...);
+uint8_t cast_long_uint8(long from, const char* fmt, ...);
 gid_t cast_ulong_gid(unsigned long from, const char* fmt, ...);
 unsigned long long cast_longlong_ulonglong(long long from, const char* fmt, ...);
 unsigned int cast_longlong_uint(long long from, const char* fmt, ...);

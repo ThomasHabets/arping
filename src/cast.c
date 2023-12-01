@@ -229,6 +229,25 @@ cast_long_int(long from, const char* fmt, ...)
     va_end(ap);
     return to;
 }
+uint8_t
+cast_long_uint8(long from, const char* fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    cast_assert(from >= 0, "cast_long_uint8(%"PRIdMAX"): %s", (intmax_t)from, "need >= 0");    const uint8_t to = (uint8_t)from;    if (from != (long)to) {
+        fprintf(stderr, "arping: ");
+        if (fmt) {
+          vfprintf(stderr, fmt, ap);
+          fprintf(stderr, ": value won't fit in uint8_t");
+        } else {
+          fprintf(stderr, "cast_long_uint8(%"PRIdMAX"): %s", (intmax_t)from, "value won't fit in uint8_t\n");
+        }
+        fprintf(stderr, "\n");
+        exit(1);
+    }
+    va_end(ap);
+    return to;
+}
 gid_t
 cast_ulong_gid(unsigned long from, const char* fmt, ...)
 {

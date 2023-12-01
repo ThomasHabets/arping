@@ -33,6 +33,8 @@ AC_DEFUN([CHECK_COMPILER_OPTION], [
     )
 ])
 
+CHECK_COMPILER_OPTION([-std=c99])
+
 # Checks for libraries.
 AC_CHECK_LIB([m], [sqrt])
 AC_CHECK_LIB([socket], [socket])

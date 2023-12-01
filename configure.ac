@@ -21,6 +21,18 @@ AC_PROG_MAKE_SET
 # no longer defined by default.
 CPPFLAGS="$CPPFLAGS -D_DEFAULT_SOURCE=1"
 
+AC_DEFUN([CHECK_COMPILER_OPTION], [
+    AC_MSG_CHECKING([compiler option $1])
+    OLD_CFLAGS="$CFLAGS"
+    CFLAGS="$CFLAGS $1"
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],
+    [AC_MSG_RESULT(yes)],
+    [
+        AC_MSG_RESULT(no)]
+        CFLAGS="$OLD_CFLAGS"
+    )
+])
+
 # Checks for libraries.
 AC_CHECK_LIB([m], [sqrt])
 AC_CHECK_LIB([socket], [socket])
@@ -146,15 +158,40 @@ if test x$ac_cv_have_decl_CLOCK_MONOTONIC = xyes; then
    AC_DEFINE([HAVE_CLOCK_MONOTONIC], [1], [Monotonic clock])
 fi
 
-AC_ARG_ENABLE(hardened, AS_HELP_STRING([--enable-hardened], [Enable security build options]),
-                        [
-                          CFLAGS+=" -pie -fPIE -fstack-protector-all --param ssp-buffer-size=1 -D_FORTIFY_SOURCE=2"
-                          LDFLAGS+=" -pie -fPIE -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack"
-                        ])
-AC_ARG_ENABLE(warnings, AS_HELP_STRING([--enable-warnings], [Enable build warnings]),
-                        [
-                          CFLAGS+=" -Wall -Wpedantic -Wextra -Wformat -Wstack-protector -Wformat-security -Werror=format-security -Wconversion"
-                        ])
+AC_ARG_ENABLE(hardened,
+    AS_HELP_STRING([--enable-hardened], [Enable security build options]),
+    [
+        CHECK_COMPILER_OPTION([-fstack-clash-protection])
+        CHECK_COMPILER_OPTION([-fstack-protector-strong])
+        CHECK_COMPILER_OPTION([-mbranch-protection=standard])
+        CHECK_COMPILER_OPTION([-fcf-protection=full])
+        CHECK_COMPILER_OPTION([-fstrict-flex-arrays=3])
+        CHECK_COMPILER_OPTION([-fPIE -pie])
+        CHECK_COMPILER_OPTION([-Wl,-z,nodlopen])
+        CHECK_COMPILER_OPTION([-Wl,-z,noexecstack])
+        CHECK_COMPILER_OPTION([-Wl,-z,relro])
+        CHECK_COMPILER_OPTION([-Wl,-z,noexecheap])
+        CHECK_COMPILER_OPTION([-Wl,-z,now])
+        CHECK_COMPILER_OPTION([-fstack-protector-all])
+        CHECK_COMPILER_OPTION([--param ssp-buffer-size=1])
+        CHECK_COMPILER_OPTION([-U _FORTIFY_SOURCE -D_FORTIFY_SOURCE=3])
+])
+AC_ARG_ENABLE(warnings,
+    AS_HELP_STRING([--enable-warnings], [Enable build warnings]),
+    [
+        CHECK_COMPILER_OPTION([-Wall])
+        CHECK_COMPILER_OPTION([-Wextra])
+        CHECK_COMPILER_OPTION([-Wpedantic])
+        CHECK_COMPILER_OPTION([-Wstack-protector])
+        CHECK_COMPILER_OPTION([-Wformat])
+        CHECK_COMPILER_OPTION([-Wformat-security])
+        CHECK_COMPILER_OPTION([-Wformat-y2k])
+        CHECK_COMPILER_OPTION([-Werror=format-security])
+        CHECK_COMPILER_OPTION([-Wconversion])
+        CHECK_COMPILER_OPTION([-Wsign-conversion])
+        CHECK_COMPILER_OPTION([-Wimplicit-fallthrough])
+        CHECK_COMPILER_OPTION([-Wtrampolines])
+])
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])

@@ -501,7 +501,7 @@ START_TEST(badarg_maxcount_neg)
                 "dummy",
                 NULL
         };
-        arping_main(sizeof(args)/sizeof(char*)-1, args);
+        exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
 }
 
 START_TEST(badarg_maxcount_nan)
@@ -513,7 +513,7 @@ START_TEST(badarg_maxcount_nan)
                 "dummy",
                 NULL
         };
-        arping_main(sizeof(args)/sizeof(char*)-1, args);
+        exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
 }
 
 START_TEST(badarg_maxcount_range)
@@ -525,7 +525,7 @@ START_TEST(badarg_maxcount_range)
                 "dummy",
                 NULL
         };
-        arping_main(sizeof(args)/sizeof(char*)-1, args);
+        exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
 }
 
 START_TEST(arg_maxcount_good)
@@ -537,7 +537,7 @@ START_TEST(arg_maxcount_good)
                 "dummy",
                 NULL
         };
-        arping_main(sizeof(args)/sizeof(char*)-1, args);
+        exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
 }
 
 START_TEST(arg_maxcount_hex)
@@ -549,7 +549,7 @@ START_TEST(arg_maxcount_hex)
                 "dummy",
                 NULL
         };
-        arping_main(sizeof(args)/sizeof(char*)-1, args);
+        exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
 }
 
 START_TEST(badarg_packetwait_neg)
@@ -561,7 +561,7 @@ START_TEST(badarg_packetwait_neg)
                 "dummy",
                 NULL
         };
-        arping_main(sizeof(args)/sizeof(char*)-1, args);
+        exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
 }
 
 START_TEST(badarg_packetwait_nan)
@@ -573,7 +573,7 @@ START_TEST(badarg_packetwait_nan)
                 "dummy",
                 NULL
         };
-        arping_main(sizeof(args)/sizeof(char*)-1, args);
+        exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
 }
 
 START_TEST(badarg_packetwait_range)
@@ -585,7 +585,7 @@ START_TEST(badarg_packetwait_range)
                 "dummy",
                 NULL
         };
-        arping_main(sizeof(args)/sizeof(char*)-1, args);
+        exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
 }
 
 START_TEST(arg_packetwait_good)
@@ -597,7 +597,7 @@ START_TEST(arg_packetwait_good)
                 "dummy",
                 NULL
         };
-        arping_main(sizeof(args)/sizeof(char*)-1, args);
+        exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
 }
 
 START_TEST(libnet_init_bad_nolo)
@@ -678,14 +678,13 @@ arping_suite(void)
 int
 main()
 {
-        int number_failed;
         Suite *s = arping_suite();
-        SRunner *sr = srunner_create (s);
-        srunner_run_all (sr, CK_NORMAL);
-        number_failed = srunner_ntests_failed (sr);
-        srunner_free (sr);
+        SRunner *sr = srunner_create(s);
+        srunner_run_all(sr, CK_NORMAL);
+        const int number_failed = srunner_ntests_failed(sr);
+        srunner_free(sr);
+        fprintf(stderr, "Number of failed tests: %d\n", number_failed);
         return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
-        return 0;
 }
 /* ---- Emacs Variables ----
  * Local Variables:

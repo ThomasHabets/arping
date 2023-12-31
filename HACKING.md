@@ -16,6 +16,9 @@ Don't make style-only changes, but fix the style on the line you're touching any
 1. Up version in configure.ac. Commit.
 2. Run `./extra/mktarball HEAD`
 3. Test that tarball.
+  1. make check
+  2. make distcheck
+  3. Some manual tests
 4. Check `git log --reverse arping-2.oldversion..HEAD` for notable changes.
 5. Create tag: `git tag -s arping-2.newversion`
 6. Push to github: `git push --tags`

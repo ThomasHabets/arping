@@ -79,10 +79,8 @@ read_main(void* p)
         char *cur = out->buffer;
 
         for (;;) {
-                ssize_t n;
-                n = out->bufsize - (cur - out->buffer);
-                assert(n > 0);
-                n = read(out->reader_fd, cur, n);
+                const size_t to_read = out->bufsize - (size_t)(cur - out->buffer);
+                const ssize_t n = read(out->reader_fd, cur, to_read);
                 if (n > 0) {
                         cur += n;
                 }

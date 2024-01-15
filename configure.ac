@@ -195,6 +195,26 @@ AC_ARG_ENABLE(warnings,
         CHECK_COMPILER_OPTION([-Wtrampolines])
 ])
 
+AC_DEFUN([CHECK_SECCOMP_SYSCALL], [
+  AC_MSG_CHECKING([seccomp syscall $1])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#include<seccomp.h>
+]], [[
+void test()
+{
+scmp_filter_ctx ctx;
+seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS($1), 0);
+}
+]])],
+[
+  AC_MSG_RESULT(yes)
+  AC_DEFINE([HAVE_SECCOMP_SYSCALL_$1], [1], [Have seccomp syscall])
+],[AC_MSG_RESULT(no)])])
+
+CHECK_SECCOMP_SYSCALL([fstat]);
+CHECK_SECCOMP_SYSCALL([statx]);
+CHECK_SECCOMP_SYSCALL([nonexistant]);
+
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([doc/Makefile])

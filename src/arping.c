@@ -645,10 +645,18 @@ static void drop_seccomp(int libnet_fd)
         //
 
         // Write to stdout and stderr.
+#if HAVE_SECCOMP_SYSCALL_statx
+        if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(statx), 1, SCMP_A0(SCMP_CMP_EQ, STDOUT_FILENO))) {
+                perror("seccomp_rule_add(statx stdout)");
+                exit(1);
+        }
+#endif
+#if HAVE_SECCOMP_SYSCALL_fstat
         if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(fstat), 1, SCMP_A0(SCMP_CMP_EQ, STDOUT_FILENO))) {
                 perror("seccomp_rule_add(fstat stdout)");
                 exit(1);
         }
+#endif
         if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(write), 1, SCMP_A0(SCMP_CMP_EQ, STDOUT_FILENO))) {
                 perror("seccomp_rule_add(write stdout)");
                 exit(1);

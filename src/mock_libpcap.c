@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include<pcap.h>
 
 #define UNUSED(x) (void)(x)

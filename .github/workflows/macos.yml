@@ -1,0 +1,27 @@
+name: macOS
+
+on:
+  push:
+    branches: [ "arping-2.x" ]
+  pull_request:
+    branches: [ "arping-2.x" ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: brew install autoconf automake libnet
+    - name: bootstrap
+      run: ./bootstrap.sh
+    - name: configure
+      run: |
+        export LDFLAGS="-L$(brew --prefix libnet)/lib"
+        export CPPFLAGS="-I$(brew --prefix libnet)/include"
+        ./configure
+    - name: make
+      run: make
+    - name: test
+      run: ./src/arping --help

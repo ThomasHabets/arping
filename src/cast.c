@@ -88,7 +88,13 @@ cast_size_ssize(size_t from, const char* fmt, ...)
     va_start(ap, fmt);
 
 #pragma GCC diagnostic push
+    // If the `from` type cannot represent `dst_max`, then GCC warns as
+    // it always being true. So suppressing that warning.
+    //
+    // Silence both GCC and clang for the same error.
+#pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wtype-limits"
+#pragma GCC diagnostic ignored "-Wtautological-constant-out-of-range-compare"
     cast_assert(from <= SSIZE_MAX, "cast_size_ssize(%"PRIuMAX"): %s", (uintmax_t)from, "value won't fit in ssize_t");
 #pragma GCC diagnostic pop
     const ssize_t to = (ssize_t)from;
@@ -339,7 +345,13 @@ cast_gid_longlong(gid_t from, const char* fmt, ...)
     va_start(ap, fmt);
 
 #pragma GCC diagnostic push
+    // If the `from` type cannot represent `dst_max`, then GCC warns as
+    // it always being true. So suppressing that warning.
+    //
+    // Silence both GCC and clang for the same error.
+#pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wtype-limits"
+#pragma GCC diagnostic ignored "-Wtautological-constant-out-of-range-compare"
     cast_assert(from <= LLONG_MAX, "cast_gid_longlong(%"PRIuMAX"): %s", (uintmax_t)from, "value won't fit in long long");
 #pragma GCC diagnostic pop
     const long long to = (long long)from;
@@ -365,7 +377,13 @@ cast_uid_longlong(uid_t from, const char* fmt, ...)
     va_start(ap, fmt);
 
 #pragma GCC diagnostic push
+    // If the `from` type cannot represent `dst_max`, then GCC warns as
+    // it always being true. So suppressing that warning.
+    //
+    // Silence both GCC and clang for the same error.
+#pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wtype-limits"
+#pragma GCC diagnostic ignored "-Wtautological-constant-out-of-range-compare"
     cast_assert(from <= LLONG_MAX, "cast_uid_longlong(%"PRIuMAX"): %s", (uintmax_t)from, "value won't fit in long long");
 #pragma GCC diagnostic pop
     const long long to = (long long)from;

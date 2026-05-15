@@ -186,11 +186,15 @@ cast_{src_name}_{dst_name}({src} from, const char* fmt, ...)
         if s2u:
             fc.write('    cast_assert(from >= 0, {errstr}, "need >= 0");\n'.format(**keys));
         if u2s:
-            # If the `from` type cannot represent `dst_max`, then GCC warns as
-            # it always being true. So suppressing that warning.
             fc.write('''
 #pragma GCC diagnostic push
+    // If the `from` type cannot represent `dst_max`, then GCC warns as
+    // it always being true. So suppressing that warning.
+    //
+    // Silence both GCC and clang for the same error.
+#pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wtype-limits"
+#pragma GCC diagnostic ignored "-Wtautological-constant-out-of-range-compare"
     cast_assert(from <= {dst_max}, {errstr}, "value won't fit in {dst}");
 #pragma GCC diagnostic pop
 '''.format(**keys));

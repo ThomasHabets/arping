@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <stddef.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
@@ -77,7 +78,7 @@ arping_lookupdev(uint32_t srcip,
 
         /* buffer */
         char *buf_memory = NULL;
-        char *lim;
+        const char *lim;
         size_t bufsize;
 
         /* Matching interfaces */
@@ -85,7 +86,7 @@ arping_lookupdev(uint32_t srcip,
 
         /* best match */
         in_addr_t best_mask = 0;
-        struct in_addr best_addr;
+        struct in_addr best_addr = { 0 };
 
         /* Results */
         static char ifName[IFNAMSIZ];
@@ -125,90 +126,139 @@ arping_lookupdev(uint32_t srcip,
 
         /* Loop through all interfaces */
         while (buf < lim) {
-                struct sockaddr_dl *sdl;
+                const struct if_msghdr *ifh;
+                const struct sockaddr_dl *sdl;
+                const char *if_end;
+                int if_flags;
                 char  tmpIfName[IFNAMSIZ];
-                int   i;
+                size_t i;
 
                 // Check that remaining buffer is big enough.
-                if (buf + sizeof(struct if_msghdr) > lim) {
+                if ((size_t)(lim - buf) < sizeof(*ifh)) {
                         if (verbose > 1) {
                                 fprintf(stderr, "arping: More buffer available, but not enough.\n");
                         }
                         break;
                 }
 
-                struct if_msghdr *ifh = (struct if_msghdr *)buf;
+                ifh = (const struct if_msghdr *)buf;
+                if (ifh->ifm_msglen < sizeof(*ifh)
+                    || (size_t)ifh->ifm_msglen > (size_t)(lim - buf)) {
+                        if (verbose > 1) {
+                                fprintf(stderr, "arping: Invalid interface message length.\n");
+                        }
+                        break;
+                }
+                if_end = buf + ifh->ifm_msglen;
+                if_flags = ifh->ifm_flags;
+
                 if (ifh->ifm_type != RTM_IFINFO) {
                         xsnprintf(ebuf, LIBNET_ERRBUF_SIZE,
                                  "Wrong data in NET_RT_IFLIST.");
-                        return NULL;
+                        goto failed;
                 }
-                sdl = (struct sockaddr_dl *)(buf +
-                                             sizeof(struct if_msghdr) -
-                                             sizeof(struct if_data) +
-                                             sizeof(struct if_data));
+                if ((size_t)(if_end - buf)
+                    < sizeof(*ifh) + offsetof(struct sockaddr_dl, sdl_data)) {
+                        if (verbose > 1) {
+                                fprintf(stderr, "arping: Interface message too short.\n");
+                        }
+                        break;
+                }
+                sdl = (const struct sockaddr_dl *)(buf + sizeof(*ifh));
+                if ((size_t)sdl->sdl_nlen
+                    > (size_t)(if_end
+                               - ((const char *)sdl
+                                  + offsetof(struct sockaddr_dl, sdl_data)))) {
+                        if (verbose > 1) {
+                                fprintf(stderr, "arping: Interface name exceeds message.\n");
+                        }
+                        break;
+                }
 
-                i = sdl->sdl_nlen < sizeof(ifName)
+                i = (size_t)sdl->sdl_nlen < sizeof(ifName)
                         ? sdl->sdl_nlen
                         : (sizeof(tmpIfName)-1);
                 memcpy(tmpIfName, sdl->sdl_data, i);
                 tmpIfName[i] = 0;
 
-                buf += ifh->ifm_msglen;
+                buf = if_end;
 
                 /* Loop through all addresses of interface. */
                 while (buf < lim) {
+                        const struct ifa_msghdr *ifht;
+                        const char *ifa_end;
+                        const char*  addrptr;
+                        const struct sockaddr_in *if_addr = NULL;
+                        const struct sockaddr_in *if_nmsk = NULL;
+                        const struct sockaddr_in *if_bcst = NULL;
+                        in_addr_t mask;
+
                         // Check that remaining buffer is big enough.
-                        if (buf + sizeof(struct ifa_msghdr) > lim) {
+                        if ((size_t)(lim - buf) < sizeof(*ifht)) {
                                 if (verbose > 1) {
                                         fprintf(stderr, "arping: More buffer available, but not enough.\n");
                                 }
                                 break;
                         }
 
-                        struct ifa_msghdr *ifht = (struct ifa_msghdr *)buf;
-                        char*  addrptr;
-                        struct sockaddr_in *if_addr = NULL;
-                        struct sockaddr_in *if_nmsk = NULL;
-                        struct sockaddr_in *if_bcst = NULL;
-                        in_addr_t mask;
-
+                        ifht = (const struct ifa_msghdr *)buf;
                         if (ifht->ifam_type != RTM_NEWADDR) {
                                 break;
                         }
+                        if (ifht->ifam_msglen < sizeof(*ifht)
+                            || (size_t)ifht->ifam_msglen > (size_t)(lim - buf)) {
+                                if (verbose > 1) {
+                                        fprintf(stderr, "arping: Invalid address message length.\n");
+                                }
+                                break;
+                        }
 
-                        addrptr = buf + sizeof(struct ifa_msghdr);
-                        buf += ifht->ifam_msglen;
+                        ifa_end = buf + ifht->ifam_msglen;
+                        addrptr = buf + sizeof(*ifht);
+                        buf = ifa_end;
 
-                        if (ifh->ifm_flags & (IFF_LOOPBACK|IFF_POINTOPOINT)) {
+                        if (if_flags & (IFF_LOOPBACK|IFF_POINTOPOINT)) {
                                 continue;
                         }
 
                         /* Loop through all the address attributes. */
                         for (c=1; c < (1<<RTAX_MAX); c<<=1) {
-                                struct sockaddr_in *sa;
-                                if (addrptr + sizeof(struct sockaddr_in) > lim) {
+                                const struct sockaddr *sa;
+                                size_t len;
+
+                                if (!(c & ifht->ifam_addrs)) {
+                                        continue;
+                                }
+                                if ((size_t)(ifa_end - addrptr) < sizeof(*sa)) {
                                         if (verbose > 1) {
                                                 fprintf(stderr, "arping: More buffer available, but not enough.\n");
                                         }
                                         break;
                                 }
-                                size_t len;
-                                sa = addrptr;
-                                switch (c & ifht->ifam_addrs) {
-                                case 0:
-                                        continue;
-                                case RTA_NETMASK:
-                                        if_nmsk = sa;
-                                        break;
-                                case RTA_IFA:
-                                        if_addr = sa;
-                                        break;
-                                case RTA_BRD:
-                                        if_bcst = sa;
+                                sa = (const struct sockaddr *)addrptr;
+                                len = SA_SIZE(sa);
+                                if (len > (size_t)(ifa_end - addrptr)) {
+                                        if (verbose > 1) {
+                                                fprintf(stderr, "arping: Address exceeds message.\n");
+                                        }
                                         break;
                                 }
-                                addrptr += SA_SIZE((struct sockaddr*)sa);
+                                if (len < sizeof(struct sockaddr_in)) {
+                                        addrptr += len;
+                                        continue;
+                                }
+                                switch (c) {
+                                case RTA_NETMASK:
+                                        if_nmsk = (const struct sockaddr_in *)sa;
+                                        break;
+                                case RTA_IFA:
+                                        if_addr = (const struct sockaddr_in *)sa;
+                                        break;
+                                case RTA_BRD:
+                                        if_bcst = (const struct sockaddr_in *)sa;
+                                        break;
+                                }
+                                addrptr += len;
                         }
 
                         if (!if_addr || !if_nmsk || !if_bcst) {
@@ -239,7 +289,7 @@ arping_lookupdev(uint32_t srcip,
                         }
 
                         mask = ntohl(if_nmsk->sin_addr.s_addr);
-                        if (mask > best_mask) {
+                        if (match_count == 1 || mask > best_mask) {
                                 memcpy(ifName,
                                        tmpIfName,
                                        sizeof(ifName));

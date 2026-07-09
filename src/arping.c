@@ -2118,7 +2118,7 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 		       int ret;
                        if (0 > (ret = pcap_dispatch(pcap, -1,
                                                     func,
-                                                    NULL))) {
+                                                    (unsigned char*)pcap))) {
                                if (time_to_die) {
                                        return;
                                }

@@ -2771,9 +2771,6 @@ arping_main(int argc, char **argv)
                                 break;
                         }
                         const uint32_t w = wait_time(deadline, packetwait);
-                        if (w == 0) {
-                                break;
-                        }
                         ping_recv(pcap, w, (pcap_handler)pingip_recv);
 		}
 	} else { /* PINGMAC */
@@ -2791,9 +2788,6 @@ arping_main(int argc, char **argv)
                                 break;
                         }
                         const uint32_t w = wait_time(deadline, packetwait);
-                        if (w == 0) {
-                                break;
-                        }
                         ping_recv(pcap, w,  (pcap_handler)pingmac_recv);
 		}
 	}

@@ -1087,9 +1087,7 @@ extended_usage()
                DEFAULT_SECCOMP ? "" : " (default)"
 #endif
                );
-        printf("Report bugs to: thomas@habets.se\n"
-               "Arping home page: <http://www.habets.pp.se/synscan/>\n"
-               "Development repo: http://github.com/ThomasHabets/arping\n");
+        printf("Project page: <http://github.com/ThomasHabets/arping>\n");
 }
 
 /**

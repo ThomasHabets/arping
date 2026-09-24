@@ -25,6 +25,10 @@
 #include<pthread.h>
 #include<stdio.h>
 #include<stdlib.h>
+#include<sys/wait.h>
+#if HAVE_SYS_SYSCALL_H
+#include<sys/syscall.h>
+#endif
 
 #include<check.h>
 #include<libnet.h>
@@ -663,6 +667,27 @@ START_TEST(libnet_init_null_nolo)
 }
 END_TEST
 
+#if USE_SECCOMP && defined(SYS_getrandom)
+START_TEST(seccomp_getrandom)
+{
+        // Keep the test runner outside the sandbox. Use the syscall directly
+        // so a libc vDSO implementation cannot hide a missing allowlist entry.
+        const pid_t pid = fork();
+        fail_if(pid < 0);
+        if (pid == 0) {
+                uint16_t id;
+                drop_seccomp(STDOUT_FILENO);
+                const long n = syscall(SYS_getrandom, &id, sizeof(id), 0);
+                _exit(n == sizeof(id) ? 0 : 1);
+        }
+        int status;
+        fail_unless(waitpid(pid, &status, 0) == pid);
+        fail_unless(WIFEXITED(status));
+        ck_assert_int_eq(WEXITSTATUS(status), 0);
+}
+END_TEST
+#endif
+
 static Suite*
 arping_suite(void)
 {
@@ -690,6 +715,9 @@ arping_suite(void)
         SIGH_LIBCHECK(arg_maxcount_good);
         SIGH_LIBCHECK(arg_maxcount_hex);
         SIGH_LIBCHECK(arg_packetwait_good);
+#if USE_SECCOMP && defined(SYS_getrandom)
+        SIGH_LIBCHECK(seccomp_getrandom);
+#endif
 
 #define SIGH_LIBCHECK_EXIT(tn)          \
         tc_core = tcase_create(#tn);   \

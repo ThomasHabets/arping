@@ -127,6 +127,8 @@ drop_seccomp(int libnet_fd)
         seccomp_allow(ctx, "nanosleep");
         seccomp_allow(ctx, "clock_nanosleep_time64");
         seccomp_allow(ctx, "clock_gettime");
+        // MAC pings generate a fresh ICMP identifier for every request.
+        seccomp_allow(ctx, "getrandom");
 
         // Load.
         if (seccomp_load(ctx)) {

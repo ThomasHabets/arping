@@ -46,6 +46,8 @@ extern unsigned int numsent;
 
 void xsnprintf(char *buf, size_t size, const char* fmt, ...) __attribute__ ((format (printf, 3, 4)));
 void drop_seccomp(int libnet_fd);
+void arping_format_bpf_filter(char* buf, size_t size, const char* protocol,
+                              int16_t tag, int buggy_pcap);
 const char *
 arping_lookupdev(uint32_t srcip, uint32_t dstip, char *ebuf);
 void do_signal_init(void);

@@ -731,6 +731,23 @@ bug_pcap_vlan()
 }
 
 /**
+ * Keep the VLAN offset adjustment even when libpcap's VLAN-ID matching is
+ * broken. The receive handlers check the VLAN ID themselves in that case.
+ */
+void
+arping_format_bpf_filter(char* buf, size_t size, const char* protocol,
+                         int16_t tag, int buggy_pcap)
+{
+        if (tag < 0) {
+                xsnprintf(buf, size, "%s", protocol);
+        } else if (buggy_pcap) {
+                xsnprintf(buf, size, "vlan and %s", protocol);
+        } else {
+                xsnprintf(buf, size, "vlan %"PRId16" and %s", tag, protocol);
+        }
+}
+
+/**
  * Do pcap_open_live(), except by using the pcap_create() interface
  * introduced in 2008 (libpcap 0.4) where available.
  * This is so that we can set some options, which can't be set with
@@ -2685,35 +2702,16 @@ arping_main(int argc, char **argv)
                         "arping: Working around bug in libpcap 1.7-1.9.0.\n");
         }
 
-	if (mode == PINGIP) {
-		/* FIXME: better filter with addresses? */
-                if (vlan_tag >= 0 && !bug_pcap_vlan()) {
-                        xsnprintf(bpf_filter, sizeof(bpf_filter),
-                                 "vlan %"PRId16" and arp", vlan_tag);
-                } else {
-                        xsnprintf(bpf_filter, sizeof(bpf_filter), "arp");
-                }
-                if (-1 == pcap_compile(pcap, &bp, bpf_filter, 0,
-                                       PCAP_NETMASK_UNKNOWN)) {
-                        fprintf(stderr, "arping: pcap_compile(%s): %s\n",
-                                bpf_filter, pcap_geterr(pcap));
-			exit(1);
-		}
-	} else { /* ping mac */
-		/* FIXME: better filter with addresses? */
-                if (vlan_tag >= 0 && !bug_pcap_vlan()) {
-                        xsnprintf(bpf_filter, sizeof(bpf_filter),
-                                 "vlan %"PRId16" and icmp", vlan_tag);
-                } else {
-                        xsnprintf(bpf_filter, sizeof(bpf_filter), "icmp");
-                }
-                if (-1 == pcap_compile(pcap, &bp, bpf_filter, 0,
-                                       PCAP_NETMASK_UNKNOWN)) {
-                        fprintf(stderr, "arping: pcap_compile(%s): %s\n",
-                                bpf_filter, pcap_geterr(pcap));
-			exit(1);
-		}
-	}
+        /* FIXME: better filter with addresses? */
+        arping_format_bpf_filter(bpf_filter, sizeof(bpf_filter),
+                                 mode == PINGIP ? "arp" : "icmp",
+                                 vlan_tag, bug_pcap_vlan());
+        if (-1 == pcap_compile(pcap, &bp, bpf_filter, 0,
+                               PCAP_NETMASK_UNKNOWN)) {
+                fprintf(stderr, "arping: pcap_compile(%s): %s\n",
+                        bpf_filter, pcap_geterr(pcap));
+                exit(1);
+        }
 	if (-1 == pcap_setfilter(pcap, &bp)) {
                 fprintf(stderr, "arping: pcap_setfilter(): %s\n",
                         pcap_geterr(pcap));

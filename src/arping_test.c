@@ -688,6 +688,62 @@ START_TEST(seccomp_getrandom)
 END_TEST
 #endif
 
+START_TEST(bpf_filter_packets)
+{
+        const struct {
+                int16_t tag;
+                int buggy;
+        } filters[] = {{-1, 0}, {7, 0}, {7, 1}};
+        const struct {
+                int16_t tag;
+                uint8_t priority;
+        } frames[] = {{-1, 0}, {7, 0}, {7, 1}, {7, 7}, {8, 1}};
+        const char* protocols[] = {"arp", "icmp"};
+        pcap_t* pcap = pcap_open_dead(DLT_EN10MB, 100);
+        fail_if(pcap == NULL);
+        for (size_t p = 0; p < 2; p++) {
+                for (size_t f = 0; f < sizeof(filters)/sizeof(filters[0]); f++) {
+                        char filter[64];
+                        struct bpf_program bp;
+                        arping_format_bpf_filter(filter, sizeof(filter), protocols[p],
+                                                 filters[f].tag, filters[f].buggy);
+                        fail_unless(pcap_compile(pcap, &bp, filter, 0, 0xffffffff) == 0);
+                        for (size_t n = 0; n < sizeof(frames)/sizeof(frames[0]); n++) {
+                                uint8_t packet[80] = {0};
+                                size_t type_offset = 12;
+                                if (frames[n].tag >= 0) {
+                                        packet[12] = 0x81;
+                                        const uint16_t tci = htons((uint16_t)(
+                                                (frames[n].priority << 13) | frames[n].tag));
+                                        memcpy(packet + 14, &tci, sizeof(tci));
+                                        type_offset = 16;
+                                }
+                                packet[type_offset] = 0x08;
+                                packet[type_offset + 1] = p == 0 ? 0x06 : 0x00;
+                                if (p == 1) {
+                                        packet[type_offset + 2] = 0x45;
+                                        packet[type_offset + 11] = IPPROTO_ICMP;
+                                }
+                                struct pcap_pkthdr h = {.caplen = sizeof(packet),
+                                                        .len = sizeof(packet)};
+                                const int expected = filters[f].tag < 0
+                                        ? frames[n].tag < 0
+                                        : frames[n].tag >= 0 && (filters[f].buggy
+                                                || frames[n].tag == filters[f].tag);
+                                ck_assert_int_eq(pcap_offline_filter(&bp, &h, packet) != 0,
+                                                 expected);
+                                // A different EtherType must not pass either filter.
+                                packet[type_offset] = 0x86;
+                                packet[type_offset + 1] = 0xdd;
+                                ck_assert_int_eq(pcap_offline_filter(&bp, &h, packet), 0);
+                        }
+                        pcap_freecode(&bp);
+                }
+        }
+        pcap_close(pcap);
+}
+END_TEST
+
 static Suite*
 arping_suite(void)
 {
@@ -715,6 +771,7 @@ arping_suite(void)
         SIGH_LIBCHECK(arg_maxcount_good);
         SIGH_LIBCHECK(arg_maxcount_hex);
         SIGH_LIBCHECK(arg_packetwait_good);
+        SIGH_LIBCHECK(bpf_filter_packets);
 #if USE_SECCOMP && defined(SYS_getrandom)
         SIGH_LIBCHECK(seccomp_getrandom);
 #endif

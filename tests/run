@@ -81,7 +81,7 @@ run_test() {
     # Run arping.
     set +e
     # TODO: test that errors go to stderr.
-    OUT="$(ip netns exec arping_test0 ./src/arping -W0.05 "$@" 2>&1)"
+    OUT="$(timeout 5s ip netns exec arping_test0 ./src/arping -W0.05 "$@" 2>&1)"
     E=$?
     set -e
 
@@ -181,8 +181,13 @@ run_tests() {
 
     # TODO: -v
     # TODO: -V
-    # TODO: -w
-    # TODO: -W
+    # Deadlines must terminate both modes without a packet count.
+    run_test -t "no_reply"          1 -w 0.05 -W 1 192.0.2.1
+    run_test -t "simplemac_timeout" 1 -w 0.05 -W 1 -i veth0 00:01:02:33:44:01
+    run_test -t "quiet"             1 -q -w 0 192.0.2.1
+
+    # A zero interval without a deadline must still send packets.
+    run_test -t "reply"             0 -W 0 -c 1 -P 192.0.2.101
     # TODO: -z
     # TODO: -Z
 }

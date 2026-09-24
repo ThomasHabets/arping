@@ -1283,6 +1283,17 @@ timespec2dbl(const struct timespec *tv)
         return (double)tv->tv_sec + (double)tv->tv_nsec / 1000000000;
 }
 
+static int
+deadline_expired(double deadline)
+{
+        if (deadline < 0) {
+                return 0;
+        }
+        struct timespec ts;
+        getclock(&ts);
+        return timespec2dbl(&ts) >= deadline;
+}
+
 /**
  * return number of microseconds to wait for packets.
  */
@@ -2750,7 +2761,7 @@ arping_main(int argc, char **argv)
 	/*
 	 * let's roll
 	 */
-        if (deadline > 0) {
+        if (deadline >= 0) {
                 struct timespec ts;
                 getclock(&ts);
                 deadline += timespec2dbl(&ts);
@@ -2758,7 +2769,7 @@ arping_main(int argc, char **argv)
 	if (mode == PINGIP) {
 		int c;
 		for (c = 0; (maxcount < 0 || c < maxcount); c++) {
-                        if (time_to_die) {
+                        if (time_to_die || deadline_expired(deadline)) {
                                 break;
                         }
                         if (c == INT_MAX) {
@@ -2774,7 +2785,7 @@ arping_main(int argc, char **argv)
 	} else { /* PINGMAC */
 		int c;
 		for (c = 0; (maxcount < 0 || c < maxcount); c++) {
-                        if (time_to_die) {
+                        if (time_to_die || deadline_expired(deadline)) {
                                 break;
                         }
                         if (c == INT_MAX) {

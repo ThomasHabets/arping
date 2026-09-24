@@ -748,6 +748,41 @@ arping_format_bpf_filter(char* buf, size_t size, const char* protocol,
 }
 
 /**
+ * On error, sets errbuf and returns 1.
+ */
+static int
+xpcap_activate(pcap_t* pcap, const char* timestamp_type, char* errbuf, size_t errbufsize)
+{
+        char warn[PCAP_ERRBUF_SIZE + 20];
+        char status[PCAP_ERRBUF_SIZE + 20];
+        int rc;
+
+        warn[0] = 0;
+        rc = pcap_activate(pcap);
+        if (rc == 0) {
+                return 0;
+        }
+        xsnprintf(status, sizeof(status), pcap_statustostr(rc));
+
+        // manpage says that the full message is here for PCAP_WARNING.
+        if (rc == PCAP_WARNING) {
+                xsnprintf(warn, sizeof(warn), ". Warning: %s", pcap_geterr(pcap));
+        }
+
+        if (timestamp_type) {
+                xsnprintf(errbuf, errbufsize, "pcap_activate(tstype=\"%s\"): %s. Try without setting timestamp type%s", timestamp_type, status, warn);
+        } else {
+                xsnprintf(errbuf, errbufsize, "pcap_activate(): %s%s", status, warn);
+        }
+        if (rc > 0) {
+                fprintf(stderr, "arping: Warning: %s\n", errbuf);
+                errbuf[0] = 0;
+                return 0;
+        }
+        return 1;
+}
+
+/**
  * Do pcap_open_live(), except by using the pcap_create() interface
  * introduced in 2008 (libpcap 0.4) where available.
  * This is so that we can set some options, which can't be set with
@@ -805,12 +840,7 @@ try_pcap_open_live(const char *device, int snaplen, int to_ms, char *errbuf)
                 }
         }
 #endif
-        if ((rc = pcap_activate(pcap))) {
-                if (timestamp_type) {
-                        xsnprintf(errbuf, PCAP_ERRBUF_SIZE, "pcap_activate(tstype=\"%s\"): %s. Try without setting timestamp type.", timestamp_type, pcap_statustostr(rc));
-                } else {
-                        xsnprintf(errbuf, PCAP_ERRBUF_SIZE, "pcap_activate(): %s", pcap_statustostr(rc));
-                }
+        if (xpcap_activate(pcap, timestamp_type, errbuf, PCAP_ERRBUF_SIZE)) {
                 goto err;
         }
 #ifdef HAVE_PCAP_LIST_TSTAMP_TYPES

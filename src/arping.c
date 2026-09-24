@@ -1282,6 +1282,9 @@ update_stats(double sample)
 static int
 stop_at_reply_limit(unsigned char* pcap_user)
 {
+        if (max_replies == UINT_MAX) {
+                return 0;
+        }
         if (numrecvd < max_replies) {
                 return 0;
         }

@@ -1834,6 +1834,8 @@ pingmac_recv(unsigned char* pcap_user, const struct pcap_pkthdr *h, const uint8_
         struct libnet_icmpv4_hdr hicmp;
         struct timespec arrival;
         const uint8_t* payload = NULL;
+        size_t ip_offset;
+        size_t ip_header_size;
         assert(packet);
 
         if (stop_at_reply_limit(pcap_user)) {
@@ -1849,27 +1851,16 @@ pingmac_recv(unsigned char* pcap_user, const struct pcap_pkthdr *h, const uint8_
 
         if (vlan_tag >= 0) {
                 struct libnet_802_1q_hdr veth;
-                if (h->caplen < LIBNET_802_1Q_H + LIBNET_IPV4_H
-                                + LIBNET_ICMPV4_ECHO_H
-                                + sizeof(struct timespec)
-                                + payload_suffix_size) {
+                if (h->caplen < LIBNET_802_1Q_H + LIBNET_IPV4_H) {
                         return;
                 }
                 if (verbose > 3) {
                         printf("arping: ... good length\n");
                 }
                 memcpy(&veth, packet, LIBNET_802_1Q_H);
-                memcpy(&hip, (char*)packet
-                                + LIBNET_802_1Q_H, LIBNET_IPV4_H);
-                memcpy(&hicmp, (char*)packet
-                                + LIBNET_802_1Q_H
-                                + LIBNET_IPV4_H, LIBNET_ICMPV4_ECHO_H);
                 memcpy(pkt_srcmac, veth.vlan_shost, ETH_ALEN);
                 memcpy(pkt_dstmac, veth.vlan_dhost, ETH_ALEN);
-                payload = packet
-                        + LIBNET_802_1Q_H
-                        + LIBNET_IPV4_H
-                        + LIBNET_ICMPV4_ECHO_H;
+                ip_offset = LIBNET_802_1Q_H;
 
                 if (ntohs(veth.vlan_tpi) != 0x8100) {
                         return;
@@ -1886,28 +1877,30 @@ pingmac_recv(unsigned char* pcap_user, const struct pcap_pkthdr *h, const uint8_
                 }
         } else {
                 struct libnet_802_3_hdr heth;
-                if (h->caplen < LIBNET_ETH_H + LIBNET_IPV4_H
-                                + LIBNET_ICMPV4_ECHO_H
-                                + sizeof(struct timespec)
-                                + payload_suffix_size) {
+                if (h->caplen < LIBNET_ETH_H + LIBNET_IPV4_H) {
                         return;
                 }
                 if (verbose > 3) {
                         printf("arping: ... good length\n");
                 }
                 memcpy(&heth, packet, LIBNET_ETH_H);
-                memcpy(&hip, (char*)packet
-                                + LIBNET_ETH_H, LIBNET_IPV4_H);
-                memcpy(&hicmp, (char*)packet
-                                + LIBNET_ETH_H
-                                + LIBNET_IPV4_H, LIBNET_ICMPV4_ECHO_H);
                 memcpy(pkt_srcmac, heth._802_3_shost, ETH_ALEN);
                 memcpy(pkt_dstmac, heth._802_3_dhost, ETH_ALEN);
-                payload = packet
-                        + LIBNET_ETH_H
-                        + LIBNET_IPV4_H
-                        + LIBNET_ICMPV4_ECHO_H;
+                ip_offset = LIBNET_ETH_H;
         }
+
+        memcpy(&hip, packet + ip_offset, LIBNET_IPV4_H);
+        if (hip.ip_v != 4 || hip.ip_hl < 5) {
+                return;
+        }
+        ip_header_size = (size_t)hip.ip_hl * 4;
+        if (h->caplen < ip_offset + ip_header_size
+                        + LIBNET_ICMPV4_ECHO_H) {
+                return;
+        }
+        memcpy(&hicmp, packet + ip_offset + ip_header_size,
+               LIBNET_ICMPV4_ECHO_H);
+        payload = packet + ip_offset + ip_header_size + LIBNET_ICMPV4_ECHO_H;
 
         // Not checking ethertype because in theory this could be used for
         // Ethernet II.

@@ -782,6 +782,31 @@ xpcap_activate(pcap_t* pcap, const char* timestamp_type, char* errbuf, size_t er
         return 1;
 }
 
+static void
+maybe_list_tstamp_types(pcap_t* pcap)
+{
+#ifdef HAVE_PCAP_LIST_TSTAMP_TYPES
+        if (verbose > 1) {
+                int *ts;
+                int count;
+                count = pcap_list_tstamp_types(pcap, &ts);
+                if (count == PCAP_ERROR) {
+                        fprintf(stderr, "arping: pcap_list_tstamp_types() failed\n");
+                } else {
+                        int c;
+                        const char* fmt = "  %-18s %s\n";
+                        fprintf(stderr, "Timestamp types:\n");
+                        fprintf(stderr, fmt, "Name", "Description");
+                        for (c = 0; c < count; c++) {
+                                fprintf(stderr, fmt, pcap_tstamp_type_val_to_name(ts[c]),
+                                        pcap_tstamp_type_val_to_description(ts[c]));
+                        }
+                        pcap_free_tstamp_types(ts);
+                }
+        }
+#endif
+}
+
 /**
  * Do pcap_open_live(), except by using the pcap_create() interface
  * introduced in 2008 (libpcap 0.4) where available.
@@ -831,6 +856,7 @@ try_pcap_open_live(const char *device, int snaplen, int to_ms, char *errbuf)
                 int v = pcap_tstamp_type_name_to_val(timestamp_type);
                 if (v == PCAP_ERROR) {
                         fprintf(stderr, "arping: Unknown timestamp type \"%s\"\n", timestamp_type);
+                        maybe_list_tstamp_types(pcap);
                         exit(1);
                 }
                 if ((err = pcap_set_tstamp_type(pcap, v))) {
@@ -843,28 +869,9 @@ try_pcap_open_live(const char *device, int snaplen, int to_ms, char *errbuf)
         if (xpcap_activate(pcap, timestamp_type, errbuf, PCAP_ERRBUF_SIZE)) {
                 goto err;
         }
-#ifdef HAVE_PCAP_LIST_TSTAMP_TYPES
         // List timestamp types after activating, since we don't want to list
         // them if activating failed.
-        if (verbose > 1) {
-                int *ts;
-                int count;
-                count = pcap_list_tstamp_types(pcap, &ts);
-                if (count == PCAP_ERROR) {
-                        fprintf(stderr, "arping: pcap_list_tstamp_types() failed\n");
-                } else {
-                        int c;
-                        const char* fmt = "  %-18s %s\n";
-                        fprintf(stderr, "Timestamp types:\n");
-                        fprintf(stderr, fmt, "Name", "Description");
-                        for (c = 0; c < count; c++) {
-                                fprintf(stderr, fmt, pcap_tstamp_type_val_to_name(ts[c]),
-                                        pcap_tstamp_type_val_to_description(ts[c]));
-                        }
-                        pcap_free_tstamp_types(ts);
-                }
-        }
-#endif
+        maybe_list_tstamp_types(pcap);
         return pcap;
 err:
         if (pcap) {

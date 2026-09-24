@@ -2868,11 +2868,11 @@ arping_main(int argc, char **argv)
         // We could close stdout/stdin too, but that'll interfere with
         // unit testing.
 
-        if (finddup) {
-                return dupfound;
-        }
         if (libnet_write_failures > 0) {
                 return EXIT_FAILURE;
+        }
+        if (finddup) {
+                return dupfound;
         }
         if ((numrecvd > 0) || send_reply) {
                 return EXIT_SUCCESS;

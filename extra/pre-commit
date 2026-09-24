@@ -16,6 +16,6 @@ cd "${ARPING_TEMPDIR}"
 make -j$(nproc)
 make check
 make distcheck
-if [[ ! "$NO_SUDO" = "true" ]]; then
+if [[ ! "${NO_SUDO:-}" = "true" ]]; then
         sudo ./tests/run
 fi

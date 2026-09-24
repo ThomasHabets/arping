@@ -33,3 +33,8 @@ src/arping_test.trs
 src/test-suite.log
 *.pcap
 *.tgz
+*.swp
+*.tar.gz
+*.asc
+*.tmp
+config.log.1

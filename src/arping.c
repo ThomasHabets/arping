@@ -200,8 +200,10 @@ const size_t payload_suffix_size = 4;
 // Longest possible:
 //   MAC: 802.1q(16) + IPv4(20) + ICMPv4(4) + timespec(18?) + 4 = 62.
 //   IP: 802.1q(16) + ARP(8) + 2xaddr_pair = 44.
-// 100 is enough.
-static const int pcap_snaplen = 100;
+//
+// 100 is more than enough normally. But then there can be IP options, so meh,
+// let's go with 200.
+static const int pcap_snaplen = 200;
 static const int pcap_timeout_ms = 10;
 
 /* If there were any libnet write failures, we return error. */

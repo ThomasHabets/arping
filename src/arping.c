@@ -2564,22 +2564,21 @@ arping_main(int argc, char **argv)
                 }
         }
 
+        if (mode == NONE && parm) {
+                mode = is_mac_addr(parm) ? PINGMAC : PINGIP;
+        }
 	/*
 	 * Handle dstip_given instead of ip address after parms (-B really)
 	 */
-	if (mode == NONE) {
-		if (parm) {
-			mode = is_mac_addr(parm)?PINGMAC:PINGIP;
-		} else if (dstip_given) {
-			mode = PINGIP;
-                        do_libnet_init(ifname, 0);
-			parm = strdup(libnet_addr2name4(dstip,0));
-			if (!parm) {
-				fprintf(stderr, "arping: out of memory\n");
-				exit(1);
-			}
-		}
-	}
+        if (!parm && dstip_given) {
+                mode = PINGIP;
+                do_libnet_init(ifname, 0);
+                parm = strdup(libnet_addr2name4(dstip,0));
+                if (!parm) {
+                        fprintf(stderr, "arping: out of memory\n");
+                        exit(1);
+                }
+        }
 
 	if (!parm) {
 		usage(1);

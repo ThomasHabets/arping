@@ -153,7 +153,10 @@ run_tests() {
     run_test "simple3"     0 -c  3 192.0.2.101
     run_test "bad_count"   1 -c -1 192.0.2.101
 
-    # TODO: -C
+    # A reply limit must exit before the next send or the 30-second interval.
+    run_test -t "simple"           0 -C 1 -W 30 192.0.2.101
+    run_test -t "simplemac_target" 0 -C 1 -W 30 -T 192.0.2.101 00:01:02:33:44:01
+    run_test -t "quiet"            1 -q -C 0 192.0.2.101
     # TODO: -d
     # TODO: -D
     # TODO: -e

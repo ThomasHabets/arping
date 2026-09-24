@@ -2070,7 +2070,7 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
                }
 
                /* check for sigint */
-	       if (time_to_die) {
+	       if (time_to_die || stop_at_reply_limit(NULL)) {
 		       return;
 	       }
 
@@ -2769,23 +2769,22 @@ arping_main(int argc, char **argv)
 	if (mode == PINGIP) {
 		int c;
 		for (c = 0; (maxcount < 0 || c < maxcount); c++) {
-                        if (time_to_die || deadline_expired(deadline)) {
+                        if (time_to_die || stop_at_reply_limit(NULL)
+                            || deadline_expired(deadline)) {
                                 break;
                         }
                         if (c == INT_MAX) {
                                 --c;
                         }
 			pingip_send();
-                        if (max_replies != UINT_MAX && numrecvd >= max_replies) {
-                                break;
-                        }
                         const uint32_t w = wait_time(deadline, packetwait);
                         ping_recv(pcap, w, (pcap_handler)pingip_recv);
 		}
 	} else { /* PINGMAC */
 		int c;
 		for (c = 0; (maxcount < 0 || c < maxcount); c++) {
-                        if (time_to_die || deadline_expired(deadline)) {
+                        if (time_to_die || stop_at_reply_limit(NULL)
+                            || deadline_expired(deadline)) {
                                 break;
                         }
                         if (c == INT_MAX) {
@@ -2793,9 +2792,6 @@ arping_main(int argc, char **argv)
                         }
                         pingmac_send(xrandom16(),
                                      cast_int_uint16(c & 0xffff, NULL));
-                        if (max_replies != UINT_MAX && numrecvd >= max_replies) {
-                                break;
-                        }
                         const uint32_t w = wait_time(deadline, packetwait);
                         ping_recv(pcap, w,  (pcap_handler)pingmac_recv);
 		}

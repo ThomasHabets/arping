@@ -15,4 +15,5 @@
 
 ## Presubmits
 
-NEVER skip presubmits.
+NEVER skip presubmits. If the user does not have `sudo`, run pre-commit with
+env `NO_SUDO=true`.

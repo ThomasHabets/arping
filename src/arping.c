@@ -226,6 +226,7 @@ static int promisc = 0;              /* Use promisc mode. -p */
 static int finddup = 0;              /* finddup mode. -d */
 static int dupfound = 0;             /* set to 1 if dup found */
 static char lastreplymac[ETH_ALEN];  /* if last different from this then dup */
+static uint16_t mac_ping_id;         /* ID must match on reception */
 
 /* -z to turn on, -Z to turn off. Default is compile time option */
 static int use_seccomp = DEFAULT_SECCOMP;
@@ -1420,11 +1421,10 @@ static char *ts2str(const struct timespec *tv, const struct timespec *tv2,
 
 /** Send directed IPv4 ICMP echo request.
  *
- * \param id      IP id
  * \param seq     Ping seq
  */
 static void
-pingmac_send(uint16_t id, uint16_t seq)
+pingmac_send(uint16_t seq)
 {
 	static libnet_ptag_t icmp = 0, ipv4 = 0,eth=0;
 
@@ -1446,7 +1446,7 @@ pingmac_send(uint16_t id, uint16_t seq)
 	if (-1 == (icmp = libnet_build_icmpv4_echo(ICMP_ECHO, /* type */
 						   0, /* code */
 						   0, /* checksum */
-						   id, /* id */
+                                                   mac_ping_id, /* id */
 						   seq, /* seq */
 						   (uint8_t*)padding, /* payload */
 						   cast_size_uint32(padding_size, NULL), /* payload len */
@@ -1462,7 +1462,7 @@ pingmac_send(uint16_t id, uint16_t seq)
                     LIBNET_IPV4_H + LIBNET_ICMPV4_ECHO_H + padding_size,
                     NULL),
 					  0, /* ToS */
-					  id, /* id */
+                                          mac_ping_id, /* id */
 					  0, /* frag */
 					  64, /* ttl */
 					  IPPROTO_ICMP,
@@ -1958,6 +1958,10 @@ pingmac_recv(unsigned char* pcap_user, const struct pcap_pkthdr *h, const uint8_
 
         if (verbose > 3) {
                 printf("arping: ... is echo reply code\n");
+        }
+
+        if (ntohs(hicmp.icmp_id) != mac_ping_id) {
+                return;
         }
 
         const size_t tmp = cast_ssize_size(payload - (uint8_t*)packet, NULL);
@@ -2814,6 +2818,7 @@ arping_main(int argc, char **argv)
 		}
 	} else { /* PINGMAC */
 		int c;
+                mac_ping_id = xrandom16();
 		for (c = 0; (maxcount < 0 || c < maxcount); c++) {
                         if (time_to_die || stop_at_reply_limit(NULL)
                             || deadline_expired(deadline)) {
@@ -2822,8 +2827,7 @@ arping_main(int argc, char **argv)
                         if (c == INT_MAX) {
                                 --c;
                         }
-                        pingmac_send(xrandom16(),
-                                     cast_int_uint16(c & 0xffff, NULL));
+                        pingmac_send(cast_int_uint16(c & 0xffff, NULL));
                         const uint32_t w = wait_time(deadline, packetwait);
                         ping_recv(pcap, w,  (pcap_handler)pingmac_recv);
 		}

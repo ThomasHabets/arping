@@ -70,6 +70,14 @@ exec1() {
     fi
 }
 
+exec1_bg() {
+    if [[ "${ARPING_ROOTLESS:-}" = yes ]]; then
+        exec nsenter -t "${ROOTLESS_PID1}" -n "$@"
+    else
+        exec ip netns exec arping_test1 "$@"
+    fi
+}
+
 #
 # Run tests.
 # run_test [ -t ] [ -i ] <test name> <arping options…>
@@ -107,7 +115,7 @@ run_test() {
     if [[ "${DO_CAPTURE?}" = "yes" ]]; then
 	CAP="$(mktemp)"
 	# TODO: in the future also capture icmp. But we need regex matching for that.
-	exec1 tcpdump \
+	exec1_bg tcpdump \
 	   -s0 \
 	   -nlpi veth1 \
 	   --immediate-mode \
@@ -123,7 +131,7 @@ run_test() {
     # Run arping.
     set +e
     # TODO: test that errors go to stderr.
-    OUT="$(exec0 timeout 5s ./src/arping -W0.05 "$@" 2>&1)"
+    OUT="$(set +x;exec0 timeout 5s ./src/arping -W0.05 "$@" 2>&1)"
     E=$?
     set -e
 

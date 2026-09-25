@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Run the integration suite in an unprivileged Linux user/network namespace.
+
+set -e
+set -o pipefail
+
+cd "$(dirname "$0")/.."
+exec unshare --user --map-root-user --net \
+    env ARPING_ROOTLESS=yes tests/run "$@"

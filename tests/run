@@ -1,16 +1,21 @@
 #!/usr/bin/env bash
 #
-# Set up a virtual environment in a network namespace, and run arping
-# in that controlled environment.
+# Set up a virtual environment in network namespaces, and run arping
+# in that controlled environment. Set ARPING_ROOTLESS=yes to use an
+# unprivileged user/network namespace instead of persistent netns objects.
 #
-# This needs to run as root, since it creates network namespaces and
-# virtual ethernet devices.
+# Running rootless is not as good as with sudo, as it can't validate the packet
+# traces.
 #
 
 set -e
 set -o pipefail
 
 setup() {
+    if [[ "${ARPING_ROOTLESS:-}" = yes ]]; then
+        setup_rootless
+        return
+    fi
     ip netns del arping_test0 2>/dev/null || true
     ip netns del arping_test1 2>/dev/null  || true
 
@@ -32,6 +37,39 @@ setup() {
     ip netns exec arping_test1 ip a a 192.0.2.101/24 dev veth1
 }
 
+setup_rootless() {
+    ROOTLESS_PID1=""
+    unshare --net sh -c 'sleep 1000000' &
+    ROOTLESS_PID1=$!
+    ip link add veth0 type veth peer name veth1
+    ip link set veth1 netns "${ROOTLESS_PID1}"
+
+    ip link set veth0 up
+    ip link set veth0 address 00:01:02:33:44:00
+    ip addr add 192.0.2.100/24 dev veth0
+
+    nsenter -t "${ROOTLESS_PID1}" -n ip link set lo up
+    nsenter -t "${ROOTLESS_PID1}" -n ip link set dev veth1 address 00:01:02:33:44:01
+    nsenter -t "${ROOTLESS_PID1}" -n ip link set veth1 up
+    nsenter -t "${ROOTLESS_PID1}" -n ip addr add 192.0.2.101/24 dev veth1
+}
+
+exec0() {
+    if [[ "${ARPING_ROOTLESS:-}" = yes ]]; then
+        "$@"
+    else
+        ip netns exec arping_test0 "$@"
+    fi
+}
+
+exec1() {
+    if [[ "${ARPING_ROOTLESS:-}" = yes ]]; then
+        nsenter -t "${ROOTLESS_PID1}" -n "$@"
+    else
+        ip netns exec arping_test1 "$@"
+    fi
+}
+
 #
 # Run tests.
 # run_test [ -t ] [ -i ] <test name> <arping options…>
@@ -42,13 +80,18 @@ run_test() {
     setup
 
     DO_CAPTURE=yes
+    if [[ "${ARPING_ROOTLESS:-}" = yes ]]; then
+	# tcpdump's privilege drop cannot map its capture-file owner in a
+	# rootless user namespace, so packet-file comparisons are unavailable.
+	DO_CAPTURE=no
+    fi
     if [[ "$1" = "-t" ]]; then
 	DO_CAPTURE=no
 	shift
     fi
 
     if [[ "$1" = "-i" ]]; then
-	ip netns exec arping_test1 sysctl -w net.ipv4.icmp_echo_ignore_broadcasts=0
+	exec1 sysctl -w net.ipv4.icmp_echo_ignore_broadcasts=0
 	shift
     fi
 
@@ -64,8 +107,7 @@ run_test() {
     if [[ "${DO_CAPTURE?}" = "yes" ]]; then
 	CAP="$(mktemp)"
 	# TODO: in the future also capture icmp. But we need regex matching for that.
-	ip netns exec arping_test1 \
-	   tcpdump \
+	exec1 tcpdump \
 	   -s0 \
 	   -nlpi veth1 \
 	   --immediate-mode \
@@ -81,9 +123,18 @@ run_test() {
     # Run arping.
     set +e
     # TODO: test that errors go to stderr.
-    OUT="$(timeout 5s ip netns exec arping_test0 ./src/arping -W0.05 "$@" 2>&1)"
+    OUT="$(exec0 timeout 5s ./src/arping -W0.05 "$@" 2>&1)"
     E=$?
     set -e
+
+    if [[ "${ARPING_ROOTLESS:-}" = yes ]]; then
+	# The mapped root in a user namespace cannot switch to the host's
+	# nobody account. These diagnostics are unrelated to the test output.
+	OUT="$(printf '%s\n' "${OUT}" | sed \
+	    -e '/arping: setgroups(0, NULL): Operation not permitted/d' \
+	    -e '/arping: setgid(): Invalid argument/d' \
+	    -e '/arping: setuid(): Invalid argument/d')"
+    fi
 
     if [[ ! $ECODE = $E ]]; then
 	echo "FAIL: wrong exit code ${E?}, want ${ECODE?}"
@@ -110,7 +161,9 @@ run_test() {
 	wait "${PID?}" || true
 
 	TXT="$(mktemp)"
-	chown root:root "${CAP?}"
+	if [[ "${ARPING_ROOTLESS:-}" != yes ]]; then
+	    chown root:root "${CAP?}"
+	fi
 	tcpdump -txnlpr "${CAP?}" > "${TXT?}"
 	diff -Nu "tests/${NAME?}.cap" "${TXT?}" || (echo "FAIL ${TXT?}"; exit 1)
 	rm "${CAP?}"
@@ -119,6 +172,15 @@ run_test() {
 }
 
 cleanup() {
+    if [[ "${ARPING_ROOTLESS:-}" = yes ]]; then
+	if [[ -n "${ROOTLESS_PID1:-}" ]]; then
+	    kill "${ROOTLESS_PID1}" 2>/dev/null || true
+	    wait "${ROOTLESS_PID1}" 2>/dev/null || true
+	fi
+	ip link del veth0 2>/dev/null || true
+	ROOTLESS_PID1=""
+	return
+    fi
     ip netns del arping_test0 || true
     ip netns del arping_test1 || true
 }    

@@ -18,4 +18,6 @@ make check
 make distcheck
 if [[ ! "${NO_SUDO:-}" = "true" ]]; then
         sudo ./tests/run
+else
+        ./tests/run-rootless
 fi

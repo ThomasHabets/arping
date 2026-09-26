@@ -786,10 +786,10 @@ xpcap_activate(pcap_t* pcap, const char* timestamp_type, char* errbuf, size_t er
 }
 
 static void
-maybe_list_tstamp_types(pcap_t* pcap)
+maybe_list_tstamp_types(pcap_t* pcap, int always)
 {
 #ifdef HAVE_PCAP_LIST_TSTAMP_TYPES
-        if (verbose > 1) {
+        if (always || verbose > 1) {
                 int *ts;
                 int count;
                 count = pcap_list_tstamp_types(pcap, &ts);
@@ -858,15 +858,16 @@ try_pcap_open_live(const char *device, int snaplen, int to_ms, char *errbuf)
                 int err;
                 int v = pcap_tstamp_type_name_to_val(timestamp_type);
                 if (v == PCAP_ERROR) {
-                        fprintf(stderr, "arping: Unknown timestamp type \"%s\"\n", timestamp_type);
-                        maybe_list_tstamp_types(pcap);
+                        fprintf(stderr, "arping: Unknown timestamp type \"%s\" on %s\n",
+                                timestamp_type, device);
+                        maybe_list_tstamp_types(pcap, 1);
                         exit(1);
                 }
                 if ((err = pcap_set_tstamp_type(pcap, v))) {
                         fprintf(stderr,
-                                "arping: Failed to set timestamp type \"%s\" (%d): %s\n",
-                                timestamp_type, v, pcap_statustostr(err));
-                        maybe_list_tstamp_types(pcap);
+                                "arping: Failed to set timestamp type \"%s\" (%d) on %s: %s\n",
+                                timestamp_type, v, device, pcap_statustostr(err));
+                        maybe_list_tstamp_types(pcap, 1);
                 }
         }
 #endif
@@ -875,7 +876,7 @@ try_pcap_open_live(const char *device, int snaplen, int to_ms, char *errbuf)
         }
         // List timestamp types after activating, since we don't want to list
         // them if activating failed.
-        maybe_list_tstamp_types(pcap);
+        maybe_list_tstamp_types(pcap, 0);
         return pcap;
 err:
         if (pcap) {

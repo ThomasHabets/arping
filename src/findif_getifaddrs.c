@@ -92,7 +92,7 @@ arping_lookupdev(uint32_t srcip,
                         continue;
                 }
                 match_count++;
-                if (ntohl(mask) > ntohl(best_mask)) {
+                if (match_count == 1 || ntohl(mask) > ntohl(best_mask)) {
                         memset(ifname, 0, sizeof(ifname));
                         strncpy(ifname, cur->ifa_name, sizeof(ifname)-1);
                         best_mask = mask;

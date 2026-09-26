@@ -2605,9 +2605,14 @@ arping_main(int argc, char **argv)
 	/*
 	 *
 	 */
-	if (mode == NONE) {
-		usage(1);
-	}
+        if (mode == NONE) {
+                usage(1);
+        }
+
+        if (addr_must_be_same && mode == PINGMAC) {
+                fprintf(stderr, "arping: -A cannot be used with a MAC destination.\n");
+                exit(1);
+        }
 
 	/*
 	 * libnet init (may be done already for resolving)

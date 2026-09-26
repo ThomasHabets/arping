@@ -39,7 +39,7 @@ setup() {
 
 setup_rootless() {
     ROOTLESS_PID1=""
-    unshare --net sh -c 'sleep 1000000' &
+    unshare --net sh -c 'exec sleep 1000000' &
     ROOTLESS_PID1=$!
     ip link add veth0 type veth peer name veth1
     ip link set veth1 netns "${ROOTLESS_PID1}"

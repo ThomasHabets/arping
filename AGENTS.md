@@ -6,6 +6,8 @@
 
 - `exit_on_drop_fail` is 0 intentionally for now. Don't point it out or change
   that.
+- MAC ping accepts replies with sequence numbers other than the most recently
+  sent.
 
 ## Commit messages
 

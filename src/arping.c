@@ -866,6 +866,7 @@ try_pcap_open_live(const char *device, int snaplen, int to_ms, char *errbuf)
                         fprintf(stderr,
                                 "arping: Failed to set timestamp type \"%s\" (%d): %s\n",
                                 timestamp_type, v, pcap_statustostr(err));
+                        maybe_list_tstamp_types(pcap);
                 }
         }
 #endif
@@ -1106,7 +1107,9 @@ extended_usage()
                " (Disabled on this system. Option ignored)"
 #endif
                "\n           Type of timestamp to use for incoming packets. Use -vv when\n"
-               "           pinging to list available ones.\n"
+               "           pinging to list available ones. If the timestamp type is valid\n"
+               "           but not supported by the selected device, a warning is printed\n"
+               "           and the default timestamp type is used instead.\n"
 	       "    -q     Does not display messages, except error messages.\n"
                "    -Q pri 802.1p priority to set. Should be used with 802.1Q (-V).\n"
                "           Defaults to 0.\n"

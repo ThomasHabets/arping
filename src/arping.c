@@ -1988,11 +1988,11 @@ pingmac_recv(unsigned char* pcap_user, const struct pcap_pkthdr *h, const uint8_
                 printf("arping: ... correct payload suffix\n");
         }
 
-        {
-                struct timespec ts;
-                memcpy(&ts, payload, sizeof(struct timespec));
-                update_stats(timespec2dbl(&arrival) - timespec2dbl(&ts));
-        }
+        // Extract timestamp from paload.
+        struct timespec payload_ts;
+        memcpy(&payload_ts, payload, sizeof(struct timespec));
+        update_stats(timespec2dbl(&arrival) - timespec2dbl(&payload_ts));
+
         if (beep) {
                 printf("\a");
         }
@@ -2009,7 +2009,7 @@ pingmac_recv(unsigned char* pcap_user, const struct pcap_pkthdr *h, const uint8_
                        libnet_addr2name4(hip.ip_src.s_addr, 0),
                        format_mac(pkt_srcmac, buf, sizeof(buf)),
                        ntohs(hicmp.icmp_seq),
-                       ts2str(&lastpacketsent, &arrival, buf2, sizeof(buf2)));
+                       ts2str(&payload_ts, &arrival, buf2, sizeof(buf2)));
                 break;
         case RAW:
                 printf("%s", libnet_addr2name4(hip.ip_src.s_addr, 0));

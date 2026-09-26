@@ -1988,8 +1988,11 @@ pingmac_recv(unsigned char* pcap_user, const struct pcap_pkthdr *h, const uint8_
                 printf("arping: ... correct payload suffix\n");
         }
 
-        // TODO: use timestamp from packet payload instead of last packet sent.
-        update_stats(timespec2dbl(&arrival) - timespec2dbl(&lastpacketsent));
+        {
+                struct timespec ts;
+                memcpy(&ts, payload, sizeof(struct timespec));
+                update_stats(timespec2dbl(&arrival) - timespec2dbl(&ts));
+        }
         if (beep) {
                 printf("\a");
         }

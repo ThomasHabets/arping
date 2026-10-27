@@ -1753,6 +1753,17 @@ pingip_recv(unsigned char *pcap_user, const struct pcap_pkthdr *h, const unsigne
                 printf("arping: ... destination is the source we used\n");
         }
 
+        // Replies must also be addressed to the IPv4 source we used.
+        uint32_t target_ip;
+        memcpy(&target_ip, arpdata + 2 * harp.ar_hln + harp.ar_pln, 4);
+        if (target_ip != srcip) {
+                if (verbose > 3) {
+                        printf("arping: ... but addressed to IPv4 %s\n",
+                               libnet_addr2name4(target_ip, 0));
+                }
+                return;
+        }
+
         // Actually the IPv4 address we asked for.
         uint32_t ip;
         memcpy(&ip, (char*)arpdata + harp.ar_hln, 4);

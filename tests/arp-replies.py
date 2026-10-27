@@ -22,12 +22,15 @@ def respond():
                     and packet[20:22] == b'\x00\x01'
                     and packet[38:42] == socket.inet_aton('192.0.2.102')):
                 break
-        for ethernet_sender, arp_sender in replies:
+        for reply in replies:
+            ethernet_sender, arp_sender = reply[:2]
+            target_ip = (socket.inet_aton(reply[2]) if len(reply) == 3
+                         else packet[28:32])
             ethernet = (packet[6:12] + bytes.fromhex(ethernet_sender)
                         + b'\x08\x06')
             arp = (struct.pack('!HHBBH', 1, 0x800, 6, 4, 2)
                    + bytes.fromhex(arp_sender) + packet[38:42]
-                   + packet[22:28] + packet[28:32])
+                   + packet[22:28] + target_ip)
             sock.send(ethernet + arp + b'\0' * 18)
 
 
@@ -90,6 +93,21 @@ def main():
                 '', status=1)
     check_reply('same owner with different Ethernet senders',
                 [(ethernet, owner), ('020000000002', owner)], ['-d', '-q'], '')
+    check_reply('wrong target IP cannot satisfy the reply limit',
+                [(ethernet, ethernet, '192.0.2.99')], ['-q', '-C', '1'],
+                '', status=1)
+    check_reply('wrong target IP with an explicit source',
+                [(ethernet, ethernet, '192.0.2.100')],
+                ['-q', '-S', '198.51.100.1'], '', status=1)
+    check_reply('matching explicit source IP', [(ethernet, ethernet)],
+                ['-q', '-S', '198.51.100.1'], '')
+    check_reply('matching zero source IP', [(ethernet, ethernet)],
+                ['-q', '-0'], '')
+    check_reply('promiscuous mode rejects another target IP',
+                [(ethernet, ethernet, '192.0.2.99')], ['-q', '-p'],
+                '', status=1)
+    check_reply('promiscuous mode accepts the matching target IP',
+                [(ethernet, ethernet)], ['-q', '-p'], '')
 
 
 if __name__ == '__main__':

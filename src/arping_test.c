@@ -394,6 +394,7 @@ START_TEST(pingip_interesting_packet)
 
         dstip = htonl(0x12345678);
 
+        srcip = htonl(0x87654321);
         pkthdr.ts.tv_sec = time(NULL);
         pkthdr.ts.tv_usec = 0;
         pkthdr.len = 60;
@@ -410,7 +411,7 @@ START_TEST(pingip_interesting_packet)
         stop_capture(sout);
 
         char* emsg = NULL;
-        fail_unless(0 < asprintf(&emsg, "Captured: <%s> (%zd), want   <%s> %zd\n",
+        fail_unless(0 < asprintf(&emsg, "Captured: <%s> (%zu), want   <%s> %zu\n",
                          sout->buffer, strlen(sout->buffer),
                                  correct0, strlen(correct0)));
         fail_unless(!strncmp(sout->buffer, correct0, strlen(correct0)), emsg);

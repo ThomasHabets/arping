@@ -18,19 +18,25 @@ def checksum(data):
     return (~total) & 0xffff
 
 
-def respond_mac(sock, packet, replies):
+def respond_mac(sock, packet, replies, fields):
     header_size = (packet[14] & 15) * 4
     length = struct.unpack('!H', packet[16:18])[0]
     icmp = bytearray(packet[14 + header_size:14 + length])
+    options = b'\x01' * fields.get('ip_options', 0)
+    reply_header_size = 20 + len(options)
+    ip_length = fields.get('ip_length', reply_header_size + len(icmp))
+    ip_length -= fields.get('trim_ip', 0)
     icmp[0] = 0
     icmp[2:4] = b'\0\0'
-    icmp[2:4] = struct.pack('!H', checksum(bytes(icmp)))
+    icmp[2:4] = struct.pack('!H', checksum(
+        bytes(icmp[:max(0, ip_length - reply_header_size)])))
     for sender, ip in replies:
         ethernet = packet[6:12] + bytes.fromhex(sender) + b'\x08\x00'
-        header = struct.pack('!BBHHHBBH4s4s', 0x45, 0, 20 + len(icmp),
-                             1, 0, 64, 1, 0, socket.inet_aton(ip), packet[26:30])
+        header = struct.pack('!BBHHHBBH4s4s', 0x40 | (reply_header_size // 4),
+                             0, ip_length, 1, 0, 64, 1, 0,
+                             socket.inet_aton(ip), packet[26:30]) + options
         header = header[:10] + struct.pack('!H', checksum(header)) + header[12:]
-        sock.send(ethernet + header + icmp)
+        sock.send(ethernet + header + icmp + b'\0' * fields.get('padding', 0))
 
 
 def respond():
@@ -47,7 +53,7 @@ def respond():
                     and packet[12:14] == b'\x08\x00' and packet[23] == 1
                     and packet[30:34] == socket.inet_aton('192.0.2.102')
                     and packet[14 + (packet[14] & 15) * 4] == 8):
-                respond_mac(sock, packet, replies)
+                respond_mac(sock, packet, replies, config['mac_fields'])
                 return
             if (not mac_ping and len(packet) >= 42
                     and packet[12:14] == b'\x08\x06'
@@ -67,7 +73,7 @@ def respond():
 
 
 def check_reply(name, replies, options, expected, status=0, prefix=False,
-                mac_ping=False):
+                mac_ping=False, mac_fields=None):
     if os.environ.get('ARPING_ROOTLESS') == 'yes':
         sender = []
         peer = ['nsenter', '-t', os.environ['ARPING_PEER_PID'], '-n']
@@ -80,7 +86,8 @@ def check_reply(name, replies, options, expected, status=0, prefix=False,
         text=True)
     try:
         responder.stdin.write(json.dumps({'replies': replies,
-                                         'mac_ping': mac_ping}) + '\n')
+                                         'mac_ping': mac_ping,
+                                         'mac_fields': mac_fields or {}}) + '\n')
         responder.stdin.flush()
         if responder.stdout.readline().strip() != 'ready':
             raise RuntimeError('ARP responder did not start')
@@ -158,6 +165,19 @@ def main():
                 ['-d', '-C', '1', '-r'], '192.0.2.102\n', mac_ping=True)
     check_reply('MAC duplicate check without replies', [], ['-d', '-q'], '',
                 mac_ping=True)
+    reply = [(owner, '192.0.2.102')]
+    for name, fields in [
+        ('cookie only in Ethernet padding', {'ip_length': 28}),
+        ('short cookie with padding', {'trim_ip': 1}),
+        ('IP length smaller than the header', {'ip_length': 16}),
+        ('IP length larger than the captured packet', {'ip_length': 65535}),
+        ('cookie in padding after IP options', {'ip_options': 4, 'ip_length': 32}),
+    ]:
+        check_reply(name, reply, ['-q', '-C', '1'], '', status=1,
+                    mac_ping=True, mac_fields=fields)
+    for fields in ({'padding': 16}, {'ip_options': 4}, {'ip_options': 40}):
+        check_reply(f'valid MAC reply with {fields}', reply, ['-q'], '',
+                    mac_ping=True, mac_fields=fields)
 
 
 if __name__ == '__main__':

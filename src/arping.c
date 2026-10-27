@@ -1928,8 +1928,9 @@ pingmac_recv(unsigned char* pcap_user, const struct pcap_pkthdr *h, const uint8_
                 return;
         }
         ip_header_size = (size_t)hip.ip_hl * 4;
-        if (h->caplen < ip_offset + ip_header_size
-                        + LIBNET_ICMPV4_ECHO_H) {
+        const size_t ip_size = ntohs(hip.ip_len);
+        if (ip_size < ip_header_size + LIBNET_ICMPV4_ECHO_H
+            || h->caplen < ip_offset + ip_size) {
                 return;
         }
         memcpy(&hicmp, packet + ip_offset + ip_header_size,
@@ -1996,11 +1997,7 @@ pingmac_recv(unsigned char* pcap_user, const struct pcap_pkthdr *h, const uint8_
                 return;
         }
 
-        const size_t tmp = cast_ssize_size(payload - (uint8_t*)packet, NULL);
-        if (h->caplen < tmp) {
-                return;
-        }
-        const size_t payload_size = h->caplen - tmp;
+        const size_t payload_size = ip_size - ip_header_size - LIBNET_ICMPV4_ECHO_H;
         if (payload_size < sizeof(struct timespec) + payload_suffix_size) {
                 return;
         }

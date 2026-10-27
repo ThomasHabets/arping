@@ -4,6 +4,8 @@
 * Don't edit doc/arping.8 directly. Edit doc/arping.yodl and regenerate
   doc/arping.8 from it. When editing yodl, always include the newly generated
   manpage in the same commit.
+* If editing a line that uses tabs for indents, take the opportunity to change
+  it to spaces instead.
 
 ## Intentional behavior
 

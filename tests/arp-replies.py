@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise ARP reply fields using the namespaces created by tests/run."""
+"""Exercise reply fields using the namespaces created by tests/run."""
 
 import json
 import os
@@ -10,15 +10,47 @@ import subprocess
 import sys
 
 
+def checksum(data):
+    data += b'\0' * (len(data) % 2)
+    total = sum(struct.unpack('!' + 'H' * (len(data) // 2), data))
+    while total >> 16:
+        total = (total & 0xffff) + (total >> 16)
+    return (~total) & 0xffff
+
+
+def respond_mac(sock, packet, replies):
+    header_size = (packet[14] & 15) * 4
+    length = struct.unpack('!H', packet[16:18])[0]
+    icmp = bytearray(packet[14 + header_size:14 + length])
+    icmp[0] = 0
+    icmp[2:4] = b'\0\0'
+    icmp[2:4] = struct.pack('!H', checksum(bytes(icmp)))
+    for sender, ip in replies:
+        ethernet = packet[6:12] + bytes.fromhex(sender) + b'\x08\x00'
+        header = struct.pack('!BBHHHBBH4s4s', 0x45, 0, 20 + len(icmp),
+                             1, 0, 64, 1, 0, socket.inet_aton(ip), packet[26:30])
+        header = header[:10] + struct.pack('!H', checksum(header)) + header[12:]
+        sock.send(ethernet + header + icmp)
+
+
 def respond():
-    replies = json.loads(sys.stdin.readline())
+    config = json.loads(sys.stdin.readline())
+    replies = config['replies']
+    mac_ping = config['mac_ping']
     with socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(3)) as sock:
         sock.bind(('veth1', 0))
         sock.settimeout(5)
         print('ready', flush=True)
         while True:
             packet = sock.recv(2048)
-            if (len(packet) >= 42 and packet[12:14] == b'\x08\x06'
+            if (mac_ping and len(packet) >= 42
+                    and packet[12:14] == b'\x08\x00' and packet[23] == 1
+                    and packet[30:34] == socket.inet_aton('192.0.2.102')
+                    and packet[14 + (packet[14] & 15) * 4] == 8):
+                respond_mac(sock, packet, replies)
+                return
+            if (not mac_ping and len(packet) >= 42
+                    and packet[12:14] == b'\x08\x06'
                     and packet[20:22] == b'\x00\x01'
                     and packet[38:42] == socket.inet_aton('192.0.2.102')):
                 break
@@ -34,7 +66,8 @@ def respond():
             sock.send(ethernet + arp + b'\0' * 18)
 
 
-def check_reply(name, replies, options, expected, status=0, prefix=False):
+def check_reply(name, replies, options, expected, status=0, prefix=False,
+                mac_ping=False):
     if os.environ.get('ARPING_ROOTLESS') == 'yes':
         sender = []
         peer = ['nsenter', '-t', os.environ['ARPING_PEER_PID'], '-n']
@@ -46,13 +79,16 @@ def check_reply(name, replies, options, expected, status=0, prefix=False):
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True)
     try:
-        responder.stdin.write(json.dumps(replies) + '\n')
+        responder.stdin.write(json.dumps({'replies': replies,
+                                         'mac_ping': mac_ping}) + '\n')
         responder.stdin.flush()
         if responder.stdout.readline().strip() != 'ready':
             raise RuntimeError('ARP responder did not start')
+        target = (['-T', '192.0.2.102', 'ff:ff:ff:ff:ff:ff'] if mac_ping
+                  else ['192.0.2.102'])
         result = subprocess.run(
             sender + ['./src/arping', '-i', 'veth0', '-c', '1', '-W', '0.05']
-            + options + ['192.0.2.102'], capture_output=True, text=True,
+            + options + target, capture_output=True, text=True,
             timeout=5)
         responder.wait(timeout=5)
         if responder.returncode:
@@ -109,6 +145,19 @@ def main():
                 '', status=1)
     check_reply('promiscuous mode accepts the matching target IP',
                 [(ethernet, ethernet)], ['-q', '-p'], '')
+    same_mac = [(owner, '192.0.2.102'), (owner, '192.0.2.103')]
+    different_macs = [(owner, '192.0.2.102'), (other_owner, '192.0.2.103')]
+    check_reply('MAC ping detects distinct senders', different_macs,
+                ['-d', '-r'], '192.0.2.102\n192.0.2.103\n', status=1,
+                mac_ping=True)
+    check_reply('MAC ping permits multiple IPs from one MAC', same_mac,
+                ['-d', '-r'], '192.0.2.102\n192.0.2.103\n', mac_ping=True)
+    check_reply('MAC ping accepts distinct senders without -d', different_macs,
+                ['-r'], '192.0.2.102\n192.0.2.103\n', mac_ping=True)
+    check_reply('MAC duplicate check honors the reply limit', different_macs,
+                ['-d', '-C', '1', '-r'], '192.0.2.102\n', mac_ping=True)
+    check_reply('MAC duplicate check without replies', [], ['-d', '-q'], '',
+                mac_ping=True)
 
 
 if __name__ == '__main__':

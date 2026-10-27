@@ -1,6 +1,9 @@
 # Agent Notes
 
 * One logical change per commit
+* Don't edit doc/arping.8 directly. Edit doc/arping.yodl and regenerate
+  doc/arping.8 from it. When editing yodl, always include the newly generated
+  manpage in the same commit.
 
 ## Intentional behavior
 

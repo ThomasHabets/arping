@@ -17,8 +17,10 @@ def check_failure(library, fault, options, after=0, status=1, output=''):
                   '-i', 'veth0', '-W', '0.01', '-c', '2'] + options,
         capture_output=True, text=True, timeout=5)
     expected = f'injected {fault} failure'
+    statistics = (f'{after} packets transmitted, 0 packets received'
+                  if fault.startswith('libnet_build_') else output)
     if (result.returncode != status or expected not in result.stderr
-            or output not in result.stdout):
+            or statistics not in result.stdout):
         raise AssertionError(
             f'{fault}, {options}, after={after}: exit {result.returncode}; '
             f'output {result.stdout!r}; stderr {result.stderr!r}')

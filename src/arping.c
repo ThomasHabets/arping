@@ -206,8 +206,8 @@ const size_t payload_suffix_size = 4;
 static const int pcap_snaplen = 200;
 static const int pcap_timeout_ms = 10;
 
-/* If there were any libnet write failures, we return error. */
-static size_t libnet_write_failures = 0;
+/* Runtime failures are reported after printing the shutdown statistics. */
+static int exit_status = EXIT_SUCCESS;
 
 uint32_t srcip;                   /* autodetected, override with -S/-b/-0 */
 uint8_t srcmac[ETH_ALEN];         /* autodetected, override with -s */
@@ -1458,7 +1458,9 @@ pingmac_send(uint16_t seq)
 						   icmp))) {
 		fprintf(stderr, "libnet_build_icmpv4_echo(): %s\n",
 			libnet_geterror(libnet));
-		exit(EXIT_FAILURE);
+                exit_status = EXIT_FAILURE;
+                sigint(0);
+                return;
 	}
 
         if (-1 == (ipv4 = libnet_build_ipv4(
@@ -1479,7 +1481,9 @@ pingmac_send(uint16_t seq)
 					  ipv4))) {
 		fprintf(stderr, "libnet_build_ipv4(): %s\n",
 			libnet_geterror(libnet));
-		exit(EXIT_FAILURE);
+                exit_status = EXIT_FAILURE;
+                sigint(0);
+                return;
 	}
 	if (vlan_tag >= 0) {
                 eth = libnet_build_802_1q(dstmac,
@@ -1507,7 +1511,9 @@ pingmac_send(uint16_t seq)
                         (vlan_tag >= 0) ? "libnet_build_802_1q()" :
                         "libnet_build_ethernet()",
                         libnet_geterror(libnet));
-                exit(EXIT_FAILURE);
+                exit_status = EXIT_FAILURE;
+                sigint(0);
+                return;
         }
 	if (verbose > 1) {
                 getclock(&lastpacketsent);
@@ -1518,7 +1524,7 @@ pingmac_send(uint16_t seq)
         if (-1 == libnet_write(libnet)) {
 		fprintf(stderr, "arping: libnet_write(): %s\n",
 			libnet_geterror(libnet));
-                libnet_write_failures++;
+                exit_status = EXIT_FAILURE;
 		sigint(0);
 	}
         getclock(&lastpacketsent);
@@ -1554,7 +1560,9 @@ pingip_send()
 					  arp))) {
 		fprintf(stderr, "arping: libnet_build_arp(): %s\n",
 			libnet_geterror(libnet));
-		exit(EXIT_FAILURE);
+                exit_status = EXIT_FAILURE;
+                sigint(0);
+                return;
 	}
 
         if (vlan_tag >= 0) {
@@ -1583,7 +1591,9 @@ pingip_send()
 			(vlan_tag >= 0) ? "libnet_build_802_1q()" :
                         "libnet_build_ethernet()",
 			libnet_geterror(libnet));
-		exit(EXIT_FAILURE);
+                exit_status = EXIT_FAILURE;
+                sigint(0);
+                return;
 	}
 	if (verbose > 1) {
                 getclock(&lastpacketsent);
@@ -1597,7 +1607,7 @@ pingip_send()
 	if (-1 == libnet_write(libnet)) {
 		fprintf(stderr, "arping: libnet_write(): %s\n",
 			libnet_geterror(libnet));
-                libnet_write_failures++;
+                exit_status = EXIT_FAILURE;
 		sigint(0);
 	}
         getclock(&lastpacketsent);
@@ -2851,6 +2861,9 @@ arping_main(int argc, char **argv)
                                 --c;
                         }
 			pingip_send();
+                        if (time_to_die) {
+                                break;
+                        }
                         const uint32_t w = wait_time(deadline, packetwait);
                         ping_recv(pcap, w, (pcap_handler)pingip_recv);
 		}
@@ -2866,6 +2879,9 @@ arping_main(int argc, char **argv)
                                 --c;
                         }
                         pingmac_send(cast_int_uint16(c & 0xffff, NULL));
+                        if (time_to_die) {
+                                break;
+                        }
                         const uint32_t w = wait_time(deadline, packetwait);
                         ping_recv(pcap, w,  (pcap_handler)pingmac_recv);
 		}
@@ -2941,8 +2957,8 @@ arping_main(int argc, char **argv)
         // We could close stdout/stdin too, but that'll interfere with
         // unit testing.
 
-        if (libnet_write_failures > 0) {
-                return EXIT_FAILURE;
+        if (exit_status != EXIT_SUCCESS) {
+                return exit_status;
         }
         if (finddup) {
                 return dupfound;

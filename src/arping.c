@@ -1458,7 +1458,7 @@ pingmac_send(uint16_t seq)
 						   icmp))) {
 		fprintf(stderr, "libnet_build_icmpv4_echo(): %s\n",
 			libnet_geterror(libnet));
-		sigint(0);
+		exit(EXIT_FAILURE);
 	}
 
         if (-1 == (ipv4 = libnet_build_ipv4(
@@ -1479,7 +1479,7 @@ pingmac_send(uint16_t seq)
 					  ipv4))) {
 		fprintf(stderr, "libnet_build_ipv4(): %s\n",
 			libnet_geterror(libnet));
-		sigint(0);
+		exit(EXIT_FAILURE);
 	}
 	if (vlan_tag >= 0) {
                 eth = libnet_build_802_1q(dstmac,
@@ -1507,7 +1507,7 @@ pingmac_send(uint16_t seq)
                         (vlan_tag >= 0) ? "libnet_build_802_1q()" :
                         "libnet_build_ethernet()",
                         libnet_geterror(libnet));
-                sigint(0);
+                exit(EXIT_FAILURE);
         }
 	if (verbose > 1) {
                 getclock(&lastpacketsent);
@@ -1554,7 +1554,7 @@ pingip_send()
 					  arp))) {
 		fprintf(stderr, "arping: libnet_build_arp(): %s\n",
 			libnet_geterror(libnet));
-		sigint(0);
+		exit(EXIT_FAILURE);
 	}
 
         if (vlan_tag >= 0) {
@@ -1583,7 +1583,7 @@ pingip_send()
 			(vlan_tag >= 0) ? "libnet_build_802_1q()" :
                         "libnet_build_ethernet()",
 			libnet_geterror(libnet));
-		sigint(0);
+		exit(EXIT_FAILURE);
 	}
 	if (verbose > 1) {
                 getclock(&lastpacketsent);

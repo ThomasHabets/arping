@@ -7,7 +7,7 @@ echo "Set up tempdir ${ARPING_TEMPDIR}"
 git archive HEAD | tar -x -C "${ARPING_TEMPDIR}"
 git diff --cached --binary | (
         cd "${ARPING_TEMPDIR}"
-        git apply
+        git apply --allow-empty
 )
 cd "${ARPING_TEMPDIR}"
 

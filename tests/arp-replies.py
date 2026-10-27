@@ -83,9 +83,10 @@ def main():
                 [], 'ARPING 192.0.2.102\n60 bytes from ' + both
                 + ' (192.0.2.102): index=0 time=', prefix=True)
     check_reply('different ARP sender in raw output', [(ethernet, owner)],
-                ['-r'], mac + '\n')
+                ['-r'], '02:00:00:00:00:aa\n')
     check_reply('different ARP sender in combined raw output',
-                [(ethernet, owner)], ['-r', '-R'], mac + ' 192.0.2.102\n')
+                [(ethernet, owner)], ['-r', '-R'],
+                '02:00:00:00:00:aa 192.0.2.102\n')
     check_reply('IP-only output', [(ethernet, owner)],
                 ['-R'], '192.0.2.102\n')
     check_reply('different owners sharing an Ethernet sender',

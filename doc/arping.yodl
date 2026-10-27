@@ -76,8 +76,9 @@ switch is not given, -i disables this smartness.
     dit(-Q em(priority)) 802.1p priority to set. Should be used with 802.1Q tag (-V).
         Defaults to 0.
     dit(-r) Raw output: only the MAC/IP address is displayed for each reply.
-        Normal output shows the Ethernet source, appending "(ARP: MAC)"
-        when the ARP sender hardware address differs.
+        When pinging an IP, raw output uses the sender hardware address from the
+        ARP header. Normal output shows the Ethernet source, appending
+        "(ARP: MAC)" when the ARP sender hardware address differs.
     dit(-R) Raw output: Like -r but shows "the other one", can be combined with
 -r.
     dit(-s em(MAC)) Set source MAC address. You may need to use -p with this.

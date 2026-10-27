@@ -1811,14 +1811,14 @@ pingip_recv(unsigned char *pcap_user, const struct pcap_pkthdr *h, const unsigne
         case QUIET:
                 break;
         case RAWRAW:
-                printf("%s %s", format_mac(pkt_srcmac, buf, sizeof(buf)),
+                printf("%s %s", format_mac(arpdata, buf, sizeof(buf)),
                        libnet_addr2name4(ip, 0));
                 break;
         case RRAW:
                 printf("%s", libnet_addr2name4(ip, 0));
                 break;
         case RAW:
-                printf("%s", format_mac(pkt_srcmac, buf, sizeof(buf)));
+                printf("%s", format_mac(arpdata, buf, sizeof(buf)));
                 break;
         default:
                 fprintf(stderr, "arping: can't happen!\n");

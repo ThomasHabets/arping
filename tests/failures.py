@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inject failures into the actual binary in the tests/run namespaces."""
+"""Exercise failures and argument validation in the tests/run namespaces."""
 
 import os
 from pathlib import Path
@@ -29,6 +29,21 @@ def check_failure(library, fault, options, after=0, status=1, output=''):
             f'{fault}, {options}, after={after}: exit {result.returncode}; '
             f'output {result.stdout!r}; stderr {result.stderr!r}')
     print(f'PASS: {fault}, {options}, after={after}')
+
+
+def check_group(value, status):
+    sender = ([] if os.environ.get('ARPING_ROOTLESS') == 'yes'
+              else ['ip', 'netns', 'exec', 'arping_test0'])
+    result = subprocess.run(
+        sender + ['./src/arping', '-Z', '-i', 'veth0', '-P', '-c', '0',
+                  '-g', value, '192.0.2.102'],
+        capture_output=True, text=True, timeout=5)
+    if (result.returncode != status or (status and not result.stderr)
+            or (not status and '0 packets transmitted' not in result.stdout)):
+        raise AssertionError(
+            f'group {value}: exit {result.returncode}, want {status}; '
+            f'output {result.stdout!r}; stderr {result.stderr!r}')
+    print(f'PASS: group {value}, exit={status}')
 
 
 def main():
@@ -82,6 +97,11 @@ def main():
         check_failure(library, 'clock-on-reply', unicast_mac)
         check_failure(library, 'clock-fallback', unicast_mac, status=0,
                       output='2 packets transmitted, 2 packets received')
+    # Values above 32-bit ULONG_MAX must not wrap into another group ID.
+    for value in ('4294967296', '4294967297', '18446744073709551615'):
+        check_group(value, 1)
+    for value in ('0', '1', '2147483647'):
+        check_group(value, 0)
 
 
 if __name__ == '__main__':

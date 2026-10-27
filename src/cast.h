@@ -29,6 +29,7 @@ gid_t cast_ulong_gid(unsigned long from, const char* fmt, ...) __attribute__ ((f
 long long cast_gid_longlong(gid_t from, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
 long long cast_uid_longlong(uid_t from, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
 unsigned long long cast_longlong_ulonglong(long long from, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
+unsigned long cast_longlong_ulong(long long from, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
 unsigned int cast_longlong_uint(long long from, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
 int16_t cast_int_int16(int from, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
 unsigned long cast_long_ulong(long from, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));

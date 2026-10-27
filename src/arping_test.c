@@ -35,6 +35,7 @@
 #include<pcap.h>
 
 #include"arping.h"
+#include"cast.h"
 
 #ifndef ETH_ALEN
 #define ETH_ALEN 6
@@ -716,6 +717,36 @@ START_TEST(seccomp_allocations)
 END_TEST
 #endif
 
+START_TEST(cast_longlong_ulong_success)
+{
+        fail_unless(cast_longlong_ulong(0, NULL) == 0);
+        fail_unless(cast_longlong_ulong(1, NULL) == 1);
+#if ULONG_MAX < LLONG_MAX
+        const long long largest = ULONG_MAX;
+        const unsigned long expected = ULONG_MAX;
+#else
+        const long long largest = LLONG_MAX;
+        const unsigned long expected = LLONG_MAX;
+#endif
+        fail_unless(cast_longlong_ulong(largest, NULL) == expected);
+}
+END_TEST
+
+START_TEST(cast_longlong_ulong_negative)
+{
+        (void)cast_longlong_ulong(-1, NULL);
+}
+END_TEST
+
+#if ULONG_MAX < LLONG_MAX
+START_TEST(cast_longlong_ulong_overflow)
+{
+        const long long largest = ULONG_MAX;
+        (void)cast_longlong_ulong(largest + 1, NULL);
+}
+END_TEST
+#endif
+
 START_TEST(bpf_filter_packets)
 {
         const struct {
@@ -800,6 +831,7 @@ arping_suite(void)
         SIGH_LIBCHECK(arg_maxcount_hex);
         SIGH_LIBCHECK(arg_packetwait_good);
         SIGH_LIBCHECK(bpf_filter_packets);
+        SIGH_LIBCHECK(cast_longlong_ulong_success);
 #if USE_SECCOMP && defined(SYS_getrandom)
         SIGH_LIBCHECK(seccomp_getrandom);
 #endif
@@ -820,6 +852,10 @@ arping_suite(void)
         SIGH_LIBCHECK_EXIT(badarg_packetwait_range);
         SIGH_LIBCHECK_EXIT(libnet_init_bad_nolo);
         SIGH_LIBCHECK_EXIT(libnet_init_null_nolo_nonull);
+        SIGH_LIBCHECK_EXIT(cast_longlong_ulong_negative);
+#if ULONG_MAX < LLONG_MAX
+        SIGH_LIBCHECK_EXIT(cast_longlong_ulong_overflow);
+#endif
 
         return s;
 }

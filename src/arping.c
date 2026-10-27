@@ -394,7 +394,7 @@ parse_ulong(const char* in, const char* what, char* ebuf, size_t ebuflen)
         char *endp = NULL;
         errno = 0;
 #if HAVE_STRTOLL
-#define CASTER cast_longlong_ulonglong
+#define CASTER cast_longlong_ulong
         const long long ret = strtoll(in, &endp, 0);
 #else
 #define CASTER cast_long_ulong

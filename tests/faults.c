@@ -114,7 +114,28 @@ pcap_dispatch(pcap_t *pcap, int count, pcap_handler handler, unsigned char *user
         __typeof__(&pcap_dispatch) original = dlsym(RTLD_NEXT, "pcap_dispatch");
         if (!original) abort();
         packet_handler = handler;
-        return original(pcap, count, track_reply, user);
+        const int ret = original(pcap, count, track_reply, user);
+        const char *fault = getenv("ARPING_TEST_FAIL");
+        if (fault && !strcmp(fault, "pcap-dispatch") && received_reply) {
+                fprintf(stderr, "injected %s failure\n", fault);
+                return PCAP_ERROR;
+        }
+        return ret;
+}
+
+int
+pcap_get_selectable_fd(pcap_t *pcap)
+{
+        const char *fault = getenv("ARPING_TEST_FAIL");
+        if (fault && (!strcmp(fault, "pcap-fd")
+                      || !strcmp(fault, "pcap-fd-limit"))) {
+                fprintf(stderr, "injected %s failure\n", fault);
+                return !strcmp(fault, "pcap-fd") ? -1 : FD_SETSIZE;
+        }
+        __typeof__(&pcap_get_selectable_fd) original =
+                dlsym(RTLD_NEXT, "pcap_get_selectable_fd");
+        if (!original) abort();
+        return original(pcap);
 }
 
 int

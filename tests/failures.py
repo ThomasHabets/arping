@@ -48,11 +48,19 @@ def main():
         for fault, options in cases:
             for after in (0, 1):
                 check_failure(library, fault, options, after)
+        check_failure(library, 'select', ['-d', '192.0.2.102'],
+                      output='1 packets transmitted, 0 packets received')
         check_failure(library, 'select', ['-d', '-q', '192.0.2.102'])
         check_failure(library, 'select-after-reply', ['-W', '0.1', '192.0.2.101'],
-                      output='index=0 time=')
+                      output='1 packets transmitted, 1 packets received')
         check_failure(library, 'select-eintr', ['-W', '0.1', '192.0.2.101'], status=0,
-                      output='2 packets received')
+                      output='2 packets transmitted, 2 packets received')
+
+        for fault in ('pcap-fd', 'pcap-fd-limit'):
+            check_failure(library, fault, ['-d', '192.0.2.102'],
+                          output='1 packets transmitted, 0 packets received')
+        check_failure(library, 'pcap-dispatch', ['-W', '0.1', '192.0.2.101'],
+                      output='1 packets transmitted, 1 packets received')
 
 
 if __name__ == '__main__':

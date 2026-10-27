@@ -2121,12 +2121,16 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
        if (fd == -1) {
                fprintf(stderr, "arping: pcap_get_selectable_fd()=-1: %s\n",
                        pcap_geterr(pcap));
-               exit(1);
+               exit_status = EXIT_FAILURE;
+               sigint(0);
+               return;
        }
        if (fd >= FD_SETSIZE) {
                fprintf(stderr, "arping: pcap fd %d >= FD_SETSIZE (%d). Use a modern OS or report a bug.\n",
                        fd, FD_SETSIZE);
-               exit(1);
+               exit_status = EXIT_FAILURE;
+               sigint(0);
+               return;
        }
        old_received = numrecvd;
 
@@ -2209,7 +2213,9 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 				       fprintf(stderr,
 					       "arping: select() failed: %s\n",
 					       strerror(errno));
-                                       exit(EXIT_FAILURE);
+                                       exit_status = EXIT_FAILURE;
+                                       sigint(0);
+                                       return;
 			       }
 			       break;
 		       default: /* data returned */
@@ -2227,7 +2233,9 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
                                }
                                if (ret == PCAP_ERROR) {
                                        fprintf(stderr, "arping: pcap_dispatch(): %s\n", pcap_geterr(pcap));
-                                       exit(EXIT_FAILURE);
+                                       exit_status = EXIT_FAILURE;
+                                       sigint(0);
+                                       return;
                                }
 			       /* rest, so we don't take 100% CPU... mostly
                                   hmm... does usleep() exist everywhere? */

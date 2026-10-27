@@ -134,6 +134,17 @@ def main():
                 '02:00:00:00:00:aa 192.0.2.102\n')
     check_reply('IP-only output', [(ethernet, owner)],
                 ['-R'], '192.0.2.102\n')
+    for options in (['-r', '-R', '-r'], ['-R', '-r', '-R'],
+                    ['-r', '-r', '-R', '-R'], ['-rRrR']):
+        check_reply(f'repeated combined raw flags {options}', [(ethernet, owner)],
+                    options, '02:00:00:00:00:aa 192.0.2.102\n')
+        check_reply(f'repeated combined MAC-ping raw flags {options}',
+                    [(owner, '192.0.2.102')], options,
+                    '02:00:00:00:00:aa 192.0.2.102\n', mac_ping=True)
+    check_reply('repeated MAC-only output', [(ethernet, owner)],
+                ['-r', '-r'], '02:00:00:00:00:aa\n')
+    check_reply('repeated IP-only output', [(ethernet, owner)],
+                ['-R', '-R'], '192.0.2.102\n')
     check_reply('different owners sharing an Ethernet sender',
                 [(ethernet, owner), (ethernet, other_owner)], ['-d', '-q'],
                 '', status=1)

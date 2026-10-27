@@ -2403,12 +2403,12 @@ arping_main(int argc, char **argv)
                                 exit(1);
                         }
                         break;
-		case 'r':
-			display = (display==RRAW)?RAWRAW:RAW;
-			break;
-		case 'R':
-			display = (display==RAW)?RAWRAW:RRAW;
-			break;
+                case 'r':
+                        display = (display == RRAW || display == RAWRAW) ? RAWRAW : RAW;
+                        break;
+                case 'R':
+                        display = (display == RAW || display == RAWRAW) ? RAWRAW : RRAW;
+                        break;
 		case 's': { /* spoof source MAC */
                         srcmac_opt = optarg;
 			break;

@@ -54,6 +54,7 @@ for a host.
     dit(-C em(count)) Only wait for em(count) replies, regardless of -c and -w.
     dit(-d) Find duplicate replies. Exit with 1 if there are answers from
         two different MAC addresses.
+        The sender hardware addresses in the ARP replies are compared.
     dit(-D) Display answers as exclamation points and missing packets as dots.
         Like flood ping on a Cisco.
     dit(-e) Like -a but beep when there is no reply.

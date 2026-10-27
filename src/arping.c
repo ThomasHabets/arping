@@ -225,7 +225,7 @@ static int promisc = 0;              /* Use promisc mode. -p */
 
 static int finddup = 0;              /* finddup mode. -d */
 static int dupfound = 0;             /* set to 1 if dup found */
-static char lastreplymac[ETH_ALEN];  /* if last different from this then dup */
+static char lastreplymac[ETH_ALEN];  /* Last ARP sender, for duplicate detection */
 static uint16_t mac_ping_id;         /* ID must match on reception */
 
 /* -z to turn on, -Z to turn off. Default is compile time option */
@@ -1822,11 +1822,11 @@ pingip_recv(unsigned char *pcap_user, const struct pcap_pkthdr *h, const unsigne
         fflush(stdout);
         if (numrecvd) {
                 if (memcmp(lastreplymac,
-                           pkt_srcmac, ETH_ALEN)) {
+                           arpdata, ETH_ALEN)) {
                         dupfound = 1;
                 }
         }
-        memcpy(lastreplymac, pkt_srcmac, ETH_ALEN);
+        memcpy(lastreplymac, arpdata, ETH_ALEN);
 
         numrecvd++;
         stop_at_reply_limit(pcap_user);

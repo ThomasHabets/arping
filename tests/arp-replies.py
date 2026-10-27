@@ -71,6 +71,7 @@ def check_reply(name, replies, options, expected, status=0, prefix=False):
 def main():
     ethernet = '000102334401'
     owner = '0200000000aa'
+    other_owner = '0200000000bb'
     mac = '00:01:02:33:44:01'
     both = mac + ' (ARP: 02:00:00:00:00:aa)'
     check_reply('matching ARP and Ethernet senders', [(ethernet, ethernet)],
@@ -84,6 +85,11 @@ def main():
                 [(ethernet, owner)], ['-r', '-R'], mac + ' 192.0.2.102\n')
     check_reply('IP-only output', [(ethernet, owner)],
                 ['-R'], '192.0.2.102\n')
+    check_reply('different owners sharing an Ethernet sender',
+                [(ethernet, owner), (ethernet, other_owner)], ['-d', '-q'],
+                '', status=1)
+    check_reply('same owner with different Ethernet senders',
+                [(ethernet, owner), ('020000000002', owner)], ['-d', '-q'], '')
 
 
 if __name__ == '__main__':

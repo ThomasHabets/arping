@@ -1767,6 +1767,15 @@ pingip_recv(unsigned char *pcap_user, const struct pcap_pkthdr *h, const unsigne
 
         update_stats(timespec2dbl(&arrival) - timespec2dbl(&lastpacketsent));
         char buf[128];
+        char macbuf[64];
+        format_mac(pkt_srcmac, macbuf, sizeof(macbuf));
+        if (memcmp(pkt_srcmac, arpdata, ETH_ALEN)) {
+                char ethbuf[32];
+                char arpbuf[32];
+                xsnprintf(macbuf, sizeof(macbuf), "%s (ARP: %s)",
+                          format_mac(pkt_srcmac, ethbuf, sizeof(ethbuf)),
+                          format_mac(arpdata, arpbuf, sizeof(arpbuf)));
+        }
         if (beep) {
                 printf("\a");
         }
@@ -1776,8 +1785,7 @@ pingip_recv(unsigned char *pcap_user, const struct pcap_pkthdr *h, const unsigne
                 break;
         case NORMAL:
                 printf("%u bytes from %s (%s): index=%u",
-                       h->len, format_mac(pkt_srcmac, buf, sizeof(buf)),
-                       libnet_addr2name4(ip, 0), numrecvd);
+                       h->len, macbuf, libnet_addr2name4(ip, 0), numrecvd);
 
                 if (alsototal) {
                         unsigned int t = numsent;

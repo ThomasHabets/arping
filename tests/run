@@ -265,6 +265,9 @@ run_tests() {
 
     # A zero interval without a deadline must still send packets.
     run_test -t "reply"             0 -W 0 -c 1 -P 192.0.2.101
+    setup
+    ARPING_PEER_PID="${ROOTLESS_PID1:-}" python3 tests/arp-replies.py
+    cleanup
     # TODO: -z
     # TODO: -Z
 }

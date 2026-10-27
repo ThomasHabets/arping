@@ -19,8 +19,12 @@ def check_failure(library, fault, options, after=0, status=1, output=''):
     expected = f'injected {fault} failure'
     statistics = (f'{after} packets transmitted, 0 packets received'
                   if fault.startswith('libnet_build_') else output)
+    fatal_clock = fault.startswith('clock') and fault != 'clock-fallback'
     if (result.returncode != status or expected not in result.stderr
-            or statistics not in result.stdout):
+            or statistics not in result.stdout
+            or ('-q' in options and result.stdout)
+            or (fatal_clock and ('statistics' in result.stdout
+                                 or 'gettimeofday():' not in result.stderr))):
         raise AssertionError(
             f'{fault}, {options}, after={after}: exit {result.returncode}; '
             f'output {result.stdout!r}; stderr {result.stderr!r}')
@@ -61,6 +65,23 @@ def main():
                           output='1 packets transmitted, 0 packets received')
         check_failure(library, 'pcap-dispatch', ['-W', '0.1', '192.0.2.101'],
                       output='1 packets transmitted, 1 packets received')
+        check_failure(library, 'clock', ['-P', '-vv', '192.0.2.102'])
+        check_failure(library, 'clock', ip)
+        check_failure(library, 'clock', mac)
+        check_failure(library, 'clock', ['-w', '1'] + ip)
+        check_failure(library, 'clock', ['-q'] + ip)
+        check_failure(library, 'clock', ['192.0.2.102'], after=1)
+        check_failure(library, 'clock', ['192.0.2.102'], after=2)
+        check_failure(library, 'clock', ['-w', '1'] + ip, after=1)
+        check_failure(library, 'clock', ['-w', '1'] + ip, after=3)
+        check_failure(library, 'clock-on-reply', ['-W', '0.1', '192.0.2.101'])
+        check_failure(library, 'clock-after-reply', ['-W', '0.1', '192.0.2.101'])
+        check_failure(library, 'clock-fallback', ip, status=0,
+                      output='2 packets transmitted, 0 packets received')
+        unicast_mac = ['-W', '0.1', '-T', '192.0.2.101', '00:01:02:33:44:01']
+        check_failure(library, 'clock-on-reply', unicast_mac)
+        check_failure(library, 'clock-fallback', unicast_mac, status=0,
+                      output='2 packets transmitted, 2 packets received')
 
 
 if __name__ == '__main__':

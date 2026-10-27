@@ -1028,7 +1028,7 @@ sigint(int i)
 }
 
 /**
- * idiot-proof clock_gettime() wrapper
+ * Read a timestamp; exit if both clock sources fail.
  */
 static void
 getclock(struct timespec *ts)
@@ -1049,7 +1049,7 @@ getclock(struct timespec *ts)
         if (-1 == gettimeofday(&tv, NULL)) {
                 fprintf(stderr, "arping: gettimeofday(): %s\n",
                         strerror(errno));
-                sigint(0);
+                exit(EXIT_FAILURE);
         }
         ts->tv_sec = tv.tv_sec;
         ts->tv_nsec = tv.tv_usec * 1000;

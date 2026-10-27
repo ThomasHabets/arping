@@ -7,10 +7,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/select.h>
+#include <sys/time.h>
+#include <time.h>
 #include <libnet.h>
 #include <pcap.h>
 
 static int build_failed;
+static int clock_failed;
 
 static int
 fail_build(const char *name, libnet_t *l)
@@ -85,8 +88,8 @@ libnet_build_802_1q(const uint8_t *dst, const uint8_t *src, uint16_t tpi,
 int
 libnet_write(libnet_t *l)
 {
-        if (build_failed) {
-                fprintf(stderr, "transmission attempted after build failure\n");
+        if (build_failed || clock_failed) {
+                fprintf(stderr, "transmission attempted after build or clock failure\n");
                 _exit(99);
         }
         __typeof__(&libnet_write) original = dlsym(RTLD_NEXT, "libnet_write");
@@ -96,16 +99,76 @@ libnet_write(libnet_t *l)
 
 static int received_reply;
 static pcap_handler packet_handler;
+static int clocks_armed;
+static int reply_started;
 
 static void
 track_reply(unsigned char *user, const struct pcap_pkthdr *h,
              const unsigned char *packet)
 {
+        reply_started = h->caplen >= 42 && packet[12] == 8 && packet[13] == 6
+                && packet[20] == 0 && packet[21] == 2;
+        if (h->caplen >= 42 && packet[12] == 8 && packet[13] == 0
+            && packet[23] == IPPROTO_ICMP) {
+                const size_t icmp_offset = 14 + (size_t)(packet[14] & 15) * 4;
+                reply_started = h->caplen >= icmp_offset + 8
+                        && packet[icmp_offset] == ICMP_ECHOREPLY;
+        }
         packet_handler(user, h, packet);
-        if (h->caplen >= 42 && packet[12] == 8 && packet[13] == 6
-            && packet[20] == 0 && packet[21] == 2) {
+        if (reply_started) {
                 received_reply = 1;
         }
+}
+
+int
+pcap_setfilter(pcap_t *pcap, struct bpf_program *bp)
+{
+        __typeof__(&pcap_setfilter) original = dlsym(RTLD_NEXT, "pcap_setfilter");
+        if (!original) abort();
+        const int ret = original(pcap, bp);
+        // Do not interfere with clocks used by NSS during privilege setup.
+        if (ret == 0) clocks_armed = 1;
+        return ret;
+}
+
+static int monotonic_failed;
+
+int
+clock_gettime(clockid_t clock, struct timespec *ts)
+{
+        const char *fault = getenv("ARPING_TEST_FAIL");
+        if (clocks_armed && clock == CLOCK_MONOTONIC && fault) {
+                static unsigned int calls;
+                const char *after = getenv("ARPING_TEST_FAIL_AFTER");
+                const int fail = (!strcmp(fault, "clock")
+                                  && calls++ >= (after ? strtoul(after, NULL, 10) : 0))
+                        || !strcmp(fault, "clock-fallback")
+                        || (!strcmp(fault, "clock-on-reply") && reply_started)
+                        || (!strcmp(fault, "clock-after-reply") && received_reply);
+                if (fail) {
+                        fprintf(stderr, "injected %s failure\n", fault);
+                        monotonic_failed = 1;
+                        errno = EIO;
+                        return -1;
+                }
+        }
+        __typeof__(&clock_gettime) original = dlsym(RTLD_NEXT, "clock_gettime");
+        if (!original) abort();
+        return original(clock, ts);
+}
+
+int
+gettimeofday(struct timeval *tv, void *tz)
+{
+        const char *fault = getenv("ARPING_TEST_FAIL");
+        if (monotonic_failed && fault && strcmp(fault, "clock-fallback")) {
+                clock_failed = 1;
+                errno = EIO;
+                return -1;
+        }
+        __typeof__(&gettimeofday) original = dlsym(RTLD_NEXT, "gettimeofday");
+        if (!original) abort();
+        return original(tv, tz);
 }
 
 int

@@ -1949,6 +1949,11 @@ pingmac_recv(unsigned char* pcap_user, const struct pcap_pkthdr *h, const uint8_
                 printf("arping: ... right dst mac\n");
         }
 
+        // Destination IPv4 address must be the source used by the probe.
+        if (hip.ip_dst.s_addr != srcip) {
+                return;
+        }
+
         // Source MAC must match, if set.
         if (memcmp(dstmac, ethxmas, ETH_ALEN)) {
                 if (memcmp(pkt_srcmac, dstmac, ETH_ALEN)) {

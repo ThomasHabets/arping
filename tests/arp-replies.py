@@ -32,9 +32,11 @@ def respond_mac(sock, packet, replies, fields):
         bytes(icmp[:max(0, ip_length - reply_header_size)])))
     for sender, ip in replies:
         ethernet = packet[6:12] + bytes.fromhex(sender) + b'\x08\x00'
+        destination = (socket.inet_aton(fields['destination'])
+                       if 'destination' in fields else packet[26:30])
         header = struct.pack('!BBHHHBBH4s4s', 0x40 | (reply_header_size // 4),
                              0, ip_length, 1, 0, 64, 1, 0,
-                             socket.inet_aton(ip), packet[26:30]) + options
+                             socket.inet_aton(ip), destination) + options
         header = header[:10] + struct.pack('!H', checksum(header)) + header[12:]
         sock.send(ethernet + header + icmp + b'\0' * fields.get('padding', 0))
 
@@ -178,6 +180,16 @@ def main():
     for fields in ({'padding': 16}, {'ip_options': 4}, {'ip_options': 40}):
         check_reply(f'valid MAC reply with {fields}', reply, ['-q'], '',
                     mac_ping=True, mac_fields=fields)
+    for options in (['-q'], ['-q', '-p'], ['-q', '-S', '198.51.100.1']):
+        check_reply(f'MAC reply to another IPv4 host with {options}', reply,
+                    options, '', status=1, mac_ping=True,
+                    mac_fields={'destination': '192.0.2.99'})
+    check_reply('MAC reply to the interface IP instead of explicit source',
+                reply, ['-q', '-S', '198.51.100.1'], '', status=1,
+                mac_ping=True, mac_fields={'destination': '192.0.2.100'})
+    for options in (['-q', '-S', '198.51.100.1'], ['-q', '-0'], ['-q', '-p']):
+        check_reply(f'MAC reply to the matching source with {options}', reply,
+                    options, '', mac_ping=True)
 
 
 if __name__ == '__main__':

@@ -1,11 +1,14 @@
 /* Fault injection for the Linux network integration tests. */
 #define _GNU_SOURCE
 #include <dlfcn.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/select.h>
 #include <libnet.h>
+#include <pcap.h>
 
 static int build_failed;
 
@@ -89,4 +92,48 @@ libnet_write(libnet_t *l)
         __typeof__(&libnet_write) original = dlsym(RTLD_NEXT, "libnet_write");
         if (!original) abort();
         return original(l);
+}
+
+static int received_reply;
+static pcap_handler packet_handler;
+
+static void
+track_reply(unsigned char *user, const struct pcap_pkthdr *h,
+             const unsigned char *packet)
+{
+        packet_handler(user, h, packet);
+        if (h->caplen >= 42 && packet[12] == 8 && packet[13] == 6
+            && packet[20] == 0 && packet[21] == 2) {
+                received_reply = 1;
+        }
+}
+
+int
+pcap_dispatch(pcap_t *pcap, int count, pcap_handler handler, unsigned char *user)
+{
+        __typeof__(&pcap_dispatch) original = dlsym(RTLD_NEXT, "pcap_dispatch");
+        if (!original) abort();
+        packet_handler = handler;
+        return original(pcap, count, track_reply, user);
+}
+
+int
+select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
+        struct timeval *timeout)
+{
+        const char *fault = getenv("ARPING_TEST_FAIL");
+        static int interrupted;
+        const int interrupt = fault && !strcmp(fault, "select-eintr")
+                && !interrupted;
+        if (fault && (!strcmp(fault, "select") || interrupt
+                      || (!strcmp(fault, "select-after-reply")
+                          && received_reply))) {
+                fprintf(stderr, "injected %s failure\n", fault);
+                interrupted = 1;
+                errno = interrupt ? EINTR : EBADF;
+                return -1;
+        }
+        __typeof__(&select) original = dlsym(RTLD_NEXT, "select");
+        if (!original) abort();
+        return original(nfds, readfds, writefds, exceptfds, timeout);
 }

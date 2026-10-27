@@ -2192,11 +2192,10 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 			       break;
 		       case -1: /* error */
 			       if (errno != EINTR) {
-				       done = 1;
-				       sigint(0);
 				       fprintf(stderr,
 					       "arping: select() failed: %s\n",
 					       strerror(errno));
+                                       exit(EXIT_FAILURE);
 			       }
 			       break;
 		       default: /* data returned */

@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 
 
-def check_failure(library, fault, options, after=0):
+def check_failure(library, fault, options, after=0, status=1, output=''):
     sender = ([] if os.environ.get('ARPING_ROOTLESS') == 'yes'
               else ['ip', 'netns', 'exec', 'arping_test0'])
     result = subprocess.run(
@@ -17,7 +17,8 @@ def check_failure(library, fault, options, after=0):
                   '-i', 'veth0', '-W', '0.01', '-c', '2'] + options,
         capture_output=True, text=True, timeout=5)
     expected = f'injected {fault} failure'
-    if result.returncode != 1 or expected not in result.stderr:
+    if (result.returncode != status or expected not in result.stderr
+            or output not in result.stdout):
         raise AssertionError(
             f'{fault}, {options}, after={after}: exit {result.returncode}; '
             f'output {result.stdout!r}; stderr {result.stderr!r}')
@@ -45,6 +46,11 @@ def main():
         for fault, options in cases:
             for after in (0, 1):
                 check_failure(library, fault, options, after)
+        check_failure(library, 'select', ['-d', '-q', '192.0.2.102'])
+        check_failure(library, 'select-after-reply', ['-W', '0.1', '192.0.2.101'],
+                      output='index=0 time=')
+        check_failure(library, 'select-eintr', ['-W', '0.1', '192.0.2.101'], status=0,
+                      output='2 packets received')
 
 
 if __name__ == '__main__':

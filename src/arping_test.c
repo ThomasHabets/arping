@@ -689,6 +689,33 @@ START_TEST(seccomp_getrandom)
 END_TEST
 #endif
 
+#if USE_SECCOMP
+START_TEST(seccomp_allocations)
+{
+        const pid_t pid = fork();
+        fail_if(pid < 0);
+        if (pid == 0) {
+                drop_seccomp(STDOUT_FILENO);
+                // A large allocation exercises mmap and munmap even with a
+                // warm allocator inherited from the test runner.
+                const size_t size = 16 * 1024 * 1024;
+                volatile uint8_t *memory = malloc(size);
+                if (!memory) {
+                        _exit(1);
+                }
+                memory[0] = 1;
+                memory[size - 1] = 2;
+                free((void*)memory);
+                _exit(0);
+        }
+        int status;
+        fail_unless(waitpid(pid, &status, 0) == pid);
+        fail_unless(WIFEXITED(status));
+        ck_assert_int_eq(WEXITSTATUS(status), 0);
+}
+END_TEST
+#endif
+
 START_TEST(bpf_filter_packets)
 {
         const struct {
@@ -775,6 +802,9 @@ arping_suite(void)
         SIGH_LIBCHECK(bpf_filter_packets);
 #if USE_SECCOMP && defined(SYS_getrandom)
         SIGH_LIBCHECK(seccomp_getrandom);
+#endif
+#if USE_SECCOMP
+        SIGH_LIBCHECK(seccomp_allocations);
 #endif
 
 #define SIGH_LIBCHECK_EXIT(tn)          \

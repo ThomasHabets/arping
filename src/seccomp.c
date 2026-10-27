@@ -131,6 +131,12 @@ drop_seccomp(int libnet_fd)
         // MAC pings generate a fresh ICMP identifier for every request.
         seccomp_allow(ctx, "getrandom");
 
+        // libseccomp cleanup and packet construction allocate and free memory.
+        seccomp_allow(ctx, "brk");
+        seccomp_allow(ctx, "mmap");
+        seccomp_allow(ctx, "mmap2");
+        seccomp_allow(ctx, "munmap");
+
         // Load.
         if (seccomp_load(ctx)) {
                 perror("seccomp_load()");

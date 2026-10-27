@@ -265,6 +265,10 @@ run_tests() {
 
     # A zero interval without a deadline must still send packets.
     run_test -t "reply"             0 -W 0 -c 1 -P 192.0.2.101
+    # Force allocator mappings during seccomp cleanup and packet construction.
+    MALLOC_MMAP_THRESHOLD_=1 run_test -t "quiet" 0 -z -q -c 1 192.0.2.101
+    MALLOC_MMAP_THRESHOLD_=1 run_test -t "quiet" 0 -z -q -c 1 \
+        -T 192.0.2.101 00:01:02:33:44:01
     setup
     ARPING_PEER_PID="${ROOTLESS_PID1:-}" python3 tests/arp-replies.py
     python3 tests/failures.py

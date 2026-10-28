@@ -1953,6 +1953,9 @@ pingmac_recv(unsigned char* pcap_user, const struct pcap_pkthdr *h, const uint8_
         if (hip.ip_dst.s_addr != srcip) {
                 return;
         }
+        if (verbose > 3) {
+                printf("arping: ... right dst ip\n");
+        }
 
         // Source MAC must match, if set.
         if (memcmp(dstmac, ethxmas, ETH_ALEN)) {

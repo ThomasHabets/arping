@@ -1933,6 +1933,10 @@ pingmac_recv(unsigned char* pcap_user, const struct pcap_pkthdr *h, const uint8_
         if (hip.ip_v != 4 || hip.ip_hl < 5) {
                 return;
         }
+        // Packet capture does not reassemble IPv4 fragments.
+        if (ntohs(hip.ip_off) & (IP_MF | IP_OFFMASK)) {
+                return;
+        }
         ip_header_size = (size_t)hip.ip_hl * 4;
         const size_t ip_size = ntohs(hip.ip_len);
         if (ip_size < ip_header_size + LIBNET_ICMPV4_ECHO_H

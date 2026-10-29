@@ -22,6 +22,7 @@ def respond_mac(sock, packet, replies, fields):
     header_size = (packet[14] & 15) * 4
     length = struct.unpack('!H', packet[16:18])[0]
     icmp = bytearray(packet[14 + header_size:14 + length])
+    icmp += b'\x01' * fields.get('extra_payload', 0)
     options = b'\x01' * fields.get('ip_options', 0)
     reply_header_size = 20 + len(options)
     ip_length = fields.get('ip_length', reply_header_size + len(icmp))
@@ -35,7 +36,7 @@ def respond_mac(sock, packet, replies, fields):
         destination = (socket.inet_aton(fields['destination'])
                        if 'destination' in fields else packet[26:30])
         header = struct.pack('!BBHHHBBH4s4s', 0x40 | (reply_header_size // 4),
-                             0, ip_length, 1, 0, 64, 1, 0,
+                             0, ip_length, 1, fields.get('fragment', 0), 64, 1, 0,
                              socket.inet_aton(ip), destination) + options
         header = header[:10] + struct.pack('!H', checksum(header)) + header[12:]
         sock.send(ethernet + header + icmp + b'\0' * fields.get('padding', 0))
@@ -179,6 +180,13 @@ def main():
     check_reply('MAC duplicate check without replies', [], ['-d', '-q'], '',
                 mac_ping=True)
     reply = [(owner, '192.0.2.102')]
+    for fragment in (0x2000, 1, 0x2001, 0x1fff):
+        check_reply(f'MAC ping rejects IPv4 fragment {fragment:#x}', reply,
+                    ['-q', '-C', '1'], '', status=1, mac_ping=True,
+                    mac_fields={'fragment': fragment, 'extra_payload': 4})
+    check_reply('MAC ping accepts an unfragmented packet with DF set', reply,
+                ['-q', '-C', '1'], '', mac_ping=True,
+                mac_fields={'fragment': 0x4000})
     for name, fields in [
         ('cookie only in Ethernet padding', {'ip_length': 28}),
         ('short cookie with padding', {'trim_ip': 1}),

@@ -142,7 +142,8 @@ clock_gettime(clockid_t clock, struct timespec *ts)
                 const char *after = getenv("ARPING_TEST_FAIL_AFTER");
                 const int fail = (!strcmp(fault, "clock")
                                   && calls++ >= (after ? strtoul(after, NULL, 10) : 0))
-                        || !strcmp(fault, "clock-fallback")
+                        || (!strcmp(fault, "clock-fallback")
+                            && calls++ >= (after ? strtoul(after, NULL, 10) : 0))
                         || (!strcmp(fault, "clock-on-reply") && reply_started)
                         || (!strcmp(fault, "clock-after-reply") && received_reply);
                 if (fail) {

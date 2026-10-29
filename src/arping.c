@@ -1028,7 +1028,7 @@ sigint(int i)
 }
 
 /**
- * Read a timestamp; exit if both clock sources fail.
+ * Read timestamps in one clock domain; exit if that clock fails.
  */
 static void
 getclock(struct timespec *ts)
@@ -1036,12 +1036,18 @@ getclock(struct timespec *ts)
         memset(ts, 0, sizeof(struct timespec));
 #if HAVE_CLOCK_MONOTONIC
         static int clock_gettime_failed = 0;
+        static int monotonic_used = 0;
         if (!clock_gettime_failed) {
                 if (0 == clock_gettime(CLOCK_MONOTONIC, ts)) {
+                        monotonic_used = 1;
                         return;
                 }
                 fprintf(stderr, "arping: clock_gettime(): %s\n",
                         strerror(errno));
+                // Existing timestamps and deadlines cannot use wall time.
+                if (monotonic_used) {
+                        exit(EXIT_FAILURE);
+                }
                 clock_gettime_failed = 1; // Prevent duplicate error messages.
         }
 #endif

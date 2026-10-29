@@ -19,12 +19,15 @@ def check_failure(library, fault, options, after=0, status=1, output=''):
     expected = f'injected {fault} failure'
     statistics = (f'{after} packets transmitted, 0 packets received'
                   if fault.startswith('libnet_build_') else output)
-    fatal_clock = fault.startswith('clock') and fault != 'clock-fallback'
+    fatal_clock = fault.startswith('clock') and (fault != 'clock-fallback'
+                                                or after > 0)
+    clock_error = ('gettimeofday():' if fault == 'clock' and after == 0
+                   else 'clock_gettime():')
     if (result.returncode != status or expected not in result.stderr
             or statistics not in result.stdout
             or ('-q' in options and result.stdout)
             or (fatal_clock and ('statistics' in result.stdout
-                                 or 'gettimeofday():' not in result.stderr))):
+                                 or clock_error not in result.stderr))):
         raise AssertionError(
             f'{fault}, {options}, after={after}: exit {result.returncode}; '
             f'output {result.stdout!r}; stderr {result.stderr!r}')
@@ -97,6 +100,11 @@ def main():
         check_failure(library, 'clock-on-reply', unicast_mac)
         check_failure(library, 'clock-fallback', unicast_mac, status=0,
                       output='2 packets transmitted, 2 packets received')
+        # A late monotonic failure must not mix uptime with Unix time,
+        # even when gettimeofday would succeed.
+        check_failure(library, 'clock-fallback', ['-w', '1'] + ip, after=1)
+        check_failure(library, 'clock-fallback', ['192.0.2.101'], after=1)
+        check_failure(library, 'clock-fallback', unicast_mac, after=1)
     # Values above 32-bit ULONG_MAX must not wrap into another group ID.
     for value in ('4294967296', '4294967297', '18446744073709551615'):
         check_group(value, 1)

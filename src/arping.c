@@ -1859,6 +1859,27 @@ pingip_recv(unsigned char *pcap_user, const struct pcap_pkthdr *h, const unsigne
         stop_at_reply_limit(pcap_user);
 }
 
+/* Validate the Internet checksum of an IPv4 ICMP message, including its
+ * checksum field. Read bytes to support unaligned headers and odd lengths.
+ */
+static int
+icmp_checksum_valid(const uint8_t *packet, size_t size)
+{
+        uint32_t sum = 0;
+        while (size >= 2) {
+                sum += 256U * packet[0] + packet[1];
+                packet += 2;
+                size -= 2;
+        }
+        if (size) {
+                sum += 256U * packet[0];
+        }
+        while (sum >> 16) {
+                sum = (sum & 0xffffU) + (sum >> 16);
+        }
+        return sum == 0xffffU;
+}
+
 /** handle incoming packet when pinging an MAC address.
  *
  * \param h       packet metadata
@@ -1941,6 +1962,10 @@ pingmac_recv(unsigned char* pcap_user, const struct pcap_pkthdr *h, const uint8_
         const size_t ip_size = ntohs(hip.ip_len);
         if (ip_size < ip_header_size + LIBNET_ICMPV4_ECHO_H
             || h->caplen < ip_offset + ip_size) {
+                return;
+        }
+        if (!icmp_checksum_valid(packet + ip_offset + ip_header_size,
+                                 ip_size - ip_header_size)) {
                 return;
         }
         memcpy(&hicmp, packet + ip_offset + ip_header_size,

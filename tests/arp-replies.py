@@ -31,6 +31,10 @@ def respond_mac(sock, packet, replies, fields):
     icmp[2:4] = b'\0\0'
     icmp[2:4] = struct.pack('!H', checksum(
         bytes(icmp[:max(0, ip_length - reply_header_size)])))
+    if fields.get('bad_checksum'):
+        icmp[2] ^= 1
+    if fields.get('corrupt_tail'):
+        icmp[-1] ^= 1
     for sender, ip in replies:
         ethernet = packet[6:12] + bytes.fromhex(sender) + b'\x08\x00'
         destination = (socket.inet_aton(fields['destination'])
@@ -180,6 +184,16 @@ def main():
     check_reply('MAC duplicate check without replies', [], ['-d', '-q'], '',
                 mac_ping=True)
     reply = [(owner, '192.0.2.102')]
+    for fields in ({'bad_checksum': True},
+                   {'extra_payload': 3, 'corrupt_tail': True}):
+        check_reply(f'MAC ping rejects an invalid ICMP checksum {fields}',
+                    reply, ['-q', '-C', '1'], '', status=1,
+                    mac_ping=True, mac_fields=fields)
+    for fields in ({'extra_payload': 1},
+                   {'extra_payload': 3, 'ip_options': 4, 'padding': 7}):
+        check_reply(f'MAC ping accepts a valid odd-length checksum {fields}',
+                    reply, ['-q', '-C', '1'], '', mac_ping=True,
+                    mac_fields=fields)
     for fragment in (0x2000, 1, 0x2001, 0x1fff):
         check_reply(f'MAC ping rejects IPv4 fragment {fragment:#x}', reply,
                     ['-q', '-C', '1'], '', status=1, mac_ping=True,

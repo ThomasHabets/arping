@@ -76,6 +76,11 @@ AC_CHECK_LIB([net], [libnet_init], ,[AC_MSG_ERROR([libnet 1.1.x not found])])
 AC_CHECK_LIB([pcap], [pcap_open_live], ,[AC_MSG_ERROR([libpcap not found])])
 AC_SEARCH_LIBS([clock_gettime], [rt])
 
+# Some distributions build Check with subunit support; others omit it.
+AC_CHECK_LIB([subunit], [subunit_test_start],
+             [SUBUNIT_LIBS="-lsubunit"], [SUBUNIT_LIBS=""])
+AC_SUBST([SUBUNIT_LIBS])
+
 AC_ARG_ENABLE([seccomp], [Enable seccomp priv drops by default (-z to turn on, -Z for off)], [
    if test x"$enableval" = x"yes"; then
       if test "$ac_cv_lib_seccomp_seccomp_init" = "no"; then

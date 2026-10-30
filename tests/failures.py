@@ -137,6 +137,45 @@ def check_interrupt(library, options, sandbox):
         process.communicate()
 
 
+def check_duplicate_address():
+    sender = ([] if os.environ.get('ARPING_ROOTLESS') == 'yes'
+              else ['ip', 'netns', 'exec', 'arping_test0'])
+    command = sender + ['./src/arping', '-Z', '-i', 'veth0', '-d',
+                        '-c', '1', '-W', '0.05']
+    subprocess.run(sender + ['ip', 'addr', 'del', '192.0.2.100/24',
+                              'dev', 'veth0'], check=True)
+    try:
+        for options in ([], ['-0'], ['-S', '192.0.2.100'],
+                        ['-q', '-S', '192.0.2.100']):
+            result = subprocess.run(command + options, capture_output=True,
+                                    text=True, timeout=5)
+            if (result.returncode != 1 or result.stdout
+                    or 'IPv4 address for duplicate detection' not in result.stderr):
+                raise AssertionError(
+                    f'duplicate address lookup, {options}: exit {result.returncode}; '
+                    f'output {result.stdout!r}; stderr {result.stderr!r}')
+            print(f'PASS: duplicate detection rejects an unknown address, {options}')
+        # An explicit destination still works without an interface IPv4 address.
+        result = subprocess.run(command + ['-S', '192.0.2.100', '192.0.2.101'],
+                                capture_output=True, text=True, timeout=5)
+        if (result.returncode or not result.stdout.startswith('ARPING 192.0.2.101\n')
+                or '1 packets transmitted, 1 packets received' not in result.stdout):
+            raise AssertionError(
+                f'explicit duplicate address: exit {result.returncode}; '
+                f'output {result.stdout!r}; stderr {result.stderr!r}')
+        print('PASS: explicit duplicate target on an unnumbered interface')
+    finally:
+        subprocess.run(sender + ['ip', 'addr', 'add', '192.0.2.100/24',
+                                  'dev', 'veth0'], check=True)
+    result = subprocess.run(command, capture_output=True, text=True, timeout=5)
+    if (result.returncode or not result.stdout.startswith('ARPING 192.0.2.100\n')
+            or '1 packets transmitted' not in result.stdout):
+        raise AssertionError(
+            f'default duplicate address: exit {result.returncode}; '
+            f'output {result.stdout!r}; stderr {result.stderr!r}')
+    print('PASS: default duplicate target with a valid interface IPv4 address')
+
+
 def main():
     with tempfile.TemporaryDirectory(prefix='arping-faults-') as directory:
         library = str(Path(directory) / 'faults.so')
@@ -208,6 +247,7 @@ def main():
             check_failure(library, 'wall-clock', ['-m', 'host'] + options)
     for timestamp_type in ('adapter_unsynced', 'host_hiprec_unsynced'):
         check_unsynchronized_type(timestamp_type)
+    check_duplicate_address()
     # Values above 32-bit ULONG_MAX must not wrap into another group ID.
     for value in ('4294967296', '4294967297', '18446744073709551615'):
         check_group(value, 1)

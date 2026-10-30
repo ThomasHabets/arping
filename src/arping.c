@@ -2747,6 +2747,12 @@ arping_main(int argc, char **argv)
                 dstip_given = 1;
                 do_libnet_init(ifname, 0);
                 dstip = libnet_get_ipaddr4(libnet);
+                if (dstip == ip_broadcast_num) {
+                        fprintf(stderr,
+                                "arping: Unable to get the interface IPv4 address for duplicate detection: %s\n",
+                                libnet_geterror(libnet));
+                        exit(EXIT_FAILURE);
+                }
                 if (verbose) {
                         printf("defaulting to checking dup for %s\n",
                                libnet_addr2name4(dstip, 0));

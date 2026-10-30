@@ -39,18 +39,23 @@ See INSTALL file.
 
 ### Portability
 
-First class platforms, tested by CI in github actions and/or main development
+First class platforms, tested by CI in GitHub Actions and/or main development
 machine:
+
 * Latest Debian stable amd64
 * Latest Ubuntu amd64
+* Ubuntu 24.04 aarch64
 * Latest OpenBSD amd64
 * Latest MacOS X aarch64
+* FreeBSD amd64
+* NetBSD amd64
+* DragonFly BSD amd64
+* OmniOS r151054 amd64
 
 Systems that it should still work on, but I don't personally regularly test:
+
 * Debian Alpha
-* FreeBSD
 * IRIX 6.5 mips (last test 2009-09-27)
-* NetBSD
 * OpenBSD sparc64 (last test: 2009-10-02)
 * Solaris
 

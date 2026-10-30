@@ -43,6 +43,10 @@ def respond_mac(sock, packet, replies, fields):
                              0, ip_length, 1, fields.get('fragment', 0), 64, 1, 0,
                              socket.inet_aton(ip), destination) + options
         header = header[:10] + struct.pack('!H', checksum(header)) + header[12:]
+        if fields.get('bad_ip_checksum'):
+            header = header[:10] + bytes([header[10] ^ 1]) + header[11:]
+        if fields.get('corrupt_ip_option'):
+            header = header[:-1] + bytes([header[-1] ^ 1])
         sock.send(ethernet + header + icmp + b'\0' * fields.get('padding', 0))
 
 
@@ -184,6 +188,12 @@ def main():
     check_reply('MAC duplicate check without replies', [], ['-d', '-q'], '',
                 mac_ping=True)
     reply = [(owner, '192.0.2.102')]
+    for fields in ({'bad_ip_checksum': True},
+                   {'bad_ip_checksum': True, 'ip_options': 40},
+                   {'corrupt_ip_option': True, 'ip_options': 4}):
+        check_reply(f'MAC ping rejects an invalid IPv4 checksum {fields}',
+                    reply, ['-q', '-C', '1'], '', status=1,
+                    mac_ping=True, mac_fields=fields)
     for fields in ({'bad_checksum': True},
                    {'extra_payload': 3, 'corrupt_tail': True}):
         check_reply(f'MAC ping rejects an invalid ICMP checksum {fields}',

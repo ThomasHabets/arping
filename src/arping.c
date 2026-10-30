@@ -1859,11 +1859,11 @@ pingip_recv(unsigned char *pcap_user, const struct pcap_pkthdr *h, const unsigne
         stop_at_reply_limit(pcap_user);
 }
 
-/* Validate the Internet checksum of an IPv4 ICMP message, including its
+/* Validate an Internet checksum, including its
  * checksum field. Read bytes to support unaligned headers and odd lengths.
  */
 static int
-icmp_checksum_valid(const uint8_t *packet, size_t size)
+checksum_valid(const uint8_t *packet, size_t size)
 {
         uint32_t sum = 0;
         while (size >= 2) {
@@ -1964,8 +1964,9 @@ pingmac_recv(unsigned char* pcap_user, const struct pcap_pkthdr *h, const uint8_
             || h->caplen < ip_offset + ip_size) {
                 return;
         }
-        if (!icmp_checksum_valid(packet + ip_offset + ip_header_size,
-                                 ip_size - ip_header_size)) {
+        if (!checksum_valid(packet + ip_offset, ip_header_size)
+            || !checksum_valid(packet + ip_offset + ip_header_size,
+                               ip_size - ip_header_size)) {
                 return;
         }
         memcpy(&hicmp, packet + ip_offset + ip_header_size,

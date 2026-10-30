@@ -68,6 +68,10 @@ switch is not given, -i disables this smartness.
         Use -vv when pinging to list available ones. If the timestamp type is
         valid but not supported by the selected device, a warning is printed and
         the default timestamp type is used instead.
+        With this option, RTTs use capture timestamps for packet arrival and
+        the system clock for sending. Types explicitly marked unsynchronized
+        cannot be used to measure RTTs and are rejected. Deadlines continue
+        to use the monotonic clock where available.
     dit(-p) Turn on promiscious mode on interface, use this if you don't
             "own" the MAC address you are using.
         Also accept ARP replies addressed to other hardware addresses.

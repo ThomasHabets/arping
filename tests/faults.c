@@ -114,7 +114,17 @@ track_reply(unsigned char *user, const struct pcap_pkthdr *h,
                 reply_started = h->caplen >= icmp_offset + 8
                         && packet[icmp_offset] == ICMP_ECHOREPLY;
         }
-        packet_handler(user, h, packet);
+        const char *fault = getenv("ARPING_TEST_FAIL");
+        if (reply_started && fault && !strcmp(fault, "capture-time")) {
+                struct pcap_pkthdr captured = *h;
+                // 1.234567 seconds after the fixed send time below.
+                captured.ts.tv_sec = 1700000002;
+                captured.ts.tv_usec = 134567;
+                usleep(200000);
+                packet_handler(user, &captured, packet);
+        } else {
+                packet_handler(user, h, packet);
+        }
         if (reply_started) {
                 received_reply = 1;
         }
@@ -162,6 +172,17 @@ int
 gettimeofday(struct timeval *tv, void *tz)
 {
         const char *fault = getenv("ARPING_TEST_FAIL");
+        if (clocks_armed && fault && !strcmp(fault, "capture-time")) {
+                tv->tv_sec = 1700000000;
+                tv->tv_usec = 900000;
+                return 0;
+        }
+        if (clocks_armed && fault && !strcmp(fault, "wall-clock")) {
+                fprintf(stderr, "injected %s failure\n", fault);
+                clock_failed = 1;
+                errno = EIO;
+                return -1;
+        }
         if (monotonic_failed && fault && strcmp(fault, "clock-fallback")) {
                 clock_failed = 1;
                 errno = EIO;

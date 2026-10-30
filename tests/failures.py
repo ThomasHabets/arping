@@ -19,9 +19,11 @@ def check_failure(library, fault, options, after=0, status=1, output=''):
     expected = f'injected {fault} failure'
     statistics = (f'{after} packets transmitted, 0 packets received'
                   if fault.startswith('libnet_build_') else output)
-    fatal_clock = fault.startswith('clock') and (fault != 'clock-fallback'
-                                                or after > 0)
-    clock_error = ('gettimeofday():' if fault == 'clock' and after == 0
+    fatal_clock = (fault == 'wall-clock'
+                   or (fault.startswith('clock') and (fault != 'clock-fallback'
+                                                       or after > 0)))
+    clock_error = ('gettimeofday():' if fault == 'wall-clock'
+                   or (fault == 'clock' and after == 0)
                    else 'clock_gettime():')
     if (result.returncode != status or expected not in result.stderr
             or statistics not in result.stdout
@@ -47,6 +49,44 @@ def check_group(value, status):
             f'group {value}: exit {result.returncode}, want {status}; '
             f'output {result.stdout!r}; stderr {result.stderr!r}')
     print(f'PASS: group {value}, exit={status}')
+
+
+def check_capture_time(library, options, timestamp_type='host', sandbox='-Z'):
+    sender = ([] if os.environ.get('ARPING_ROOTLESS') == 'yes'
+              else ['ip', 'netns', 'exec', 'arping_test0'])
+    result = subprocess.run(
+        sender + ['env', f'LD_PRELOAD={library}', 'ARPING_TEST_FAIL=capture-time',
+                  './src/arping', sandbox, '-i', 'veth0', '-m', timestamp_type,
+                  '-c', '2', '-W', '0.01', '-w', '1'] + options,
+        capture_output=True, text=True, timeout=5)
+    # The capture and send timestamps are fixed, while callbacks are delayed.
+    # Check both per-reply output and statistics, including microsecond scaling.
+    expected = 'rtt min/avg/max/std-dev = 1234.567/1234.567/1234.567/0.000 ms'
+    if (result.returncode or expected not in result.stdout
+            or result.stdout.count('time=1.235 sec') != 2
+            or '2 packets transmitted, 2 packets received' not in result.stdout):
+        raise AssertionError(
+            f'capture timestamps, {timestamp_type}, {sandbox}, {options}: '
+            f'exit {result.returncode}; output {result.stdout!r}; '
+            f'stderr {result.stderr!r}')
+    print(f'PASS: capture timestamps, {timestamp_type}, {sandbox}, {options}')
+
+
+def check_unsynchronized_type(timestamp_type):
+    sender = ([] if os.environ.get('ARPING_ROOTLESS') == 'yes'
+              else ['ip', 'netns', 'exec', 'arping_test0'])
+    result = subprocess.run(
+        sender + ['./src/arping', '-Z', '-i', 'veth0', '-m', timestamp_type,
+                  '-P', '-c', '0', '192.0.2.102'],
+        capture_output=True, text=True, timeout=5)
+    # Older libpcap versions might not know these names at all.
+    if (result.returncode != 1
+            or not any(message in result.stderr for message in
+                       ('not synchronized', 'Unknown timestamp type'))):
+        raise AssertionError(
+            f'unsynchronized type {timestamp_type}: exit {result.returncode}; '
+            f'stderr {result.stderr!r}')
+    print(f'PASS: reject unsynchronized timestamp type {timestamp_type}')
 
 
 def main():
@@ -105,6 +145,15 @@ def main():
         check_failure(library, 'clock-fallback', ['-w', '1'] + ip, after=1)
         check_failure(library, 'clock-fallback', ['192.0.2.101'], after=1)
         check_failure(library, 'clock-fallback', unicast_mac, after=1)
+        for options in (['192.0.2.101'], unicast_mac):
+            for sandbox in ('-Z', '-z'):
+                check_capture_time(library, options, sandbox=sandbox)
+            # Unsupported synchronized types fall back to default capture
+            # timestamps, which must still be used for RTT measurements.
+            check_capture_time(library, options, timestamp_type='host_hiprec')
+            check_failure(library, 'wall-clock', ['-m', 'host'] + options)
+    for timestamp_type in ('adapter_unsynced', 'host_hiprec_unsynced'):
+        check_unsynchronized_type(timestamp_type)
     # Values above 32-bit ULONG_MAX must not wrap into another group ID.
     for value in ('4294967296', '4294967297', '18446744073709551615'):
         check_group(value, 1)

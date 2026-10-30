@@ -235,6 +235,7 @@ unsigned int numsent = 0;                   /* packets sent */
 unsigned int numrecvd = 0;                  /* packets received */
 static unsigned int max_replies = UINT_MAX; /* exit after -C replies */
 static const char* timestamp_type = NULL;   /* Incoming packet measurement ts type (-m) */
+static int use_capture_timestamps = 0;      /* RTT clock selected by -m */
 
 static double stats_min_time = -1;
 static double stats_max_time = -1;
@@ -863,6 +864,15 @@ try_pcap_open_live(const char *device, int snaplen, int to_ms, char *errbuf)
                         maybe_list_tstamp_types(pcap, 1);
                         exit(1);
                 }
+                if (v == PCAP_TSTAMP_ADAPTER_UNSYNCED
+#ifdef PCAP_TSTAMP_HOST_HIPREC_UNSYNCED
+                    || v == PCAP_TSTAMP_HOST_HIPREC_UNSYNCED
+#endif
+                    ) {
+                        fprintf(stderr, "arping: Timestamp type \"%s\" is not synchronized with the system clock; cannot measure RTT\n",
+                                timestamp_type);
+                        exit(1);
+                }
                 if ((err = pcap_set_tstamp_type(pcap, v))) {
                         fprintf(stderr,
                                 "arping: Failed to set timestamp type \"%s\" (%d) on %s: %s\n",
@@ -874,6 +884,9 @@ try_pcap_open_live(const char *device, int snaplen, int to_ms, char *errbuf)
         if (xpcap_activate(pcap, timestamp_type, errbuf, PCAP_ERRBUF_SIZE)) {
                 goto err;
         }
+#ifdef HAVE_PCAP_LIST_TSTAMP_TYPES
+        use_capture_timestamps = timestamp_type != NULL;
+#endif
         // List timestamp types after activating, since we don't want to list
         // them if activating failed.
         maybe_list_tstamp_types(pcap, 0);
@@ -1027,9 +1040,22 @@ sigint(int i)
 	time_to_die = 1;
 }
 
-/**
- * Read timestamps in one clock domain; exit if that clock fails.
- */
+/* Read the system clock used by synchronized capture timestamps. */
+static void
+getwallclock(struct timespec *ts)
+{
+        memset(ts, 0, sizeof(*ts));
+        struct timeval tv;
+        if (-1 == gettimeofday(&tv, NULL)) {
+                fprintf(stderr, "arping: gettimeofday(): %s\n",
+                        strerror(errno));
+                exit(EXIT_FAILURE);
+        }
+        ts->tv_sec = tv.tv_sec;
+        ts->tv_nsec = tv.tv_usec * 1000;
+}
+
+/** Read timestamps in one clock domain; exit if that clock fails. */
 static void
 getclock(struct timespec *ts)
 {
@@ -1051,14 +1077,30 @@ getclock(struct timespec *ts)
                 clock_gettime_failed = 1; // Prevent duplicate error messages.
         }
 #endif
-        struct timeval tv;
-        if (-1 == gettimeofday(&tv, NULL)) {
-                fprintf(stderr, "arping: gettimeofday(): %s\n",
-                        strerror(errno));
-                exit(EXIT_FAILURE);
+        getwallclock(ts);
+}
+
+/* Deadlines always use getclock(); only RTTs use the selected capture clock. */
+static void
+getrttclock(struct timespec *ts)
+{
+        if (use_capture_timestamps) {
+                getwallclock(ts);
+        } else {
+                getclock(ts);
         }
-        ts->tv_sec = tv.tv_sec;
-        ts->tv_nsec = tv.tv_usec * 1000;
+}
+
+static void
+getarrival(const struct pcap_pkthdr *h, struct timespec *ts)
+{
+        if (use_capture_timestamps) {
+                ts->tv_sec = h->ts.tv_sec;
+                // Live capture uses libpcap's default microsecond precision.
+                ts->tv_nsec = h->ts.tv_usec * 1000;
+        } else {
+                getclock(ts);
+        }
 }
 
 /**
@@ -1117,6 +1159,8 @@ extended_usage()
                "           pinging to list available ones. If the timestamp type is valid\n"
                "           but not supported by the selected device, a warning is printed\n"
                "           and the default timestamp type is used instead.\n"
+               "           RTTs use capture timestamps and the system clock. Types\n"
+               "           explicitly marked unsynchronized cannot be used.\n"
 	       "    -q     Does not display messages, except error messages.\n"
                "    -Q pri 802.1p priority to set. Should be used with 802.1Q (-V).\n"
                "           Defaults to 0.\n"
@@ -1447,7 +1491,7 @@ pingmac_send(uint16_t seq)
         memset(padding, 0, padding_size);
         {
                 struct timespec ts;
-                getclock(&ts);
+                getrttclock(&ts);
                 memcpy(padding, &ts, sizeof(struct timespec));
                 memcpy(&padding[sizeof(struct timespec)],
                        payload_suffix, payload_suffix_size);
@@ -1610,13 +1654,13 @@ pingip_send()
         if (send_reply && display != QUIET) {
                 printf("Sending ARP reply\n");
         }
-	if (-1 == libnet_write(libnet)) {
+        getrttclock(&lastpacketsent);
+        if (-1 == libnet_write(libnet)) {
 		fprintf(stderr, "arping: libnet_write(): %s\n",
 			libnet_geterror(libnet));
                 exit_status = EXIT_FAILURE;
 		sigint(0);
 	}
-        getclock(&lastpacketsent);
 	numsent++;
 }
 
@@ -1643,7 +1687,7 @@ pingip_recv(unsigned char *pcap_user, const struct pcap_pkthdr *h, const unsigne
 		printf("arping: received response for IP ping\n");
 	}
 
-        getclock(&arrival);
+        getarrival(h, &arrival);
 
         // Handle both sizes of ethernet frames.
 	if (vlan_tag >= 0) {
@@ -1908,7 +1952,7 @@ pingmac_recv(unsigned char* pcap_user, const struct pcap_pkthdr *h, const uint8_
                        h->len, h->caplen);
 	}
 
-        getclock(&arrival);
+        getarrival(h, &arrival);
 
         if (vlan_tag >= 0) {
                 struct libnet_802_1q_hdr veth;

@@ -85,6 +85,10 @@ Type of timestamp to use for incoming packets\&.
 Use \-vv when pinging to list available ones\&. If the timestamp type is
 valid but not supported by the selected device, a warning is printed and
 the default timestamp type is used instead\&.
+With this option, RTTs use capture timestamps for packet arrival and
+the system clock for sending\&. Types explicitly marked unsynchronized
+cannot be used to measure RTTs and are rejected\&. Deadlines continue
+to use the monotonic clock where available\&.
 .IP "\-p"
 Turn on promiscious mode on interface, use this if you don\(cq\&t
 \(dq\&own\(dq\& the MAC address you are using\&.

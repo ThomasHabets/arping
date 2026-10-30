@@ -1,0 +1,116 @@
+name: Unix VMs
+
+on:
+  push:
+    branches: [ "arping-2.x", "ci" ]
+  pull_request:
+    branches: [ "arping-2.x" ]
+
+jobs:
+  freebsd:
+    name: FreeBSD
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v6
+    - uses: vmactions/freebsd-vm@v1
+      with:
+        usesh: true
+        prepare: |
+          set -eu
+          pkg install -y autoconf automake gmake libnet libpcap check
+        run: &build-and-test |
+          set -eu
+          MAKE=gmake
+          case "$(uname -s)" in
+            FreeBSD|DragonFly) prefix=/usr/local ;;
+            NetBSD) prefix=/usr/pkg ;;
+            SunOS)
+              prefix=/opt/arping-ci
+              PATH="/opt/gcc-14/bin:/usr/gnu/bin:$PATH"
+              MAKE=/usr/gnu/bin/make
+              CFLAGS="${CFLAGS:-} -m64"
+              CPPFLAGS="${CPPFLAGS:-} -D__EXTENSIONS__"
+              export PATH CFLAGS
+              ;;
+          esac
+          CPPFLAGS="${CPPFLAGS:-} -I$prefix/include"
+          LDFLAGS="${LDFLAGS:-} -L$prefix/lib -Wl,-R,$prefix/lib"
+          export MAKE CPPFLAGS LDFLAGS
+          ./bootstrap.sh
+          ./configure
+          "$MAKE" -j2
+          "$MAKE" check
+          ./src/arping --help
+          GW="$(netstat -rn -f inet | awk '$1 == "default" { print $2; exit }')"
+          test -n "$GW"
+          ./src/arping -c 1 -w 5 "$GW"
+          ./src/arping -vvvvvvv -c 1 -w 5 "$GW"
+
+  netbsd:
+    name: NetBSD
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v6
+    - uses: vmactions/netbsd-vm@v1
+      with:
+        usesh: true
+        prepare: |
+          set -eu
+          pkgin -y update
+          pkgin -y install autoconf automake gmake libnet libpcap check
+        run: *build-and-test
+
+  dragonflybsd:
+    name: DragonFly BSD
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v6
+    - uses: vmactions/dragonflybsd-vm@v1
+      with:
+        usesh: true
+        prepare: |
+          set -eu
+          pkg install -y autoconf automake gmake libnet libpcap check
+        run: *build-and-test
+
+  omnios:
+    name: OmniOS
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v6
+    - uses: vmactions/omnios-vm@v1
+      with:
+        # Use the LTS image with the development toolchain installed.
+        release: r151054-build
+        usesh: true
+        prepare: |
+          set -eu
+          pkg install developer/build/autoconf developer/build/automake \
+            developer/build/gnu-make developer/gcc14 system/library/pcap web/curl \
+            || test "$?" -eq 4
+          export PATH="/opt/gcc-14/bin:/usr/gnu/bin:$PATH"
+          export CFLAGS=-m64
+          work="$(mktemp -d)"
+          trap 'rm -rf "$work"' EXIT
+          cd "$work"
+
+          # Use pinned, unmodified dependency releases for this image.
+          curl -fL --retry 3 -o libnet.tar.gz \
+            https://github.com/libnet/libnet/releases/download/v1.3/libnet-1.3.tar.gz
+          test "$(digest -a sha256 libnet.tar.gz)" = \
+            ad1e2dd9b500c58ee462acd839d0a0ea9a2b9248a1287840bc601e774fb6b28f
+          tar -xzf libnet.tar.gz
+          (cd libnet-1.3 && ./configure --prefix=/opt/arping-ci && make -j2 && make install)
+
+          curl -fL --retry 3 -o check.tar.gz \
+            https://github.com/libcheck/check/releases/download/0.15.2/check-0.15.2.tar.gz
+          test "$(digest -a sha256 check.tar.gz)" = \
+            a8de4e0bacfb4d76dd1c618ded263523b53b85d92a146d8835eb1a52932fa20a
+          tar -xzf check.tar.gz
+          (cd check-0.15.2 && ./configure --prefix=/opt/arping-ci \
+            --disable-subunit --enable-build-docs=no && make -j2 && make install)
+        run: *build-and-test

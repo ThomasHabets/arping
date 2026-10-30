@@ -48,8 +48,8 @@ jobs:
           ./src/arping --help
           GW="$(netstat -rn -f inet | awk '$1 == "default" { print $2; exit }')"
           test -n "$GW"
-          ./src/arping -c 1 -w 5 "$GW"
           ./src/arping -vvvvvvv -c 1 -w 5 "$GW"
+          ./src/arping -c 1 -w 5 "$GW"
 
   netbsd:
     name: NetBSD

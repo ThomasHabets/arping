@@ -37,23 +37,27 @@ oops).
 
 See INSTALL file.
 
-I try to test arping on these platforms before any release:
-* Latest Debian stable x86 and amd64
-* Linux (Debian or Ubuntu) on arm
-* Latest OpenBSD x86 or amd64
+### Portability
+
+First class platforms, tested by CI in github actions and/or main development
+machine:
+* Latest Debian stable amd64
+* Latest Ubuntu amd64
+* Latest OpenBSD amd64
+* Latest MacOS X aarch64
 
 Systems that it should still work on, but I don't personally regularly test:
 * Debian Alpha
 * FreeBSD
 * IRIX 6.5 mips (last test 2009-09-27)
-* MacOS X
 * NetBSD
 * OpenBSD sparc64 (last test: 2009-10-02)
 * Solaris
 
-## Contributing
-
-Please run `make check` and `sudo ./tests/run` before creating a PR.
+Features arping depends on:
+* POSIX.1-2001, for `pselect()`. If needed, the code changes to fall back would
+  be minimal.
+* C99, for declaring variables in the middle of a block.
 
 ## Mailing list
 

@@ -24,7 +24,11 @@ jobs:
           MAKE=gmake
           case "$(uname -s)" in
             FreeBSD|DragonFly) prefix=/usr/local ;;
-            NetBSD) prefix=/usr/pkg ;;
+            NetBSD)
+              prefix=/usr/pkg
+              PATH="$prefix/bin:$prefix/sbin:$PATH"
+              export PATH
+              ;;
             SunOS)
               prefix=/opt/arping-ci
               PATH="/opt/gcc-14/bin:/usr/gnu/bin:$PATH"
@@ -58,8 +62,7 @@ jobs:
         usesh: true
         prepare: |
           set -eu
-          pkgin -y update
-          pkgin -y install autoconf automake gmake libnet libpcap check
+          /usr/sbin/pkg_add -u autoconf automake gmake libnet libpcap check
         run: *build-and-test
 
   dragonflybsd:

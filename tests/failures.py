@@ -4,8 +4,11 @@
 import os
 from pathlib import Path
 import shlex
+import select
+import signal
 import subprocess
 import tempfile
+import time
 
 
 def check_failure(library, fault, options, after=0, status=1, output=''):
@@ -89,6 +92,51 @@ def check_unsynchronized_type(timestamp_type):
     print(f'PASS: reject unsynchronized timestamp type {timestamp_type}')
 
 
+def check_interrupt(library, options, sandbox):
+    sender = ([] if os.environ.get('ARPING_ROOTLESS') == 'yes'
+              else ['ip', 'netns', 'exec', 'arping_test0'])
+    read_fd, write_fd = os.pipe()
+    # The first packet wait consumes our outgoing probe on Linux. Interrupt
+    # the next wait, when select would otherwise sleep on an empty capture fd.
+    after = 0 if '-P' in options else 1
+    process = subprocess.Popen(
+        sender + ['env', f'LD_PRELOAD={library}', 'ARPING_TEST_FAIL=wait-sigint',
+                  f'ARPING_TEST_FAIL_AFTER={after}',
+                  f'ARPING_TEST_INTERRUPT_FD={read_fd}', './src/arping', sandbox,
+                  '-i', 'veth0', '-c', '1', '-W', '10'] + options,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, pass_fds=(read_fd,))
+    os.close(read_fd)
+    stderr = b''
+    try:
+        deadline = time.monotonic() + 3
+        while b'injected wait-sigint failure' not in stderr:
+            wait = deadline - time.monotonic()
+            if wait <= 0 or not select.select([process.stderr], [], [], wait)[0]:
+                raise AssertionError('interrupt hook did not become ready')
+            chunk = os.read(process.stderr.fileno(), 4096)
+            if not chunk:
+                raise AssertionError(f'interrupt hook exited early: {stderr!r}')
+            stderr += chunk
+        os.kill(process.pid, signal.SIGINT)
+        os.write(write_fd, b'1')
+        stdout, remaining_stderr = process.communicate(timeout=2)
+        stderr += remaining_stderr
+        expected_status = 0 if '-P' in options else 1
+        if (process.returncode != expected_status or b'Timeout' in stdout
+                or ('-q' in options and stdout)
+                or ('-q' not in options
+                    and b'1 packets transmitted, 0 packets received' not in stdout)):
+            raise AssertionError(
+                f'interrupt, {sandbox}, {options}: exit {process.returncode}; '
+                f'output {stdout!r}; stderr {stderr!r}')
+        print(f'PASS: interrupt before wait, {sandbox}, {options}')
+    finally:
+        os.close(write_fd)
+        if process.poll() is None:
+            process.kill()
+        process.communicate()
+
+
 def main():
     with tempfile.TemporaryDirectory(prefix='arping-faults-') as directory:
         library = str(Path(directory) / 'faults.so')
@@ -110,13 +158,19 @@ def main():
         for fault, options in cases:
             for after in (0, 1):
                 check_failure(library, fault, options, after)
-        check_failure(library, 'select', ['-d', '192.0.2.102'],
+        check_failure(library, 'pselect', ['-d', '192.0.2.102'],
                       output='1 packets transmitted, 0 packets received')
-        check_failure(library, 'select', ['-d', '-q', '192.0.2.102'])
-        check_failure(library, 'select-after-reply', ['-W', '0.1', '192.0.2.101'],
+        check_failure(library, 'pselect', ['-d', '-q', '192.0.2.102'])
+        check_failure(library, 'pselect', ip,
+                      output='1 packets transmitted, 0 packets received')
+        check_failure(library, 'pselect-after-reply', ['-W', '0.1', '192.0.2.101'],
                       output='1 packets transmitted, 1 packets received')
-        check_failure(library, 'select-eintr', ['-W', '0.1', '192.0.2.101'], status=0,
+        check_failure(library, 'pselect-eintr', ['-W', '0.1', '192.0.2.101'], status=0,
                       output='2 packets transmitted, 2 packets received')
+        for options in (['192.0.2.102'], ['-q', '192.0.2.102'],
+                        ['-P', '192.0.2.102'], mac):
+            for sandbox in ('-Z', '-z'):
+                check_interrupt(library, options, sandbox)
 
         for fault in ('pcap-fd', 'pcap-fd-limit'):
             check_failure(library, fault, ['-d', '192.0.2.102'],

@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <signal.h>
 #include <time.h>
 #include <libnet.h>
 #include <pcap.h>
@@ -223,22 +224,68 @@ pcap_get_selectable_fd(pcap_t *pcap)
         return original(pcap);
 }
 
-int
-select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
-        struct timeval *timeout)
+/* Pause in the check-to-wait window until the parent has sent SIGINT. */
+static void
+interrupt_wait(void)
+{
+        const char *fault = getenv("ARPING_TEST_FAIL");
+        if (!fault || strcmp(fault, "wait-sigint")) {
+                return;
+        }
+        static unsigned int calls;
+        const char *after = getenv("ARPING_TEST_FAIL_AFTER");
+        if (calls++ != (after ? strtoul(after, NULL, 10) : 0)) {
+                return;
+        }
+        const char *descriptor = getenv("ARPING_TEST_INTERRUPT_FD");
+        if (!descriptor) abort();
+        fprintf(stderr, "injected %s failure\n", fault);
+        fflush(stderr);
+        char ready;
+        ssize_t ret;
+        do {
+                ret = read(atoi(descriptor), &ready, 1);
+        } while (ret < 0 && errno == EINTR);
+        if (ret != 1) abort();
+}
+
+static int
+fail_wait(void)
 {
         const char *fault = getenv("ARPING_TEST_FAIL");
         static int interrupted;
-        const int interrupt = fault && !strcmp(fault, "select-eintr")
+        const int interrupt = fault && !strcmp(fault, "pselect-eintr")
                 && !interrupted;
-        if (fault && (!strcmp(fault, "select") || interrupt
-                      || (!strcmp(fault, "select-after-reply")
+        if (fault && (!strcmp(fault, "pselect") || interrupt
+                      || (!strcmp(fault, "pselect-after-reply")
                           && received_reply))) {
                 fprintf(stderr, "injected %s failure\n", fault);
                 interrupted = 1;
                 errno = interrupt ? EINTR : EBADF;
+                return 1;
+        }
+        return 0;
+}
+
+int
+pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
+         const struct timespec *timeout, const sigset_t *mask)
+{
+        if (fail_wait()) {
                 return -1;
         }
+        interrupt_wait();
+        __typeof__(&pselect) original = dlsym(RTLD_NEXT, "pselect");
+        if (!original) abort();
+        return original(nfds, readfds, writefds, exceptfds, timeout, mask);
+}
+
+/* Keep the race test effective against the old select-based implementation. */
+int
+select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
+        struct timeval *timeout)
+{
+        interrupt_wait();
         __typeof__(&select) original = dlsym(RTLD_NEXT, "select");
         if (!original) abort();
         return original(nfds, readfds, writefds, exceptfds, timeout);

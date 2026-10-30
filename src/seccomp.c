@@ -119,6 +119,8 @@ drop_seccomp(int libnet_fd)
         seccomp_allow(ctx, "recvfrom");
         seccomp_allow(ctx, "select");
         seccomp_allow(ctx, "pselect6");
+        seccomp_allow(ctx, "pselect6_time64");
+        seccomp_allow(ctx, "rt_sigprocmask");
         seccomp_allow(ctx, "newfstatat");
         seccomp_allow(ctx, "exit_group");
         seccomp_allow(ctx, "rt_sigreturn");

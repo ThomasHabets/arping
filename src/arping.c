@@ -44,6 +44,7 @@
 #include <limits.h>
 #include <math.h>
 #include <poll.h>
+#include <signal.h>
 
 #if HAVE_UNISTD_H
 #include <unistd.h>
@@ -2172,6 +2173,47 @@ fixup_timespec(struct timespec *tv)
         }
 }
 
+/* Block SIGINT across the shutdown check, then unblock it atomically with
+ * waiting. A signal arriving before pselect must not leave us asleep.
+ * An fd of -1 means sleep without waiting for packets.
+ */
+static int
+wait_for_packets(int fd, const struct timespec *timeout)
+{
+        sigset_t blocked, original;
+        sigemptyset(&blocked);
+        sigaddset(&blocked, SIGINT);
+        if (sigprocmask(SIG_BLOCK, &blocked, &original)) {
+                fprintf(stderr, "arping: sigprocmask(SIG_BLOCK): %s\n",
+                        strerror(errno));
+                exit_status = EXIT_FAILURE;
+                sigint(0);
+                return -1;
+        }
+
+        int ret = -1;
+        int saved_errno = EINTR;
+        if (!time_to_die) {
+                fd_set fds;
+                FD_ZERO(&fds);
+                if (fd >= 0) {
+                        FD_SET(fd, &fds);
+                }
+                ret = pselect(fd + 1, fd >= 0 ? &fds : NULL, NULL, NULL,
+                              timeout, &original);
+                saved_errno = errno;
+        }
+        if (sigprocmask(SIG_SETMASK, &original, NULL)) {
+                fprintf(stderr, "arping: sigprocmask(SIG_SETMASK): %s\n",
+                        strerror(errno));
+                exit_status = EXIT_FAILURE;
+                sigint(0);
+                return -1;
+        }
+        errno = saved_errno;
+        return ret;
+}
+
 /**
  * try to receive a packet for 'packetwait' microseconds
  */
@@ -2189,7 +2231,18 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
                        printf("arping: sending replies. Waiting %"PRIdMAX" us…\n",
                               (intmax_t)packetwait);
                }
-               usleep(packetwait);
+               const struct timespec delay = {
+                       .tv_sec = packetwait / 1000000,
+                       .tv_nsec = 1000 * (packetwait % 1000000),
+               };
+               if (wait_for_packets(-1, &delay) < 0 && errno != EINTR) {
+                       if (!time_to_die) {
+                               fprintf(stderr, "arping: pselect(): %s\n",
+                                       strerror(errno));
+                               exit_status = EXIT_FAILURE;
+                               sigint(0);
+                       }
+               }
                return;
        }
 
@@ -2258,20 +2311,14 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 		       return;
 	       }
 
-	       /* try to wait for data */
-	       {
-                       fd_set fds;
-		       int r;
-                       struct timeval tv;
-                       tv.tv_sec = ts.tv_sec;
-                       tv.tv_usec = ts.tv_nsec / 1000;
-
-                       FD_ZERO(&fds);
-                       FD_SET(fd, &fds);
-
-                       r = select(fd + 1, &fds, NULL, NULL, &tv);
-		       switch (r) {
-		       case 0: /* timeout */
+               /* try to wait for data */
+               {
+                       const int r = wait_for_packets(fd, &ts);
+                       if (time_to_die) {
+                               return;
+                       }
+                       switch (r) {
+                       case 0: /* timeout */
                                if (numrecvd == old_received) {
                                        if (reverse_beep) {
                                                printf("\a");
@@ -2291,23 +2338,23 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
                                        }
                                        fflush(stdout);
                                }
-			       done = 1;
-			       break;
-		       case -1: /* error */
-			       if (errno != EINTR) {
-				       fprintf(stderr,
-					       "arping: select() failed: %s\n",
-					       strerror(errno));
+                               done = 1;
+                               break;
+                       case -1: /* error */
+                               if (errno != EINTR) {
+                                       fprintf(stderr,
+                                               "arping: pselect() failed: %s\n",
+                                               strerror(errno));
                                        exit_status = EXIT_FAILURE;
                                        sigint(0);
                                        return;
-			       }
-			       break;
-		       default: /* data returned */
-			       trydispatch = 1;
-			       break;
-		       }
-	       }
+                               }
+                               break;
+                       default: /* data returned */
+                               trydispatch = 1;
+                               break;
+                       }
+               }
 	       if (trydispatch) {
 		       int ret;
                        if (0 > (ret = pcap_dispatch(pcap, -1,

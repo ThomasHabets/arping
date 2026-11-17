@@ -562,11 +562,13 @@ drop_capabilities()
         if (cap_set_proc(no_cap)) {
                 if (verbose) {
                         printf("arping: cap_set_proc(): %s\n", strerror(errno));
+                        goto out;
                 }
         }
         if (verbose > 1) {
                 printf("arping: Successfully dropped all capabilities.\n");
         }
+out:
         cap_free(no_cap);
 #endif
 }

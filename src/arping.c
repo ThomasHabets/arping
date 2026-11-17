@@ -1011,7 +1011,7 @@ do_libnet_init(const char *inifname, int recursive)
                                 *ebuf ? ebuf : "<no error message>");
                 }
                 if (!last) {
-                        do_libnet_init(ifname, recursive+1);
+                        do_libnet_init(inifname, recursive+1);
                         if (libnet != NULL) {
                                 return;
                         }

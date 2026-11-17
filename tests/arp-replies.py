@@ -154,6 +154,8 @@ def main():
                 ['-r', '-r'], '02:00:00:00:00:aa\n')
     check_reply('repeated IP-only output', [(ethernet, owner)],
                 ['-R', '-R'], '192.0.2.102\n')
+    check_reply('two replies then an unanswered probe', [(ethernet, owner)] * 2,
+                ['-D', '-c', '2'], '!!.\t 50% packet loss (1 extra)\n')
     check_reply('different owners sharing an Ethernet sender',
                 [(ethernet, owner), (ethernet, other_owner)], ['-d', '-q'],
                 '', status=1)

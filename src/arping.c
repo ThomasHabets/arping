@@ -2387,6 +2387,16 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
        }
 }
 
+/* Count each receive window with at least one accepted reply once. */
+static unsigned int
+wait_for_replies(pcap_t *pcap, double deadline, uint32_t packetwait,
+                 pcap_handler handler)
+{
+        const unsigned int before = numrecvd;
+        ping_recv(pcap, wait_time(deadline, packetwait), handler);
+        return numrecvd != before;
+}
+
 // return 1 on success.
 static int
 xresolve(libnet_t* l, const char *name, uint8_t r, uint32_t *addr)
@@ -2998,6 +3008,7 @@ arping_main(int argc, char **argv)
                 getclock(&ts);
                 deadline += timespec2dbl(&ts);
         }
+        unsigned int answered = 0;
 	if (mode == PINGIP) {
 		int c;
 		for (c = 0; (maxcount < 0 || c < maxcount); c++) {
@@ -3012,8 +3023,8 @@ arping_main(int argc, char **argv)
                         if (time_to_die) {
                                 break;
                         }
-                        const uint32_t w = wait_time(deadline, packetwait);
-                        ping_recv(pcap, w, (pcap_handler)pingip_recv);
+                        answered += wait_for_replies(pcap, deadline, packetwait,
+                                                     (pcap_handler)pingip_recv);
 		}
 	} else { /* PINGMAC */
 		int c;
@@ -3030,31 +3041,21 @@ arping_main(int argc, char **argv)
                         if (time_to_die) {
                                 break;
                         }
-                        const uint32_t w = wait_time(deadline, packetwait);
-                        ping_recv(pcap, w,  (pcap_handler)pingmac_recv);
+                        answered += wait_for_replies(pcap, deadline, packetwait,
+                                                     (pcap_handler)pingmac_recv);
 		}
 	}
+        const double loss = numsent ? 100.0 * (numsent - answered) / numsent : 0.0;
+        const unsigned int extra = numrecvd - answered;
         if (display == DOT) {
-                double succ = 0.0;
-                if (numsent > 0) {
-                        succ = 100.0 - 100.0 * (double)(numrecvd)/(double)numsent;
-                }
-                printf("\t%3.0f%% packet loss (%u extra)\n",
-                       (succ < 0.0) ? 0.0 : succ,
-                       (succ < 0.0) ? (numrecvd - numsent) : 0);
+                printf("\t%3.0f%% packet loss (%u extra)\n", loss, extra);
         } else if (display == NORMAL) {
-                double succ = 0.0;
-                if (numsent > 0) {
-                        succ = 100.0 - 100.0 * (double)(numrecvd)/(double)numsent;
-                }
                 printf("\n--- %s statistics ---\n"
                        "%u packets transmitted, "
                        "%u packets received, "
                        "%3.0f%% "
                        "unanswered (%u extra)\n",
-                       target,numsent,numrecvd,
-                       (succ < 0.0) ? 0.0 : succ,
-                       (succ < 0.0) ? (numrecvd - numsent): 0);
+                       target, numsent, numrecvd, loss, extra);
                 if (numrecvd) {
                         double avg = stats_total_time / numrecvd;
                         double stddev2 = stats_total_sq_time/numrecvd-avg*avg;

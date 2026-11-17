@@ -244,6 +244,10 @@ run_tests() {
     run_test "reply"             0 -c 1 -P    192.0.2.101
     run_test "unsolicited_reply" 0 -c 1 -P -U 192.0.2.101
 
+    for raw in -r -R -rR; do
+        run_test -t "quiet" 0 -c 1 -P "$raw" -W 0 192.0.2.101
+    done
+
     # TODO: -q
     # TODO: -Q
     # TODO: -r

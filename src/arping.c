@@ -1655,7 +1655,7 @@ pingip_send()
                        (intmax_t)lastpacketsent.tv_sec,
                        (intmax_t)lastpacketsent.tv_nsec);
 	}
-        if (send_reply && display != QUIET) {
+        if (send_reply && (display == NORMAL || display == DOT)) {
                 printf("Sending ARP reply\n");
         }
         getrttclock(&lastpacketsent);

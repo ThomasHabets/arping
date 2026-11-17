@@ -102,8 +102,8 @@ mancommand(.sp)
 	To check the address of MAC-A, use knowledge of MAC-B and IP-B.
 
 	$ arping -S <IP-B> -s <MAC-B> -p <MAC-A>
-    dit(-u) Show index=received/sent instead of just index=received when
-	pinging MACs.
+    dit(-u) Show zero-based receive/send indexes with each reply in normal output.
+        For MAC pings, the indexes follow the ICMP sequence number.
     dit(-U) Send unsolicited ARP. This sets the destination MAC address in
     the ARP frame to the broadcast address. Unsolicited ARP is used
     to update the neighbours' ARP caches.

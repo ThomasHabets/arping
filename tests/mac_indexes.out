@@ -1,0 +1,7 @@
+ARPING 00:01:02:33:44:01
+\d+ bytes from 192[.]0[.]2[.]101 \(00:01:02:33:44:01\): icmp_seq=0 index=0/0 time=[^\n]+
+\d+ bytes from 192[.]0[.]2[.]101 \(00:01:02:33:44:01\): icmp_seq=1 index=1/1 time=[^\n]+
+
+--- 00:01:02:33:44:01 statistics ---
+2 packets transmitted, 2 packets received,   0% unanswered \(0 extra\)
+rtt min/avg/max/std-dev = [^\n]+ ms

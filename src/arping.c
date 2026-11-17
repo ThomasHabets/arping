@@ -1186,8 +1186,7 @@ extended_usage()
 	       "    -p     Turn  on  promiscious  mode  on interface, use this if you don't\n"
 	       "           \"own\" the MAC address you are using.\n"
                "    -P     Send ARP replies instead of requests. Useful with -U.\n"
-	       "    -u     Show index=received/sent instead  of  just  index=received  when\n"
-	       "           pinging MACs.\n"
+               "    -u     Show zero-based receive/send indexes with each reply.\n"
 	       "    -U     Send unsolicited ARP.\n"
 	       "    -v     Verbose output. Use twice for more messages.\n"
                "    -V num 802.1Q tag to add. Defaults to no VLAN tag.\n"
@@ -1669,6 +1668,15 @@ pingip_send()
 	numsent++;
 }
 
+static void
+print_reply_index(void)
+{
+        printf("index=%u", numrecvd);
+        if (alsototal) {
+                printf("/%u", numsent ? numsent - 1 : 0);
+        }
+}
+
 /** handle incoming packet when pinging an IP address.
  *
  * \param h       packet metadata
@@ -1860,16 +1868,9 @@ pingip_recv(unsigned char *pcap_user, const struct pcap_pkthdr *h, const unsigne
                 putchar('!');
                 break;
         case NORMAL:
-                printf("%u bytes from %s (%s): index=%u",
-                       h->len, macbuf, libnet_addr2name4(ip, 0), numrecvd);
-
-                if (alsototal) {
-                        unsigned int t = numsent;
-                        if (t > 0) {
-                                --t;
-                        }
-                        printf("/%u", t);
-                }
+                printf("%u bytes from %s (%s): ",
+                       h->len, macbuf, libnet_addr2name4(ip, 0));
+                print_reply_index();
                 printf(" time=%s", ts2str(&lastpacketsent, &arrival, buf,
                                           sizeof(buf)));
                 break;
@@ -2123,11 +2124,15 @@ pingmac_recv(unsigned char* pcap_user, const struct pcap_pkthdr *h, const uint8_
                 putchar('!');
                 break;
         case NORMAL:
-                printf("%u bytes from %s (%s): icmp_seq=%hu time=%s", h->len,
+                printf("%u bytes from %s (%s): icmp_seq=%hu", h->len,
                        libnet_addr2name4(hip.ip_src.s_addr, 0),
                        format_mac(pkt_srcmac, buf, sizeof(buf)),
-                       ntohs(hicmp.icmp_seq),
-                       ts2str(&payload_ts, &arrival, buf2, sizeof(buf2)));
+                       ntohs(hicmp.icmp_seq));
+                if (alsototal) {
+                        putchar(' ');
+                        print_reply_index();
+                }
+                printf(" time=%s", ts2str(&payload_ts, &arrival, buf2, sizeof(buf2)));
                 break;
         case RAW:
                 printf("%s", libnet_addr2name4(hip.ip_src.s_addr, 0));

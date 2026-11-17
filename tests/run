@@ -256,7 +256,7 @@ run_tests() {
     # TODO: -S
     # TODO: -t
     # TODO: -T
-    # TODO: -u
+    run_test -t "mac_indexes" 0 -u -c 2 -T 192.0.2.101 00:01:02:33:44:01
 
     run_test "unsolicited"       0 -c 1 -U 192.0.2.101
 

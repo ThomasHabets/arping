@@ -21,7 +21,7 @@ def check_failure(library, fault, options, after=0, status=1, output=''):
         capture_output=True, text=True, timeout=5)
     expected = f'injected {fault} failure'
     statistics = (f'{after} packets transmitted, 0 packets received'
-                  if fault.startswith('libnet_build_') else output)
+                  if fault.startswith('libnet_') else output)
     fatal_clock = (fault == 'wall-clock'
                    or (fault.startswith('clock') and (fault != 'clock-fallback'
                                                        or after > 0)))
@@ -186,6 +186,8 @@ def main():
         ip = ['-P', '192.0.2.102']
         mac = ['-T', '192.0.2.102', 'ff:ff:ff:ff:ff:ff']
         cases = [
+            ('libnet_write', ip),
+            ('libnet_write', mac),
             ('libnet_build_arp', ip),
             ('libnet_build_icmpv4_echo', mac),
             ('libnet_build_ipv4', mac),

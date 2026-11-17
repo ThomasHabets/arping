@@ -1576,8 +1576,9 @@ pingmac_send(uint16_t seq)
 		fprintf(stderr, "arping: libnet_write(): %s\n",
 			libnet_geterror(libnet));
                 exit_status = EXIT_FAILURE;
-		sigint(0);
-	}
+                sigint(0);
+                return;
+        }
         getclock(&lastpacketsent);
 	numsent++;
 }
@@ -1660,8 +1661,9 @@ pingip_send()
 		fprintf(stderr, "arping: libnet_write(): %s\n",
 			libnet_geterror(libnet));
                 exit_status = EXIT_FAILURE;
-		sigint(0);
-	}
+                sigint(0);
+                return;
+        }
 	numsent++;
 }
 

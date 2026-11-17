@@ -93,9 +93,7 @@ libnet_write(libnet_t *l)
                 fprintf(stderr, "transmission attempted after build or clock failure\n");
                 _exit(99);
         }
-        __typeof__(&libnet_write) original = dlsym(RTLD_NEXT, "libnet_write");
-        if (!original) abort();
-        return original(l);
+        BUILD(libnet_write, (l));
 }
 
 static int received_reply;

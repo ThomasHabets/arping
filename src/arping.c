@@ -2990,7 +2990,7 @@ arping_main(int argc, char **argv)
                 char buf[128];
 		printf("This box:   Interface: %s  IP: %s   MAC address: %s\n",
 		       ifname,
-                       libnet_addr2name4(libnet_get_ipaddr4(libnet), 0),
+                       libnet_addr2name4(srcip, 0),
                        format_mac(srcmac, buf, sizeof(buf)));
 	}
 

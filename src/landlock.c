@@ -55,6 +55,12 @@ void
 drop_landlock()
 {
 #ifdef ACTUALLY_USE_LANDLOCK
+        const int abi = ll_create_ruleset(NULL, 0, LANDLOCK_CREATE_RULESET_VERSION);
+        if (abi < 0) {
+                fprintf(stderr, "arping: Failed to query Landlock ABI: %s\n",
+                        strerror(errno));
+                return;
+        }
         struct landlock_ruleset_attr ruleset_attr = {
                 .handled_access_fs = 0
                         | LANDLOCK_ACCESS_FS_WRITE_FILE
@@ -67,29 +73,37 @@ drop_landlock()
                         | LANDLOCK_ACCESS_FS_MAKE_REG
                         | LANDLOCK_ACCESS_FS_MAKE_SOCK
                         | LANDLOCK_ACCESS_FS_MAKE_FIFO
-#ifdef LANDLOCK_ACCESS_FS_REFER
-                        | LANDLOCK_ACCESS_FS_REFER
-#endif
                         | LANDLOCK_ACCESS_FS_MAKE_BLOCK
                         | LANDLOCK_ACCESS_FS_MAKE_SYM
+                        | LANDLOCK_ACCESS_FS_EXECUTE,
+        };
+#ifdef LANDLOCK_ACCESS_FS_REFER
+        if (abi >= 2) {
+                ruleset_attr.handled_access_fs |= LANDLOCK_ACCESS_FS_REFER;
+        }
+#endif
 #ifdef LANDLOCK_ACCESS_FS_TRUNCATE
-                        | LANDLOCK_ACCESS_FS_TRUNCATE
+        if (abi >= 3) {
+                ruleset_attr.handled_access_fs |= LANDLOCK_ACCESS_FS_TRUNCATE;
+        }
+#endif
+#ifdef LANDLOCK_ACCESS_NET_BIND_TCP
+        if (abi >= 4) {
+                ruleset_attr.handled_access_net = LANDLOCK_ACCESS_NET_BIND_TCP
+                        | LANDLOCK_ACCESS_NET_CONNECT_TCP;
+        }
 #endif
 #ifdef LANDLOCK_ACCESS_FS_IOCTL_DEV
-                        | LANDLOCK_ACCESS_FS_IOCTL_DEV
-#endif
-                        | LANDLOCK_ACCESS_FS_EXECUTE,
-#ifdef LANDLOCK_ACCESS_NET_BIND_TCP
-                .handled_access_net =
-                        LANDLOCK_ACCESS_NET_BIND_TCP
-                        | LANDLOCK_ACCESS_NET_CONNECT_TCP,
+        if (abi >= 5) {
+                ruleset_attr.handled_access_fs |= LANDLOCK_ACCESS_FS_IOCTL_DEV;
+        }
 #endif
 #ifdef LANDLOCK_SCOPE_ABSTRACT_UNIX_SOCKET
-                .scoped =
-                        LANDLOCK_SCOPE_ABSTRACT_UNIX_SOCKET
-                        | LANDLOCK_SCOPE_SIGNAL,
+        if (abi >= 6) {
+                ruleset_attr.scoped = LANDLOCK_SCOPE_ABSTRACT_UNIX_SOCKET
+                        | LANDLOCK_SCOPE_SIGNAL;
+        }
 #endif
-        };
         int ruleset = ll_create_ruleset(&ruleset_attr, sizeof(ruleset_attr), 0);
         if (ruleset < 0) {
                 fprintf(stderr, "arping: Failed to create landlock ruleset: %s\n",

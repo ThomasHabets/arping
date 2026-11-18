@@ -83,7 +83,10 @@ AC_SUBST([SUBUNIT_LIBS])
 
 AC_ARG_ENABLE([seccomp], [Enable seccomp priv drops by default (-z to turn on, -Z for off)], [
    if test x"$enableval" = x"yes"; then
-      if test "$ac_cv_lib_seccomp_seccomp_init" = "no"; then
+      if test "$ac_cv_header_seccomp_h" != "yes"; then
+         AC_MSG_ERROR([--enable-seccomp requires seccomp.h])
+      fi
+      if test "$ac_cv_lib_seccomp_seccomp_init" != "yes"; then
          AC_MSG_ERROR([--enable-seccomp given but seccomp libraries not present])
       fi
       AC_DEFINE([DEFAULT_SECCOMP], [1], [Enable seccomp by default])

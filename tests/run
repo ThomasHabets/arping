@@ -11,7 +11,13 @@
 set -e
 set -o pipefail
 
+capture_pid=""
+capture_file=""
+capture_text=""
+ROOTLESS_PID1=""
+
 setup() {
+    trap cleanup EXIT
     if [[ "${ARPING_ROOTLESS:-}" = yes ]]; then
         setup_rootless
         return
@@ -22,10 +28,8 @@ setup() {
     ip netns add arping_test0
     ip netns add arping_test1
 
-    ip link add veth0 type veth peer name veth1
-
-    ip link set veth0 netns arping_test0
-    ip link set veth1 netns arping_test1
+    ip -n arping_test0 link add veth0 type veth peer name veth1
+    ip -n arping_test0 link set veth1 netns arping_test1
 
     ip netns exec arping_test0 ip l set up veth0
     ip netns exec arping_test1 ip l set up veth1
@@ -41,7 +45,6 @@ setup_rootless() {
     ROOTLESS_PID1=""
     unshare --net sh -c 'exec sleep 1200' &
     ROOTLESS_PID1=$!
-    trap cleanup EXIT
     while [[ /proc/"${ROOTLESS_PID1}"/ns/net -ef /proc/self/ns/net ]]; do
         sleep 0.01
     done
@@ -117,16 +120,16 @@ run_test() {
     echo "-----------------------------"
     
     if [[ "${DO_CAPTURE?}" = "yes" ]]; then
-	CAP="$(mktemp)"
+        capture_file="$(mktemp)"
 	# TODO: in the future also capture icmp. But we need regex matching for that.
 	exec1_bg tcpdump \
 	   -s0 \
 	   -nlpi veth1 \
 	   --immediate-mode \
-	   -w "${CAP?}" \
+           -w "$capture_file" \
 	   arp \
 	   &
-        PID=$!
+        capture_pid=$!
         # wait for tcpdump to wake up.
         sleep "${SLEEP?}"
     fi
@@ -169,21 +172,33 @@ run_test() {
     if [[ "${DO_CAPTURE?}" = "yes" ]]; then
 	# Wait for tcpdump to see the packets.
 	sleep "${SLEEP?}"
-	kill -INT "${PID?}"
-	wait "${PID?}" || true
+        kill -INT "$capture_pid"
+        wait "$capture_pid" || true
+        capture_pid=""
 
-	TXT="$(mktemp)"
-	if [[ "${ARPING_ROOTLESS:-}" != yes ]]; then
-	    chown root:root "${CAP?}"
-	fi
-	tcpdump -txnlpr "${CAP?}" > "${TXT?}"
-	diff -Nu "tests/${NAME?}.cap" "${TXT?}" || (echo "FAIL ${TXT?}"; exit 1)
-	rm "${CAP?}" "${TXT?}"
+        capture_text="$(mktemp)"
+        chown root:root "$capture_file"
+        tcpdump -txnlpr "$capture_file" > "$capture_text"
+        diff -Nu "tests/${NAME?}.cap" "$capture_text"
     fi
     cleanup
 }
 
 cleanup() {
+    trap - EXIT
+    if [[ -n "$capture_pid" ]]; then
+        kill -TERM "$capture_pid" 2>/dev/null || true
+        wait "$capture_pid" 2>/dev/null || true
+        capture_pid=""
+    fi
+    if [[ -n "$capture_file" ]]; then
+        rm -f -- "$capture_file"
+        capture_file=""
+    fi
+    if [[ -n "$capture_text" ]]; then
+        rm -f -- "$capture_text"
+        capture_text=""
+    fi
     if [[ "${ARPING_ROOTLESS:-}" = yes ]]; then
 	if [[ -n "${ROOTLESS_PID1:-}" ]]; then
 	    kill "${ROOTLESS_PID1}" 2>/dev/null || true

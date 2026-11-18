@@ -2477,7 +2477,7 @@ arping_main(int argc, char **argv)
                         maxcount = must_parse_int(optarg, "count (-c)");
                         if (maxcount < 0) {
                                 fprintf(stderr,
-                                        "arping: count (-c) must be >0. Got %d\n",
+                                        "arping: count (-c) must be >=0. Got %d\n",
                                         maxcount);
                                 exit(1);
                         }

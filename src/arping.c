@@ -2954,8 +2954,10 @@ arping_main(int argc, char **argv)
 	if (-1 == pcap_setfilter(pcap, &bp)) {
                 fprintf(stderr, "arping: pcap_setfilter(): %s\n",
                         pcap_geterr(pcap));
-		exit(1);
+                pcap_freecode(&bp);
+                exit(1);
 	}
+        pcap_freecode(&bp);
 
 	/*
 	 * final init

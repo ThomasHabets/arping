@@ -2235,28 +2235,13 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
        int fd;
        unsigned int old_received;
 
-       if (send_reply) {
-               if (verbose > 3) {
+       if (verbose > 3) {
+               if (send_reply) {
                        printf("arping: sending replies. Waiting %"PRIdMAX" us…\n",
                               (intmax_t)packetwait);
+               } else {
+                       printf("arping: receiving packets...\n");
                }
-               const struct timespec delay = {
-                       .tv_sec = packetwait / 1000000,
-                       .tv_nsec = 1000 * (packetwait % 1000000),
-               };
-               if (wait_for_packets(-1, &delay) < 0 && errno != EINTR) {
-                       if (!time_to_die) {
-                               fprintf(stderr, "arping: pselect(): %s\n",
-                                       strerror(errno));
-                               exit_status = EXIT_FAILURE;
-                               sigint(0);
-                       }
-               }
-               return;
-       }
-
-       if (verbose > 3) {
-               printf("arping: receiving packets...\n");
        }
 
        getclock(&ts);
@@ -2264,8 +2249,8 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
        endtime.tv_nsec = ts.tv_nsec + 1000 * (packetwait % 1000000);
        fixup_timespec(&endtime);
 
-       fd = pcap_get_selectable_fd(pcap);
-       if (fd == -1) {
+       fd = send_reply ? -1 : pcap_get_selectable_fd(pcap);
+       if (!send_reply && fd == -1) {
                fprintf(stderr, "arping: pcap_get_selectable_fd()=-1: %s\n",
                        pcap_geterr(pcap));
                exit_status = EXIT_FAILURE;
@@ -2288,7 +2273,7 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
 	       ts.tv_sec = endtime.tv_sec - ts.tv_sec;
 	       ts.tv_nsec = endtime.tv_nsec - ts.tv_nsec;
 	       fixup_timespec(&ts);
-               if (verbose > 2) {
+               if (!send_reply && verbose > 2) {
                        printf("arping: listen for replies for %"PRIdMAX".%09"PRIdMAX" sec\n",
                               (intmax_t)ts.tv_sec, (intmax_t)ts.tv_nsec);
                }
@@ -2328,6 +2313,9 @@ ping_recv(pcap_t *pcap, uint32_t packetwait, pcap_handler func)
                        }
                        switch (r) {
                        case 0: /* timeout */
+                               if (send_reply) {
+                                       return;
+                               }
                                if (numrecvd == old_received) {
                                        if (reverse_beep) {
                                                printf("\a");

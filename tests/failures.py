@@ -37,6 +37,7 @@ def check_failure(library, fault, options, after=0, status=1, output=''):
             f'{fault}, {options}, after={after}: exit {result.returncode}; '
             f'output {result.stdout!r}; stderr {result.stderr!r}')
     print(f'PASS: {fault}, {options}, after={after}')
+    return result.stdout
 
 
 def check_group(value, status):
@@ -208,6 +209,12 @@ def main():
                       output='1 packets transmitted, 1 packets received')
         check_failure(library, 'pselect-eintr', ['-W', '0.1', '192.0.2.101'], status=0,
                       output='2 packets transmitted, 2 packets received')
+        output = check_failure(library, 'pselect-eintr', ['-vv', '-W', '0.2'] + ip,
+                               status=0, output='2 packets transmitted, 0 packets received')
+        first, second = [float(line.split()[-1]) for line in output.splitlines()
+                         if line.startswith('arping: sending packet at time ')]
+        if second - first < 0.19:
+            raise AssertionError(f'interrupted reply wait lasted only {second - first}s')
         for options in (['192.0.2.102'], ['-q', '192.0.2.102'],
                         ['-P', '192.0.2.102'], mac):
             for sandbox in ('-Z', '-z'):

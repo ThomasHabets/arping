@@ -22,6 +22,7 @@ int16_t cast_long_int16(long from, const char* fmt, ...) __attribute__ ((format 
 uint8_t cast_int16_uint8(int16_t from, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
 unsigned int cast_int_uint(int from, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
 uint16_t cast_int_uint16(int from, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
+uint16_t cast_uint_uint16(unsigned int from, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
 size_t cast_int_size(int from, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
 int cast_long_int(long from, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
 uint8_t cast_long_uint8(long from, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));

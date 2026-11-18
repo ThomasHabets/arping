@@ -256,6 +256,26 @@ cast_int_uint16(int from, const char* fmt, ...)
     va_end(ap);
     return to;
 }
+uint16_t
+cast_uint_uint16(unsigned int from, const char* fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    const uint16_t to = (uint16_t)from;
+    if (from != (unsigned int)to) {
+        fprintf(stderr, "arping: ");
+        if (fmt) {
+          vfprintf(stderr, fmt, ap);
+          fprintf(stderr, ": value won't fit in uint16_t");
+        } else {
+          fprintf(stderr, "cast_uint_uint16(%"PRIuMAX"): %s", (uintmax_t)from, "value won't fit in uint16_t\n");
+        }
+        fprintf(stderr, "\n");
+        exit(1);
+    }
+    va_end(ap);
+    return to;
+}
 size_t
 cast_int_size(int from, const char* fmt, ...)
 {

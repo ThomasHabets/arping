@@ -3037,7 +3037,7 @@ arping_main(int argc, char **argv)
                         if (c == INT_MAX) {
                                 --c;
                         }
-                        pingmac_send(cast_int_uint16(c & 0xffff, NULL));
+                        pingmac_send(cast_uint_uint16(numsent & UINT16_MAX, NULL));
                         if (time_to_die) {
                                 break;
                         }

@@ -1362,6 +1362,9 @@ get_mac_addr(const char *in, uint8_t *out)
 static void
 update_stats(double sample)
 {
+        if (sample < 0) {
+                return;
+        }
         if (stats_min_time < 0 || sample < stats_min_time) {
                 stats_min_time = sample;
         }

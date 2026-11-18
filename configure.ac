@@ -33,6 +33,24 @@ AC_DEFUN([CHECK_COMPILER_OPTION], [
     )
 ])
 
+# $2 is an optional compiler flag required by the linker option (e.g. PIE).
+AC_DEFUN([CHECK_LINKER_OPTION], [
+    AC_MSG_CHECKING([linker option $1])
+    saved_ldflags=$LDFLAGS
+    saved_cflags=$CFLAGS
+    saved_werror=$ac_c_werror_flag
+    LDFLAGS="$LDFLAGS $1"
+    m4_ifval([$2], [CFLAGS="$CFLAGS $2"])
+    # Some linkers warn about ignored options and still produce an executable.
+    AC_LANG_WERROR
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])],
+        [AC_MSG_RESULT([yes])],
+        [AC_MSG_RESULT([no])
+         LDFLAGS=$saved_ldflags
+         CFLAGS=$saved_cflags])
+    ac_c_werror_flag=$saved_werror
+])
+
 CHECK_COMPILER_OPTION([-std=c99])
 
 # Checks for header files.
@@ -247,12 +265,12 @@ AC_ARG_ENABLE(hardened,
         CHECK_COMPILER_OPTION([-mbranch-protection=standard])
         CHECK_COMPILER_OPTION([-fcf-protection=full])
         CHECK_COMPILER_OPTION([-fstrict-flex-arrays=3])
-        CHECK_COMPILER_OPTION([-fPIE -pie])
-        CHECK_COMPILER_OPTION([-Wl,-z,nodlopen])
-        CHECK_COMPILER_OPTION([-Wl,-z,noexecstack])
-        CHECK_COMPILER_OPTION([-Wl,-z,relro])
-        CHECK_COMPILER_OPTION([-Wl,-z,noexecheap])
-        CHECK_COMPILER_OPTION([-Wl,-z,now])
+        CHECK_LINKER_OPTION([-pie], [-fPIE])
+        CHECK_LINKER_OPTION([-Wl,-z,nodlopen])
+        CHECK_LINKER_OPTION([-Wl,-z,noexecstack])
+        CHECK_LINKER_OPTION([-Wl,-z,relro])
+        CHECK_LINKER_OPTION([-Wl,-z,noexecheap])
+        CHECK_LINKER_OPTION([-Wl,-z,now])
         CHECK_COMPILER_OPTION([-fstack-protector-all])
         CHECK_COMPILER_OPTION([--param ssp-buffer-size=1])
         CHECK_COMPILER_OPTION([-U _FORTIFY_SOURCE -D_FORTIFY_SOURCE=3])

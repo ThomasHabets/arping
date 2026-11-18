@@ -21,3 +21,7 @@ if [[ ! "${NO_SUDO:-}" = "true" ]]; then
 else
         ./tests/run-rootless
 fi
+
+# Keep failed builds for inspection.
+cd /
+rm -rf -- "${ARPING_TEMPDIR}"

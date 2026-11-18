@@ -51,7 +51,9 @@ AC_DEFUN([CHECK_LINKER_OPTION], [
     ac_c_werror_flag=$saved_werror
 ])
 
-CHECK_COMPILER_OPTION([-std=c99])
+AS_CASE([" $CFLAGS "], [*" -std="*], [], [
+    CHECK_COMPILER_OPTION([-std=c99])
+])
 
 # Checks for header files.
 AC_HEADER_STDC

@@ -297,7 +297,7 @@ run_tests() {
 }
 
 main() {
-    cd "$(dirname $0)/.."
+    cd "$(dirname "$0")/.."
     SLEEP="${1:-0.1}"
     cleanup
     run_tests

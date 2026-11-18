@@ -40,6 +40,7 @@ drop_no_new_privs()
         if (prctl(PR_SET_NO_NEW_PRIVS, 1L, 0L, 0L, 0L)) {
                 fprintf(stderr, "arping: setting NO_NEW_PRIVS failed: %s\n",
                         strerror(errno));
+                return;
         }
         if (verbose > 2) {
                 printf("arping: Prevented new privs being set\n");

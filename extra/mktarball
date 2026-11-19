@@ -23,10 +23,11 @@ OUTPUT="$VERSION.tar.gz"
 echo "Writing $OUTPUT"
 
 GITDIR="$(realpath .)"
-TMPDIR="$(mktemp -d)"
+release_tmpdir="$(mktemp -d)"
+trap 'rm -rf -- "$release_tmpdir"' EXIT
 
 (
-    cd "$TMPDIR"
+    cd "$release_tmpdir"
     mkdir "$VERSION"
     cd "$VERSION"
     git init
@@ -39,4 +40,3 @@ TMPDIR="$(mktemp -d)"
     cd ..
     tar cfz - "$VERSION" > "$GITDIR/$OUTPUT"
 )
-rm -fr -- "$TMPDIR"

@@ -769,7 +769,11 @@ xpcap_activate(pcap_t* pcap, const char* timestamp_type, char* errbuf, size_t er
         if (rc == 0) {
                 return 0;
         }
-        xsnprintf(status, sizeof(status), "%s", pcap_statustostr(rc));
+        if (rc == PCAP_ERROR && *pcap_geterr(pcap)) {
+                xsnprintf(status, sizeof(status), "%s", pcap_geterr(pcap));
+        } else {
+                xsnprintf(status, sizeof(status), "%s", pcap_statustostr(rc));
+        }
 
         // manpage says that the full message is here for PCAP_WARNING.
         if (rc == PCAP_WARNING) {

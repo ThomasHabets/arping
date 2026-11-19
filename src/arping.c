@@ -273,15 +273,22 @@ xsnprintf(char *buf, size_t size, const char* fmt, ...)
 
         const int ret = vsnprintf(buf, size, fmt, ap);
         if (ret < 0) {
-                fprintf(stderr, "arping: snprintf() returned negative: %d\n", ret);
+                fprintf(stderr, "arping: vsnprintf() failed: %s\n", strerror(errno));
+                va_end(ap);
                 exit(1);
         }
+        va_end(ap);
         if (cast_int_size(ret, "snprintf return %d not castable to size_t", ret) >= size) {
                 fprintf(stderr, "arping: snprintf() overflow: %d >= %zu\n", ret, size);
+                if (verbose) {
+                        fputs("arping: string that didn't fit: ", stderr);
+                        va_start(ap, fmt);
+                        vfprintf(stderr, fmt, ap);
+                        va_end(ap);
+                        fputc('\n', stderr);
+                }
                 exit(1);
         }
-
-        va_end(ap);
 }
 
 static float

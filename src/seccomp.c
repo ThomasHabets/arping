@@ -92,7 +92,7 @@ drop_seccomp(int libnet_fd)
         scmp_filter_ctx ctx = seccomp_init(SCMP_ACT_KILL);
         if (!ctx) {
                 perror("seccomp_init()");
-                exit(1);
+                arping_exit(1);
         }
 
         //
@@ -107,11 +107,11 @@ drop_seccomp(int libnet_fd)
         // Libnet.
         if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1, SCMP_A0(SCMP_CMP_EQ, cast_int_uint(libnet_fd, NULL)))) {
                 perror("seccomp_rule_add(ioctl libnet)");
-                exit(1);
+                arping_exit(1);
         }
         if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sendto), 1, SCMP_A0(SCMP_CMP_EQ, cast_int_uint(libnet_fd, NULL)))) {
                 perror("seccomp_rule_add(sendto libnet)");
-                exit(1);
+                arping_exit(1);
         }
 
         // Other.
@@ -142,7 +142,7 @@ drop_seccomp(int libnet_fd)
         // Load.
         if (seccomp_load(ctx)) {
                 perror("seccomp_load()");
-                exit(1);
+                arping_exit(1);
         }
         seccomp_release(ctx);
         if (verbose > 1) {

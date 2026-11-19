@@ -539,7 +539,7 @@ START_TEST(badarg_maxcount_neg)
                 "dummy",
                 NULL
         };
-        exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
+        arping_exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
 }
 
 START_TEST(badarg_maxcount_nan)
@@ -551,7 +551,7 @@ START_TEST(badarg_maxcount_nan)
                 "dummy",
                 NULL
         };
-        exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
+        arping_exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
 }
 
 START_TEST(badarg_maxcount_range)
@@ -563,7 +563,7 @@ START_TEST(badarg_maxcount_range)
                 "dummy",
                 NULL
         };
-        exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
+        arping_exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
 }
 
 START_TEST(arg_maxcount_good)
@@ -575,7 +575,7 @@ START_TEST(arg_maxcount_good)
                 "dummy",
                 NULL
         };
-        exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
+        arping_exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
 }
 
 START_TEST(arg_maxcount_hex)
@@ -587,7 +587,7 @@ START_TEST(arg_maxcount_hex)
                 "dummy",
                 NULL
         };
-        exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
+        arping_exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
 }
 
 START_TEST(badarg_packetwait_neg)
@@ -599,7 +599,7 @@ START_TEST(badarg_packetwait_neg)
                 "dummy",
                 NULL
         };
-        exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
+        arping_exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
 }
 
 START_TEST(badarg_packetwait_nan)
@@ -611,7 +611,7 @@ START_TEST(badarg_packetwait_nan)
                 "dummy",
                 NULL
         };
-        exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
+        arping_exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
 }
 
 START_TEST(badarg_packetwait_range)
@@ -623,7 +623,7 @@ START_TEST(badarg_packetwait_range)
                 "dummy",
                 NULL
         };
-        exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
+        arping_exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
 }
 
 START_TEST(arg_packetwait_good)
@@ -635,7 +635,7 @@ START_TEST(arg_packetwait_good)
                 "dummy",
                 NULL
         };
-        exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
+        arping_exit(arping_main(sizeof(args)/sizeof(char*)-1, args));
 }
 
 START_TEST(libnet_init_bad_nolo)

@@ -3,6 +3,7 @@
  */
 
 #include "cast.h"
+#include "arping.h"
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -34,7 +35,7 @@ cast_assert(int must, const char* fmt, ...)
         fprintf(stderr, "arping: runtime check: ");
         vfprintf(stderr, fmt, ap);
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
 }
@@ -55,7 +56,7 @@ cast_int16_uint16(int16_t from, const char* fmt, ...)
           fprintf(stderr, "cast_int16_uint16(%"PRIdMAX"): %s", (intmax_t)from, "value won't fit in uint16_t\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -76,7 +77,7 @@ cast_ssize_size(ssize_t from, const char* fmt, ...)
           fprintf(stderr, "cast_ssize_size(%"PRIdMAX"): %s", (intmax_t)from, "value won't fit in size_t\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -108,7 +109,7 @@ cast_size_ssize(size_t from, const char* fmt, ...)
           fprintf(stderr, "cast_size_ssize(%"PRIuMAX"): %s", (uintmax_t)from, "value won't fit in ssize_t\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -128,7 +129,7 @@ cast_size_uint16(size_t from, const char* fmt, ...)
           fprintf(stderr, "cast_size_uint16(%"PRIuMAX"): %s", (uintmax_t)from, "value won't fit in uint16_t\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -148,7 +149,7 @@ cast_size_uint32(size_t from, const char* fmt, ...)
           fprintf(stderr, "cast_size_uint32(%"PRIuMAX"): %s", (uintmax_t)from, "value won't fit in uint32_t\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -168,7 +169,7 @@ cast_ulong_uint(unsigned long from, const char* fmt, ...)
           fprintf(stderr, "cast_ulong_uint(%"PRIuMAX"): %s", (uintmax_t)from, "value won't fit in unsigned int\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -188,7 +189,7 @@ cast_long_int16(long from, const char* fmt, ...)
           fprintf(stderr, "cast_long_int16(%"PRIdMAX"): %s", (intmax_t)from, "value won't fit in int16_t\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -209,7 +210,7 @@ cast_int16_uint8(int16_t from, const char* fmt, ...)
           fprintf(stderr, "cast_int16_uint8(%"PRIdMAX"): %s", (intmax_t)from, "value won't fit in uint8_t\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -230,7 +231,7 @@ cast_int_uint(int from, const char* fmt, ...)
           fprintf(stderr, "cast_int_uint(%"PRIdMAX"): %s", (intmax_t)from, "value won't fit in unsigned int\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -251,7 +252,7 @@ cast_int_uint16(int from, const char* fmt, ...)
           fprintf(stderr, "cast_int_uint16(%"PRIdMAX"): %s", (intmax_t)from, "value won't fit in uint16_t\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -271,7 +272,7 @@ cast_uint_uint16(unsigned int from, const char* fmt, ...)
           fprintf(stderr, "cast_uint_uint16(%"PRIuMAX"): %s", (uintmax_t)from, "value won't fit in uint16_t\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -292,7 +293,7 @@ cast_int_size(int from, const char* fmt, ...)
           fprintf(stderr, "cast_int_size(%"PRIdMAX"): %s", (intmax_t)from, "value won't fit in size_t\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -312,7 +313,7 @@ cast_long_int(long from, const char* fmt, ...)
           fprintf(stderr, "cast_long_int(%"PRIdMAX"): %s", (intmax_t)from, "value won't fit in int\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -333,7 +334,7 @@ cast_long_uint8(long from, const char* fmt, ...)
           fprintf(stderr, "cast_long_uint8(%"PRIdMAX"): %s", (intmax_t)from, "value won't fit in uint8_t\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -353,7 +354,7 @@ cast_ulong_gid(unsigned long from, const char* fmt, ...)
           fprintf(stderr, "cast_ulong_gid(%"PRIuMAX"): %s", (uintmax_t)from, "value won't fit in gid_t\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -385,7 +386,7 @@ cast_gid_longlong(gid_t from, const char* fmt, ...)
           fprintf(stderr, "cast_gid_longlong(%"PRIuMAX"): %s", (uintmax_t)from, "value won't fit in long long\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -417,7 +418,7 @@ cast_uid_longlong(uid_t from, const char* fmt, ...)
           fprintf(stderr, "cast_uid_longlong(%"PRIuMAX"): %s", (uintmax_t)from, "value won't fit in long long\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -438,7 +439,7 @@ cast_longlong_ulonglong(long long from, const char* fmt, ...)
           fprintf(stderr, "cast_longlong_ulonglong(%"PRIdMAX"): %s", (intmax_t)from, "value won't fit in unsigned long long\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -459,7 +460,7 @@ cast_longlong_ulong(long long from, const char* fmt, ...)
           fprintf(stderr, "cast_longlong_ulong(%"PRIdMAX"): %s", (intmax_t)from, "value won't fit in unsigned long\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -480,7 +481,7 @@ cast_longlong_uint(long long from, const char* fmt, ...)
           fprintf(stderr, "cast_longlong_uint(%"PRIdMAX"): %s", (intmax_t)from, "value won't fit in unsigned int\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -500,7 +501,7 @@ cast_int_int16(int from, const char* fmt, ...)
           fprintf(stderr, "cast_int_int16(%"PRIdMAX"): %s", (intmax_t)from, "value won't fit in int16_t\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -521,7 +522,7 @@ cast_long_ulong(long from, const char* fmt, ...)
           fprintf(stderr, "cast_long_ulong(%"PRIdMAX"): %s", (intmax_t)from, "value won't fit in unsigned long\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -542,7 +543,7 @@ cast_long_uint(long from, const char* fmt, ...)
           fprintf(stderr, "cast_long_uint(%"PRIdMAX"): %s", (intmax_t)from, "value won't fit in unsigned int\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;
@@ -563,7 +564,7 @@ cast_int_ulong(int from, const char* fmt, ...)
           fprintf(stderr, "cast_int_ulong(%"PRIdMAX"): %s", (intmax_t)from, "value won't fit in unsigned long\n");
         }
         fprintf(stderr, "\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
     return to;

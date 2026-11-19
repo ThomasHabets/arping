@@ -44,6 +44,7 @@ extern uint32_t dstip;
 extern unsigned int numrecvd;
 extern unsigned int numsent;
 
+void arping_exit(int status) __attribute__((noreturn));
 void xsnprintf(char *buf, size_t size, const char* fmt, ...) __attribute__ ((format (printf, 3, 4)));
 void drop_seccomp(int libnet_fd);
 void arping_format_bpf_filter(char* buf, size_t size, const char* protocol,

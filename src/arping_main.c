@@ -28,7 +28,7 @@
 int
 main(int argc, char **argv)
 {
-        return arping_main(argc, argv);
+        arping_exit(arping_main(argc, argv));
 }
 /* ---- Emacs Variables ----
  * Local Variables:

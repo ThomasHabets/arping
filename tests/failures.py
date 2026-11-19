@@ -178,6 +178,13 @@ def check_duplicate_address():
 
 
 def main():
+    with open('/dev/full', 'wb') as full:
+        for option in ('-h', '--help'):
+            result = subprocess.run(['./src/arping', option], stdout=full,
+                                    stderr=subprocess.PIPE)
+            if result.returncode != 1 or b'stdout' not in result.stderr:
+                raise AssertionError(f'{option} with full stdout: {result}')
+
     with tempfile.TemporaryDirectory(prefix='arping-faults-') as directory:
         library = str(Path(directory) / 'faults.so')
         subprocess.run(

@@ -265,6 +265,32 @@ static volatile sig_atomic_t time_to_die = 0;
 void drop_landlock();
 void drop_no_new_privs();
 
+static int
+flush_stream(FILE *stream, const char *name)
+{
+        if (fflush(stream) == EOF) {
+                fprintf(stderr, "arping: Failed to flush %s: %s\n", name, strerror(errno));
+                return -1;
+        }
+        if (ferror(stream)) {
+                fprintf(stderr, "arping: Write failure to %s\n", name);
+                return -1;
+        }
+        return 0;
+}
+
+void
+arping_exit(int status)
+{
+        if (flush_stream(stdout, "stdout")) {
+                status = EXIT_FAILURE;
+        }
+        if (flush_stream(stderr, "stderr")) {
+                status = EXIT_FAILURE;
+        }
+        exit(status);
+}
+
 void
 xsnprintf(char *buf, size_t size, const char* fmt, ...)
 {
@@ -275,7 +301,7 @@ xsnprintf(char *buf, size_t size, const char* fmt, ...)
         if (ret < 0) {
                 fprintf(stderr, "arping: vsnprintf() failed: %s\n", strerror(errno));
                 va_end(ap);
-                exit(1);
+                arping_exit(1);
         }
         va_end(ap);
         if (cast_int_size(ret, "snprintf return %d not castable to size_t", ret) >= size) {
@@ -287,7 +313,7 @@ xsnprintf(char *buf, size_t size, const char* fmt, ...)
                         va_end(ap);
                         fputc('\n', stderr);
                 }
-                exit(1);
+                arping_exit(1);
         }
 }
 
@@ -296,7 +322,7 @@ must_parse_float(const char* in, const char* what)
 {
         if (!*in) {
                 fprintf(stderr, "arping: %s: value was empty\n", what);
-                exit(1);
+                arping_exit(1);
         }
         char *endp = NULL;
         errno = 0;
@@ -306,13 +332,13 @@ must_parse_float(const char* in, const char* what)
         if (errno) {
                 fprintf(stderr, "arping: %s: parsing <%s> as float: %s\n",
                         what, in, strerror(errno));
-                exit(1);
+                arping_exit(1);
         }
         if (*endp) {
                 fprintf(stderr,
                         "arping: %s: failed parsing <%s> as float\n",
                         what, in);
-                exit(1);
+                arping_exit(1);
         }
         return ret;
 }
@@ -322,7 +348,7 @@ must_parse_int(const char* in, const char* what)
 {
         if (!*in) {
                 fprintf(stderr, "arping: %s: value was empty\n", what);
-                exit(1);
+                arping_exit(1);
         }
         char *endp = NULL;
         errno = 0;
@@ -330,13 +356,13 @@ must_parse_int(const char* in, const char* what)
         if (errno) {
                 fprintf(stderr, "arping: %s: parsing <%s> as integer: %s\n",
                         what, in, strerror(errno));
-                exit(1);
+                arping_exit(1);
         }
         if (*endp) {
                 fprintf(stderr,
                         "arping: %s: failed parsing <%s> as integer\n",
                         what, in);
-                exit(1);
+                arping_exit(1);
         }
         return cast_long_int(ret, "%s %s", what, in);
 }
@@ -362,7 +388,7 @@ must_parse_uint(const char* in, const char* what)
 {
         if (!*in) {
                 fprintf(stderr, "arping: %s: value was empty\n", what);
-                exit(1);
+                arping_exit(1);
         }
         char *endp = NULL;
         errno = 0;
@@ -376,18 +402,18 @@ must_parse_uint(const char* in, const char* what)
         if (errno) {
                 fprintf(stderr, "arping: %s: parsing <%s> as integer: %s\n",
                         what, in, strerror(errno));
-                exit(1);
+                arping_exit(1);
         }
         if (*endp) {
                 fprintf(stderr,
                         "arping: %s: failed parsing <%s> as integer\n",
                         what, in);
-                exit(1);
+                arping_exit(1);
         }
         if (ret < 0) {
                 fprintf(stderr,
                         "arping: %s: <%s> is negative\n", what, in);
-                exit(1);
+                arping_exit(1);
         }
         return CASTER(ret, "%s %s", what, in);
 #undef CASTER
@@ -461,7 +487,7 @@ xrandom16() {
                 return ret;
         }
         fprintf(stderr, "arping: failed to get random bytes after %d tries\n", maxtry);
-        exit(1);
+        arping_exit(1);
 }
 
 /**
@@ -522,7 +548,7 @@ drop_uid(uid_t uid, gid_t gid)
         if (setgroups(0, NULL)) {
                 if (exit_on_drop_fail) {
                         fprintf(stderr, "arping: setgroups(0, NULL): %s\n", strerror(errno));
-                        exit(1);
+                        arping_exit(1);
                 } else if (verbose) {
                         printf("arping: setgroups(0, NULL): %s\n", strerror(errno));
                 }
@@ -531,7 +557,7 @@ drop_uid(uid_t uid, gid_t gid)
         if (gid && setgid(gid)) {
                 if (exit_on_drop_fail) {
                         fprintf(stderr, "arping: setgid(): %s\n", strerror(errno));
-                        exit(1);
+                        arping_exit(1);
                 } else if (verbose) {
                         printf("arping: setgid(): %s\n", strerror(errno));
                 }
@@ -540,7 +566,7 @@ drop_uid(uid_t uid, gid_t gid)
         if (uid && setuid(uid)) {
                 if (exit_on_drop_fail) {
                         fprintf(stderr, "arping: setuid(): %s\n", strerror(errno));
-                        exit(1);
+                        arping_exit(1);
                 } else if (verbose) {
                         printf("arping: setuid(): %s\n", strerror(errno));
                 }
@@ -620,7 +646,7 @@ must_get_group(const char* ident)
                         "arping: %s is not a number or group\n",
                         ident);
         }
-        exit(1);
+        arping_exit(1);
 }
 
 /**
@@ -647,7 +673,7 @@ drop_privileges(const char* drop_group)
                                 fprintf(stderr, "arping: getpwnam(%s): unknown user\n",
                                         drop_user);
                         }
-                        exit(1);
+                        arping_exit(1);
                 } else if (verbose) {
                         if (errno != 0) {
                                 printf("arping: getpwnam(%s): %s\n",
@@ -676,12 +702,12 @@ drop_privileges(const char* drop_group)
                 fprintf(stderr,
                         "arping: failed to unveil(/, <>): %s\n",
                         strerror(errno));
-                exit(1);
+                arping_exit(1);
         }
         if (unveil(NULL, NULL)) {
                 fprintf(stderr, "arping: failed to unveil(NULL, NULL): %s\n",
                        strerror(errno));
-                exit(1);
+                arping_exit(1);
         }
         if (verbose > 1) {
                 printf("arping: Successfully unveiled\n");
@@ -702,7 +728,7 @@ drop_more_privileges(int libnet_fd)
         if (pledge("stdio tty", "")) {
                 fprintf(stderr, "arping: failed to pledge(stdio, <empty>): %s\n",
                        strerror(errno));
-                exit(1);
+                arping_exit(1);
         } else if (verbose > 1) {
                 printf("arping: Successfully pledged\n");
         }
@@ -876,7 +902,7 @@ try_pcap_open_live(const char *device, int snaplen, int to_ms, char *errbuf)
                         fprintf(stderr, "arping: Unknown timestamp type \"%s\" on %s\n",
                                 timestamp_type, device);
                         maybe_list_tstamp_types(pcap, 1);
-                        exit(1);
+                        arping_exit(1);
                 }
                 if (v == PCAP_TSTAMP_ADAPTER_UNSYNCED
 #ifdef PCAP_TSTAMP_HOST_HIPREC_UNSYNCED
@@ -885,7 +911,7 @@ try_pcap_open_live(const char *device, int snaplen, int to_ms, char *errbuf)
                     ) {
                         fprintf(stderr, "arping: Timestamp type \"%s\" is not synchronized with the system clock; cannot measure RTT\n",
                                 timestamp_type);
-                        exit(1);
+                        arping_exit(1);
                 }
                 if ((err = pcap_set_tstamp_type(pcap, v))) {
                         fprintf(stderr,
@@ -1040,7 +1066,7 @@ do_libnet_init(const char *inifname, int recursive)
                         fprintf(stderr,
                                 "arping: you may need to run as root\n");
                 }
-		exit(1);
+                arping_exit(1);
 	}
 }
 
@@ -1063,7 +1089,7 @@ getwallclock(struct timespec *ts)
         if (-1 == gettimeofday(&tv, NULL)) {
                 fprintf(stderr, "arping: gettimeofday(): %s\n",
                         strerror(errno));
-                exit(EXIT_FAILURE);
+                arping_exit(EXIT_FAILURE);
         }
         ts->tv_sec = tv.tv_sec;
         ts->tv_nsec = tv.tv_usec * 1000;
@@ -1086,7 +1112,7 @@ getclock(struct timespec *ts)
                         strerror(errno));
                 // Existing timestamps and deadlines cannot use wall time.
                 if (monotonic_used) {
-                        exit(EXIT_FAILURE);
+                        arping_exit(EXIT_FAILURE);
                 }
                 clock_gettime_failed = 1; // Prevent duplicate error messages.
         }
@@ -1249,7 +1275,7 @@ usage(int ret)
                 printf("For complete usage info, use --help"
                        " or check the manpage.\n");
         }
-	exit(ret);
+        arping_exit(ret);
 }
 
 /**
@@ -2458,7 +2484,7 @@ arping_main(int argc, char **argv)
                         if (!strcmp(argv[c], "--help")) {
                                 standard_usage();
                                 extended_usage();
-                                exit(0);
+                                arping_exit(0);
                         }
                 }
         }
@@ -2493,7 +2519,7 @@ arping_main(int argc, char **argv)
                                 fprintf(stderr,
                                         "arping: count (-c) must be >=0. Got %d\n",
                                         maxcount);
-                                exit(1);
+                                arping_exit(1);
                         }
 			break;
                 case 'C':
@@ -2514,7 +2540,7 @@ arping_main(int argc, char **argv)
 			break;
 		case 'h':
 			usage(0);
-                        exit(0); // Needless but shuts up compiler warnings.
+                        arping_exit(0); // Needless but shuts up compiler warnings.
                 case 'g':
                         drop_group = optarg;
                         break;
@@ -2526,7 +2552,7 @@ arping_main(int argc, char **argv)
 					" does, do you?\nUse -I if you really"
 					" mean it (undocumented on "
 					"purpose)\n");
-				exit(1);
+                                arping_exit(1);
 			}
 			ifname = optarg;
                         break;
@@ -2551,7 +2577,7 @@ arping_main(int argc, char **argv)
                                 fprintf(stderr,
                                         "arping: 802.1p priority must be 0-7. It's %d\n",
                                         vlan_prio);
-                                exit(1);
+                                arping_exit(1);
                         }
                         break;
                 case 'r':
@@ -2594,7 +2620,7 @@ arping_main(int argc, char **argv)
                                 fprintf(stderr,
                                         "arping: vlan tag must be 0-4095. Is %d\n",
                                         vlan_tag);
-                                exit(1);
+                                arping_exit(1);
                         }
                         break;
 		case 'w':
@@ -2603,7 +2629,7 @@ arping_main(int argc, char **argv)
                                 fprintf(stderr,
                                         "arping: deadline (-w) must be finite value >=0. Is %f.\n",
                                         deadline);
-                                exit(1);
+                                arping_exit(1);
                         }
 			break;
                 case 'W': {
@@ -2613,7 +2639,7 @@ arping_main(int argc, char **argv)
                                 fprintf(stderr,
                                         "arping: packetwait (-W) must be >=0. Is %f\n",
                                         val);
-                                exit(1);
+                                arping_exit(1);
                         }
                         // This overflows (asserts) if the user tries to wait
                         // more than unsigned max number of us. And that's fine.
@@ -2635,7 +2661,7 @@ arping_main(int argc, char **argv)
                 // Can be zero if using -d or -B.
                 fprintf(stderr, "arping: Too many args on command line."
                         " Expected at most one.\n");
-                exit(1);
+                arping_exit(1);
         }
 
         if (verbose > 2) {
@@ -2648,7 +2674,7 @@ arping_main(int argc, char **argv)
         if (!payload_suffix) {
                 fprintf(stderr, "arping: failed to allocate %zu bytes for payload suffix.\n",
                         payload_suffix_size);
-                exit(1);
+                arping_exit(1);
         }
 
         // Create some default content.
@@ -2676,27 +2702,27 @@ arping_main(int argc, char **argv)
             || ((mode == PINGMAC) && (opt_B || dstmac_opt || opt_U))) {
                 fprintf(stderr, "arping: -T can only be used to ping MAC"
                         " and -BtU only to ping IPs\n");
-                exit(1);
+                arping_exit(1);
         }
         if (opt_T && opt_B) {
                 fprintf(stderr,
                         "arping: -B can't be used with -T,"
                         " since they set the same thing\n");
-                exit(1);
+                arping_exit(1);
         }
 
         if (srcmac_opt != NULL) {
                 if (!get_mac_addr(srcmac_opt, srcmac)) {
                         fprintf(stderr, "arping: Weird MAC addr %s\n",
                                 srcmac_opt);
-                        exit(1);
+                        arping_exit(1);
                 }
         }
 
         if (dstmac_opt != NULL) {
                 if (!get_mac_addr(dstmac_opt, dstmac)) {
                         fprintf(stderr, "Illegal MAC addr %s\n", dstmac_opt);
-                        exit(1);
+                        arping_exit(1);
                 }
         }
 
@@ -2706,7 +2732,7 @@ arping_main(int argc, char **argv)
                         fprintf(stderr, "arping: Can't resolve %s, or "
                                 "%s is broadcast. If it is, use -b"
                                 " instead of -S\n", srcip_opt,srcip_opt);
-                        exit(1);
+                        arping_exit(1);
                 }
         }
 
@@ -2716,13 +2742,13 @@ arping_main(int argc, char **argv)
                         fprintf(stderr,"arping: Can't resolve %s, or "
                                 "%s is broadcast. If it is, use -B "
                                 "instead of -T\n",dstip_opt,dstip_opt);
-                        exit(1);
+                        arping_exit(1);
                 }
         }
 
         if (vlan_prio >= 0 && vlan_tag == -1) {
                 fprintf(stderr, "arping: -Q requires the use of 802.1Q (-V)\n");
-                exit(1);
+                arping_exit(1);
         }
         if (vlan_prio == -1) {
                 vlan_prio = 0;
@@ -2759,7 +2785,7 @@ arping_main(int argc, char **argv)
 	parm = (optind < argc) ? argv[optind] : NULL;
         if (parm && dstip_given) {
                 fprintf(stderr, "arping: options (e.g. -B) not compatible with specifying a destination.\n");
-                exit(1);
+                arping_exit(1);
         }
 
         /* default to own IP address when doing -d */
@@ -2772,7 +2798,7 @@ arping_main(int argc, char **argv)
                         fprintf(stderr,
                                 "arping: Unable to get the interface IPv4 address for duplicate detection: %s\n",
                                 libnet_geterror(libnet));
-                        exit(EXIT_FAILURE);
+                        arping_exit(EXIT_FAILURE);
                 }
                 if (verbose) {
                         printf("defaulting to checking dup for %s\n",
@@ -2792,7 +2818,7 @@ arping_main(int argc, char **argv)
                 parm = strdup(libnet_addr2name4(dstip,0));
                 if (!parm) {
                         fprintf(stderr, "arping: out of memory\n");
-                        exit(1);
+                        arping_exit(1);
                 }
         }
 
@@ -2802,7 +2828,7 @@ arping_main(int argc, char **argv)
 
         if (send_reply && mode != PINGIP) {
                 fprintf(stderr, "arping: -P can't be used with MAC destination.\n");
-                exit(1);
+                arping_exit(1);
         }
 
 	/*
@@ -2814,7 +2840,7 @@ arping_main(int argc, char **argv)
 
         if (addr_must_be_same && mode == PINGMAC) {
                 fprintf(stderr, "arping: -A cannot be used with a MAC destination.\n");
-                exit(1);
+                arping_exit(1);
         }
 
 	/*
@@ -2833,16 +2859,16 @@ arping_main(int argc, char **argv)
 			fprintf(stderr, "arping: Options given only apply to "
 				"IP ping, but MAC address given as argument"
 				"\n");
-			exit(1);
+                        arping_exit(1);
 		}
                 if (!xresolve(libnet, parm, LIBNET_RESOLVE, &dstip)) {
 			fprintf(stderr, "arping: Can't resolve %s\n", parm);
-			exit(1);
+                        arping_exit(1);
 		}
 		parm = strdup(libnet_addr2name4(dstip,0));
                 if (!parm) {
 			fprintf(stderr, "arping: strdup of hostname failed\n");
-			exit(1);
+                        arping_exit(1);
                 }
 	}
 
@@ -2857,7 +2883,7 @@ arping_main(int argc, char **argv)
 			fprintf(stderr, "arping: Options given only apply to "
 				"MAC ping, but no MAC address given as "
 				"argument\n");
-			exit(1);
+                        arping_exit(1);
 		}
                 if (!get_mac_addr(argv[optind], dstmac)) {
 			fprintf(stderr, "arping: Illegal mac addr %s\n",
@@ -2899,7 +2925,7 @@ arping_main(int argc, char **argv)
 		if (!ifname) {
                         fprintf(stderr, "arping: Gave up looking for interface"
                                 " to use: %s\n", ebuf);
-			exit(1);
+                        arping_exit(1);
 		}
 		/* FIXME: check for other probably-not interfaces */
 		if (!strcmp(ifname, "ipsec")
@@ -2924,13 +2950,13 @@ arping_main(int argc, char **argv)
                                        pcap_timeout_ms, ebuf))) {
                 strip_newline(ebuf);
                 fprintf(stderr, "arping: pcap_open_live(): %s\n", ebuf);
-		exit(1);
+                arping_exit(1);
 	}
         drop_privileges(drop_group);
 	if (pcap_setnonblock(pcap, 1, ebuf)) {
                 strip_newline(ebuf);
 		fprintf(stderr, "arping: pcap_set_nonblock(): %s\n", ebuf);
-		exit(1);
+                arping_exit(1);
 	}
 	if (verbose > 1) {
 		printf("arping: pcap_get_selectable_fd(): %d\n",
@@ -2963,13 +2989,13 @@ arping_main(int argc, char **argv)
                                PCAP_NETMASK_UNKNOWN)) {
                 fprintf(stderr, "arping: pcap_compile(%s): %s\n",
                         bpf_filter, pcap_geterr(pcap));
-                exit(1);
+                arping_exit(1);
         }
 	if (-1 == pcap_setfilter(pcap, &bp)) {
                 fprintf(stderr, "arping: pcap_setfilter(): %s\n",
                         pcap_geterr(pcap));
                 pcap_freecode(&bp);
-                exit(1);
+                arping_exit(1);
 	}
         pcap_freecode(&bp);
 
@@ -2980,7 +3006,7 @@ arping_main(int argc, char **argv)
 		if (!(cp = (char*)libnet_get_hwaddr(libnet))) {
 			fprintf(stderr, "arping: libnet_get_hwaddr(): %s\n",
 				libnet_geterror(libnet));
-			exit(1);
+                        arping_exit(1);
 		}
 		memcpy(srcmac, cp, ETH_ALEN);
 	}
@@ -2992,7 +3018,7 @@ arping_main(int argc, char **argv)
                                 "arping: "
                                 "Use -S to specify address manually.\n",
                                 ifname, libnet_geterror(libnet));
-			exit(1);
+                        arping_exit(1);
 		}
 	}
         do_signal_init();
@@ -3084,38 +3110,6 @@ arping_main(int argc, char **argv)
                 }
                 printf("\n");
 	}
-
-        if (fflush(stdout)) {
-                fprintf(stderr, "arping: Failed to write to stdout: %s\n",
-                        strerror(errno));
-                return EXIT_FAILURE;
-        }
-
-        if (ferror(stdout)) {
-                fprintf(stderr, "arping: Write failure to stdout: %s\n",
-                        strerror(errno));
-                return EXIT_FAILURE;
-        }
-
-        if (fflush(stderr)) {
-                // Likely this will go nowhere. But we can't write to
-                // stdout in case it's being machine parsed.
-                //
-                // At least it should show up in strace.
-                fprintf(stderr, "arping: Failed to write to stderr: %s\n",
-                        strerror(errno));
-                return EXIT_FAILURE;
-        }
-
-        if (ferror(stderr)) {
-                // Same here. Likely will go nowhere.
-                fprintf(stderr, "arping: Write failure to stderr: %s\n",
-                        strerror(errno));
-                return EXIT_FAILURE;
-        }
-
-        // We could close stdout/stdin too, but that'll interfere with
-        // unit testing.
 
         if (exit_status != EXIT_SUCCESS) {
                 return exit_status;

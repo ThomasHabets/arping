@@ -92,6 +92,7 @@ void cast_assert(int must, const char* fmt, ...) __attribute__ ((format (printf,
 """)
     fc.write("""
 #include "cast.h"
+#include "arping.h"
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -123,7 +124,7 @@ cast_assert(int must, const char* fmt, ...)
         fprintf(stderr, "arping: runtime check: ");
         vfprintf(stderr, fmt, ap);
         fprintf(stderr, "\\n");
-        exit(1);
+        arping_exit(1);
     }
     va_end(ap);
 }
@@ -215,7 +216,7 @@ cast_{src_name}_{dst_name}({src} from, const char* fmt, ...)
           fprintf(stderr, {errstr}, "value won't fit in {dst}\\n");
         }}
         fprintf(stderr, "\\n");
-        exit(1);
+        arping_exit(1);
     }}
     va_end(ap);
     return to;

@@ -12,7 +12,7 @@ if [ x"$VERSION" = x"" ]; then
 fi
 
 if [ x"$VERSION" = x"latest" ]; then
-    VERSION="$(git tag | tail -1)"
+    VERSION="$(git tag --list 'arping-[0-9]*' --sort=version:refname | tail -1)"
 fi
 
 if [ x"$VERSION" = x"HEAD" ]; then

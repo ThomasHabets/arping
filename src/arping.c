@@ -1265,6 +1265,7 @@ standard_usage()
 /**
  *
  */
+static void usage(int ret) __attribute__ ((noreturn));
 static void
 usage(int ret)
 {
@@ -2540,7 +2541,6 @@ arping_main(int argc, char **argv)
 			break;
 		case 'h':
 			usage(0);
-                        arping_exit(0); // Needless but shuts up compiler warnings.
                 case 'g':
                         drop_group = optarg;
                         break;
